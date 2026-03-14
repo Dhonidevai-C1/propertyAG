@@ -2,11 +2,11 @@
 
 import React from "react"
 import Link from "next/link"
-import {
-  ArrowRight,
-  Building2,
-  Users,
-  Sparkles,
+import { 
+  ArrowRight, 
+  Building2, 
+  Users, 
+  Sparkles, 
   ChevronDown,
   CheckCircle2
 } from "lucide-react"
@@ -19,7 +19,7 @@ export default function LandingPage() {
       {/* --- Section 1: Hero --- */}
       <section className="relative min-h-screen flex flex-col items-center justify-center px-4 py-20 text-center overflow-hidden">
         {/* Background is handled by layout (slate-950) */}
-
+        
         {/* Pill Badge */}
         <div className="inline-flex items-center rounded-full border border-slate-700 px-4 py-1 text-xs text-slate-400 animate-in fade-in slide-in-from-top-4 duration-1000">
           <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 mr-2" />
@@ -78,21 +78,21 @@ export default function LandingPage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <FeatureCard
+            <FeatureCard 
               icon={<Building2 className="w-5 h-5 text-emerald-400" />}
               iconBg="bg-emerald-500/10"
               borderColor="hover:border-emerald-500/40"
               title="Property listings"
               body="Add, edit and organize your full property portfolio with photos, specs, pricing and status tracking."
             />
-            <FeatureCard
+            <FeatureCard 
               icon={<Users className="w-5 h-5 text-purple-400" />}
               iconBg="bg-purple-500/10"
               borderColor="hover:border-purple-500/40"
               title="Client database"
               body="Track every buyer and renter with their preferences, budget, timeline and communication history."
             />
-            <FeatureCard
+            <FeatureCard 
               icon={<Sparkles className="w-5 h-5 text-amber-400" />}
               iconBg="bg-amber-500/10"
               borderColor="hover:border-amber-500/40"
@@ -113,27 +113,27 @@ export default function LandingPage() {
 
           <div className="relative grid grid-cols-1 md:grid-cols-3 gap-12 md:gap-8">
             {/* Step 1 */}
-            <StepItem
+            <StepItem 
               number="1"
               bg="bg-emerald-500"
               title="Add your properties & clients"
               body="List properties with full details and images. Add clients with their exact requirements and budget."
             />
             {/* Step 2 */}
-            <StepItem
+            <StepItem 
               number="2"
               bg="bg-purple-500"
               title="Smart matching runs instantly"
               body="The engine scores every property against each client's needs and surfaces the best fits automatically."
             />
             {/* Step 3 */}
-            <StepItem
+            <StepItem 
               number="3"
               bg="bg-amber-500"
               title="Get notified, close the deal"
               body="Your team gets instant alerts. View match breakdowns, contact clients, and track the outcome."
             />
-
+            
             {/* Dashed Connector Line - Desktop Only */}
             <div className="hidden md:block absolute top-10 left-[20%] right-[20%] h-px border-t border-dashed border-slate-700 -z-10" />
           </div>
@@ -145,7 +145,7 @@ export default function LandingPage() {
         <div className="max-w-3xl mx-auto text-center">
           <h2 className="text-white text-3xl md:text-4xl font-bold tracking-tight">Ready to get started?</h2>
           <p className="text-slate-400 mt-4 text-base md:text-lg">Sign in and set up your team workspace in minutes.</p>
-
+          
           <div className="mt-10">
             <Link href="/login">
               <Button className="bg-emerald-500 hover:bg-emerald-400 text-white rounded-lg px-10 py-7 text-base font-bold shadow-xl shadow-emerald-500/20 group transition-all">
@@ -154,7 +154,7 @@ export default function LandingPage() {
               </Button>
             </Link>
           </div>
-
+          
           {/* Footer Bar */}
           <div className="mt-24 pt-8 border-t border-slate-800 flex flex-col md:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-2">

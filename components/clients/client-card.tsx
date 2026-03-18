@@ -14,17 +14,19 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { Client, ClientStatus } from "./client-row"
+import { ClientWithAssignee } from "@/lib/actions/clients"
+import { formatBudgetRange, formatRelativeTime, formatInitials } from "@/lib/utils/format"
+import { ClientStatus } from "@/lib/types/database"
 import Link from "next/link"
 
 interface ClientCardProps {
-  client: Client
+  client: ClientWithAssignee
   onDelete: (id: string) => void
 }
 
 export function ClientCard({ client, onDelete }: ClientCardProps) {
   const getAvatarColor = (name: string) => {
-    const firstLetter = name.charAt(0).toUpperCase()
+    const firstLetter = name ? name.charAt(0).toUpperCase() : 'U'
     const colors: Record<string, string> = {
       A: "bg-purple-100 text-purple-700",
       B: "bg-blue-100 text-blue-700",
@@ -38,25 +40,25 @@ export function ClientCard({ client, onDelete }: ClientCardProps) {
     return colors[firstLetter] || "bg-slate-100 text-slate-700"
   }
 
-  const statusColors: Record<ClientStatus, string> = {
-    Active: "bg-green-100 text-green-700",
-    Matched: "bg-amber-100 text-amber-700",
-    Closed: "bg-slate-100 text-slate-500",
+  const statusColors: Record<string, string> = {
+    active: "bg-green-100 text-green-700",
+    matched: "bg-amber-100 text-amber-700",
+    closed: "bg-slate-100 text-slate-500",
   }
 
   return (
     <Card className="p-4 border-slate-100 shadow-sm bg-white hover:border-emerald-100 transition-all group">
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center gap-3">
-          <Avatar className={cn("h-10 w-10 border-none font-bold", getAvatarColor(client.name))}>
-            <AvatarFallback>{client.name.charAt(0)}</AvatarFallback>
+          <Avatar className={cn("h-10 w-10 border-none font-bold", getAvatarColor(client.full_name))}>
+            <AvatarFallback>{formatInitials(client.full_name)}</AvatarFallback>
           </Avatar>
           <div className="flex flex-col">
-            <span className="font-semibold text-slate-900 leading-tight">{client.name}</span>
-            <span className="text-xs text-slate-400 font-medium">Added {client.addedDate}</span>
+            <span className="font-semibold text-slate-900 leading-tight">{client.full_name}</span>
+            <span className="text-xs text-slate-400 font-medium">Added {formatRelativeTime(client.created_at)}</span>
           </div>
         </div>
-        <Badge className={cn("border-none px-2 py-0 text-[10px] font-bold", statusColors[client.status])}>
+        <Badge className={cn("border-none px-2 py-0 text-[10px] font-bold capitalize", statusColors[client.status as string] || statusColors.active)}>
           {client.status}
         </Badge>
       </div>
@@ -66,22 +68,24 @@ export function ClientCard({ client, onDelete }: ClientCardProps) {
           <Phone className="w-3.5 h-3.5" />
           <span>{client.phone}</span>
         </div>
-        <div className="flex items-center gap-2 text-sm text-slate-500 font-medium truncate">
-          <Mail className="w-3.5 h-3.5" />
-          <span>{client.email}</span>
-        </div>
+        {client.email && (
+          <div className="flex items-center gap-2 text-sm text-slate-500 font-medium truncate">
+            <Mail className="w-3.5 h-3.5" />
+            <span>{client.email}</span>
+          </div>
+        )}
         <div className="pt-1">
-          <span className="text-sm font-bold text-slate-900">Budget: {client.budget}</span>
+          <span className="text-sm font-bold text-slate-900">Budget: {formatBudgetRange(client.budget_min, client.budget_max)}</span>
         </div>
       </div>
 
       <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-1 mb-4">
-        {client.requirements.map((req, i) => (
+        {client.property_types && client.property_types.map((req, i) => (
           <span 
             key={i} 
-            className="px-2.5 py-0.5 bg-slate-50 text-slate-500 text-xs font-semibold rounded-full border border-slate-100 whitespace-nowrap"
+            className="px-2.5 py-0.5 bg-slate-50 text-slate-500 text-xs font-semibold rounded-full border border-slate-100 whitespace-nowrap capitalize"
           >
-            {req}
+            {req.replace('_', ' ')}
           </span>
         ))}
       </div>
@@ -89,7 +93,7 @@ export function ClientCard({ client, onDelete }: ClientCardProps) {
       <div className="pt-4 border-t border-slate-50 flex items-center justify-between">
         <div className="flex items-center gap-1.5 text-amber-600 font-bold group-hover:scale-105 transition-transform origin-left">
           <Sparkles className="w-4 h-4" />
-          <span className="text-xs">{client.matchCount} fits</span>
+          <span className="text-xs">matches</span>
         </div>
         
         <div className="flex items-center gap-2">

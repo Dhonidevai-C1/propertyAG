@@ -1,230 +1,221 @@
-'use client'
-
 import React from "react"
 import Link from "next/link"
-import { 
-  Building2, 
-  Users, 
-  Sparkles, 
-  Clock, 
-  TrendingUp, 
-  PencilLine, 
-  UserPlus, 
+import {
+  Building2,
+  Users,
+  Sparkles,
+  Clock,
+  TrendingUp,
+  UserPlus,
   ArrowRight,
   Bed,
   Bath,
-  MapPin
+  MapPin,
+  IndianRupee,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button, buttonVariants } from "@/components/ui/button"
+import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
+import { getDashboardStats, getRecentNotifications } from "@/lib/actions/matches"
+import { getProperties } from "@/lib/actions/properties"
+import { requireProfile } from "@/lib/auth/get-session"
+import { Notification } from "@/lib/types/database"
+import { formatRelativeTime, formatPrice } from "@/lib/utils/format"
 
-const stats = [
-  {
-    label: "Total properties",
-    value: "48",
-    icon: Building2,
-    trend: "+3 this month",
-    trendIcon: TrendingUp,
-    color: "text-blue-600",
-    bgColor: "bg-blue-50",
-  },
-  {
-    label: "Active clients",
-    value: "31",
-    icon: Users,
-    trend: "+7 this month",
-    trendIcon: TrendingUp,
-    color: "text-purple-600",
-    bgColor: "bg-purple-50",
-  },
-  {
-    label: "Matches found",
-    value: "12",
-    icon: Sparkles,
-    trend: "this week",
-    trendIcon: Sparkles,
-    color: "text-amber-600",
-    bgColor: "bg-amber-50",
-  },
-  {
-    label: "Pending follow-ups",
-    value: "5",
-    icon: Clock,
-    trend: "need attention",
-    trendIcon: Clock,
-    color: "text-red-500",
-    bgColor: "bg-red-50",
-  },
-]
+function notificationIcon(type: string) {
+  const map: Record<string, typeof Building2> = {
+    new_client: UserPlus,
+    match_found: Sparkles,
+    property_update: Building2,
+    team_member: Users,
+    system: Clock,
+  }
+  return map[type] ?? Clock
+}
 
-const activities = [
-  {
-    type: "client",
-    content: "New client added: Priya Sharma",
-    time: "2 hours ago",
-    icon: Users,
-    color: "bg-purple-100 text-purple-600",
-  },
-  {
-    type: "property",
-    content: "Property listed: 3BHK Bani Park",
-    time: "4 hours ago",
-    icon: Building2,
-    color: "bg-blue-100 text-blue-600",
-  },
-  {
-    type: "match",
-    content: "Match found: Sharma ↔ Bani Park",
-    time: "6 hours ago",
-    icon: Sparkles,
-    color: "bg-amber-100 text-amber-600",
-  },
-  {
-    type: "update",
-    content: "Property updated: 2BHK Vaishali Nagar",
-    time: "Yesterday",
-    icon: PencilLine,
-    color: "bg-slate-100 text-slate-600",
-  },
-  {
-    type: "client",
-    content: "New client added: Ramesh Gupta",
-    time: "Yesterday",
-    icon: Users,
-    color: "bg-purple-100 text-purple-600",
-  },
-  {
-    type: "team",
-    content: "Team member joined: Anil Singh",
-    time: "2 days ago",
-    icon: UserPlus,
-    color: "bg-emerald-100 text-emerald-600",
-  },
-]
+function notificationColor(type: string) {
+  const map: Record<string, string> = {
+    new_client: "bg-purple-100 text-purple-600",
+    match_found: "bg-amber-100 text-amber-600",
+    property_update: "bg-blue-100 text-blue-600",
+    team_member: "bg-emerald-100 text-emerald-600",
+    system: "bg-slate-100 text-slate-600",
+  }
+  return map[type] ?? "bg-slate-100 text-slate-600"
+}
 
+// Quick action button styles — plain strings, no client-only function call
 const quickActions = [
-  { label: "Add property", icon: Building2, href: "/properties/new", className: "bg-emerald-500 text-white hover:bg-emerald-600" },
-  { label: "Add client", icon: UserPlus, href: "/clients/new", className: "bg-slate-900 text-white hover:bg-slate-800" },
-  { label: "View matches", icon: Sparkles, href: "/matches", className: "border-slate-200 text-slate-700 hover:bg-slate-50" },
-  { label: "View team", icon: Users, href: "/team", className: "border-slate-200 text-slate-700 hover:bg-slate-50" },
-]
-
-const recentProperties = [
   {
-    id: 1,
-    name: "Luxury 3BHK Apartment",
-    location: "Bani Park, Jaipur",
-    price: "₹85,00,000",
-    beds: 3,
-    baths: 3,
-    image: "bg-slate-200",
+    label: "Add property",
+    icon: Building2,
+    href: "/properties/new",
+    cls: "bg-emerald-500 hover:bg-emerald-600 text-white",
   },
   {
-    id: 2,
-    name: "Modern Villa with Garden",
-    location: "Vaishali Nagar, Jaipur",
-    price: "₹1,20,00,000",
-    beds: 4,
-    baths: 4,
-    image: "bg-slate-200",
+    label: "Add client",
+    icon: UserPlus,
+    href: "/clients/new",
+    cls: "bg-slate-900 hover:bg-slate-800 text-white",
   },
   {
-    id: 3,
-    name: "Cozy 2BHK Flat",
-    location: "Malviya Nagar, Jaipur",
-    price: "₹45,00,000",
-    beds: 2,
-    baths: 2,
-    image: "bg-slate-200",
+    label: "View matches",
+    icon: Sparkles,
+    href: "/matches",
+    cls: "bg-white hover:bg-slate-50 text-slate-700 border border-slate-200",
+  },
+  {
+    label: "Team",
+    icon: Users,
+    href: "/team",
+    cls: "bg-white hover:bg-slate-50 text-slate-700 border border-slate-200",
   },
 ]
 
-export default function DashboardPage() {
+export default async function DashboardPage() {
+  const [profile, stats, notifications, recentProperties] = await Promise.all([
+    requireProfile(),
+    getDashboardStats(),
+    getRecentNotifications(6),
+    getProperties({ limit: 3 } as any),
+  ])
+
+  const statCards = [
+    {
+      label: "Properties",
+      value: stats.properties,
+      icon: Building2,
+      sub: "total listings",
+      color: "text-blue-600",
+      bg: "bg-blue-50",
+    },
+    {
+      label: "Active clients",
+      value: stats.clients,
+      icon: Users,
+      sub: "seeking property",
+      color: "text-purple-600",
+      bg: "bg-purple-50",
+    },
+    {
+      label: "Matches",
+      value: stats.matchesThisWeek,
+      icon: Sparkles,
+      sub: "this week",
+      color: "text-amber-600",
+      bg: "bg-amber-50",
+    },
+    {
+      label: "Follow-ups due",
+      value: stats.pendingFollowups,
+      icon: Clock,
+      sub: "need attention",
+      color: stats.pendingFollowups > 0 ? "text-red-500" : "text-emerald-600",
+      bg: stats.pendingFollowups > 0 ? "bg-red-50" : "bg-emerald-50",
+    },
+  ]
+
+  const hour = new Date().getHours()
+  const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening"
+  const firstName = profile.full_name.split(" ")[0]
+
   return (
     <div className="space-y-8 pb-10">
+      {/* Greeting */}
+      <div>
+        <h1 className="text-2xl font-bold text-slate-900">
+          {greeting}, {firstName} 👋
+        </h1>
+        <p className="text-slate-500 text-sm mt-1">
+          Here's what's happening with your agency today.
+        </p>
+      </div>
+
       {/* Stats Row */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-        {stats.map((stat) => (
-          <Card key={stat.label} className="border-none shadow-sm md:rounded-xl">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {statCards.map(stat => (
+          <Card key={stat.label} className="border-slate-100 shadow-sm rounded-2xl">
             <CardContent className="p-5">
               <div className="flex items-center justify-between mb-4">
-                <div className={cn("p-2 rounded-lg", stat.bgColor)}>
+                <div className={cn("p-2.5 rounded-xl", stat.bg)}>
                   <stat.icon className={cn("w-5 h-5", stat.color)} />
                 </div>
-                {stat.label !== "Matches found" && stat.label !== "Pending follow-ups" && (
-                  <div className="flex items-center gap-1 text-emerald-500 text-xs font-medium">
-                    <stat.trendIcon className="w-3 h-3" />
-                    <span>{stat.trend.split(" ")[0]}</span>
-                  </div>
-                )}
+                <TrendingUp className="w-3.5 h-3.5 text-emerald-400" />
               </div>
-              <p className="text-3xl font-bold text-slate-900 tracking-tight">{stat.value}</p>
-              <div className="flex items-center justify-between mt-1">
-                <p className="text-sm text-slate-500 font-medium">{stat.label}</p>
-                <span className={cn(
-                  "text-[10px] sm:text-xs",
-                  stat.label === "Pending follow-ups" ? "text-red-500" : "text-slate-400"
-                )}>
-                  {stat.trend}
-                </span>
-              </div>
+              <p className="text-3xl font-black text-slate-900 tracking-tight">{stat.value}</p>
+              <p className="text-sm font-semibold text-slate-700 mt-1">{stat.label}</p>
+              <p className="text-xs text-slate-400 mt-0.5">{stat.sub}</p>
             </CardContent>
           </Card>
         ))}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Recent Activity Feed */}
+        {/* Recent Activity */}
         <div className="lg:col-span-2 space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-slate-900">Recent activity</h2>
-            <Button variant="ghost" size="sm" className="text-emerald-600 hover:text-emerald-700 text-xs">
-              View all
-            </Button>
+            <h2 className="text-base font-bold text-slate-900">Recent activity</h2>
+            <Link href="/notifications" className="text-xs font-bold text-emerald-600 hover:text-emerald-700">
+              View all →
+            </Link>
           </div>
-          <Card className="border-none shadow-sm md:rounded-xl overflow-hidden">
-            <div className="divide-y divide-slate-100">
-              {activities.map((activity, idx) => (
-                <div 
-                  key={idx} 
-                  className="p-4 flex items-center gap-4 hover:bg-slate-50 transition-colors cursor-pointer group"
-                >
-                  <div className={cn("w-10 h-10 rounded-full flex items-center justify-center shrink-0", activity.color)}>
-                    <activity.icon className="w-5 h-5" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm text-slate-700 font-medium truncate group-hover:text-slate-900 transition-colors">
-                      {activity.content}
-                    </p>
-                    <p className="text-xs text-slate-400 mt-0.5">{activity.time}</p>
-                  </div>
-                  <ArrowRight className="w-4 h-4 text-slate-300 opacity-0 group-hover:opacity-100 transition-all -translate-x-2 group-hover:translate-x-0" />
-                </div>
-              ))}
-            </div>
+          <Card className="border-slate-100 shadow-sm rounded-2xl overflow-hidden">
+            {notifications.length > 0 ? (
+              <div className="divide-y divide-slate-50">
+                {(notifications as Notification[]).map(n => {
+                  const Icon = notificationIcon(n.type)
+                  const href =
+                    n.reference_type === "client" ? `/clients/${n.reference_id}` :
+                    n.reference_type === "property" ? `/properties/${n.reference_id}` :
+                    n.reference_type === "match" ? `/matches/${n.reference_id}` :
+                    "/notifications"
+                  return (
+                    <Link key={n.id} href={href}
+                      className="p-4 flex items-center gap-3 hover:bg-slate-50 transition-colors group"
+                    >
+                      <div className={cn("w-9 h-9 rounded-full flex items-center justify-center shrink-0", notificationColor(n.type))}>
+                        <Icon className="w-4 h-4" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className={cn(
+                          "text-sm truncate",
+                          n.is_read ? "text-slate-600 font-medium" : "text-slate-900 font-bold"
+                        )}>
+                          {n.message}
+                        </p>
+                        <p className="text-xs text-slate-400 mt-0.5">{formatRelativeTime(n.created_at)}</p>
+                      </div>
+                      {!n.is_read && <span className="w-2 h-2 bg-emerald-500 rounded-full shrink-0" />}
+                      <ArrowRight className="w-4 h-4 text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+                    </Link>
+                  )
+                })}
+              </div>
+            ) : (
+              <div className="p-12 text-center">
+                <Clock className="w-8 h-8 text-slate-200 mx-auto mb-3" />
+                <p className="text-slate-400 text-sm font-medium">No activity yet</p>
+                <p className="text-slate-300 text-xs mt-1">Activity from your team will appear here</p>
+              </div>
+            )}
           </Card>
         </div>
 
         {/* Quick Actions */}
         <div className="space-y-4">
-          <h2 className="text-lg font-semibold text-slate-900">Quick actions</h2>
-          <div className="grid grid-cols-2 lg:grid-cols-1 gap-3">
-            {quickActions.map((action) => (
+          <h2 className="text-base font-bold text-slate-900">Quick actions</h2>
+          <div className="flex flex-col gap-3">
+            {quickActions.map(action => (
               <Link
                 key={action.label}
                 href={action.href}
                 className={cn(
-                  buttonVariants({ 
-                    variant: action.className.includes("border") ? "outline" : "default"
-                  }),
-                  "h-14 justify-start px-4 rounded-xl text-sm font-medium transition-all active:scale-[0.98]",
-                  action.className
+                  "flex items-center gap-3 h-14 px-4 rounded-xl text-sm font-bold transition-all active:scale-[0.98] shadow-sm",
+                  action.cls
                 )}
               >
-                <action.icon className="w-5 h-5 mr-3 shrink-0" />
+                <action.icon className="w-5 h-5 shrink-0" />
                 {action.label}
               </Link>
             ))}
@@ -232,51 +223,67 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Properties Snapshot */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-slate-900">Recently added properties</h2>
-          <Link href="/properties" className="text-sm font-medium text-emerald-600 hover:text-emerald-700 flex items-center gap-1">
-            View all <ArrowRight className="w-4 h-4" />
-          </Link>
+      {/* Recent Properties */}
+      {recentProperties.length > 0 && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-base font-bold text-slate-900">Recent properties</h2>
+            <Link href="/properties" className="text-xs font-bold text-emerald-600 hover:text-emerald-700 flex items-center gap-1">
+              View all <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {recentProperties.map(property => (
+              <Link key={property.id} href={`/properties/${property.id}`}>
+                <Card className="border-slate-100 shadow-sm rounded-2xl overflow-hidden hover:shadow-md transition-all group cursor-pointer">
+                  <div className="aspect-video w-full bg-slate-100 flex items-center justify-center overflow-hidden">
+                    {property.cover_image_url ? (
+                      <img src={property.cover_image_url} alt={property.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                    ) : (
+                      <Building2 className="w-10 h-10 text-slate-200" />
+                    )}
+                  </div>
+                  <CardContent className="p-4 space-y-3">
+                    <div>
+                      <div className="flex items-start justify-between gap-2">
+                        <h3 className="font-bold text-slate-900 group-hover:text-emerald-600 transition-colors text-sm truncate">
+                          {property.title}
+                        </h3>
+                        <span className="text-sm font-black text-emerald-600 shrink-0">
+                          {formatPrice(property.price)}
+                        </span>
+                      </div>
+                      <div className="flex items-center text-slate-400 text-xs mt-1">
+                        <MapPin className="w-3 h-3 mr-1 shrink-0" />
+                        {[property.locality, property.city].filter(Boolean).join(", ")}
+                      </div>
+                    </div>
+                    <Separator className="bg-slate-50" />
+                    <div className="flex items-center gap-4 text-xs text-slate-500 font-medium">
+                      <div className="flex items-center gap-1">
+                        <Bed className="w-3.5 h-3.5 text-slate-300" />
+                        {property.bedrooms} Bed
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Bath className="w-3.5 h-3.5 text-slate-300" />
+                        {property.bathrooms} Bath
+                      </div>
+                      <Badge className={cn(
+                        "ml-auto text-[10px] font-bold border-none capitalize",
+                        property.status === "available" ? "bg-emerald-50 text-emerald-600" :
+                        property.status === "sold" ? "bg-red-50 text-red-600" :
+                        "bg-slate-50 text-slate-500"
+                      )}>
+                        {property.status}
+                      </Badge>
+                    </div>
+                  </CardContent>
+                </Card>
+              </Link>
+            ))}
+          </div>
         </div>
-        
-        <div className="flex overflow-x-auto lg:grid lg:grid-cols-3 gap-4 pb-4 px-1 -mx-1 no-scrollbar sm:pb-0 sm:px-0 sm:mx-0">
-          {recentProperties.map((property) => (
-            <Card key={property.id} className="min-w-[280px] border-none shadow-sm md:rounded-xl overflow-hidden hover:shadow-md transition-shadow group cursor-pointer shrink-0">
-              <div className={cn("aspect-video w-full relative", property.image)}>
-                <Badge className="absolute top-3 right-3 bg-emerald-500 hover:bg-emerald-600 border-none font-bold">
-                  {property.price}
-                </Badge>
-              </div>
-              <CardContent className="p-4 space-y-3">
-                <div className="space-y-1">
-                  <h3 className="font-semibold text-slate-900 group-hover:text-emerald-600 transition-colors truncate">
-                    {property.name}
-                  </h3>
-                  <div className="flex items-center text-slate-500 text-xs">
-                    <MapPin className="w-3 h-3 mr-1 shrink-0" />
-                    {property.location}
-                  </div>
-                </div>
-                
-                <Separator className="bg-slate-100" />
-                
-                <div className="flex items-center gap-4 text-slate-600 text-xs">
-                  <div className="flex items-center gap-1.5">
-                    <Bed className="w-4 h-4 text-slate-400" />
-                    <span className="font-medium">{property.beds} Bedrooms</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <Bath className="w-4 h-4 text-slate-400" />
-                    <span className="font-medium">{property.baths} Baths</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </div>
+      )}
     </div>
   )
 }

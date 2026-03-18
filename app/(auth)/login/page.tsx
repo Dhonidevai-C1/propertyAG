@@ -7,6 +7,8 @@ import { useForm } from "react-hook-form"
 import * as z from "zod"
 import { Building2, Eye, EyeOff, Loader2 } from "lucide-react"
 import { toast } from "sonner"
+import { createClient } from "@/lib/supabase/client"
+import { useRouter } from "next/navigation"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -32,6 +34,7 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const router = useRouter()
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -45,19 +48,26 @@ export default function LoginPage() {
     setIsLoading(true)
     setError(null)
     
-    // Simulate placeholder logic
-    console.log("Login submitted:", data)
-    
-    setTimeout(() => {
-      // For demonstration: simulate a failure if username is "error"
-      if (data.username === "error") {
-        setError("Invalid username or password.")
+    try {
+      const supabase = createClient()
+      const { error } = await supabase.auth.signInWithPassword({
+        email: data.username, // Using username field as email
+        password: data.password,
+      })
+
+      if (error) {
+        setError(error.message)
         setIsLoading(false)
-      } else {
-        toast.success("Login coming soon.")
-        setIsLoading(false)
+        return
       }
-    }, 1500)
+
+      toast.success("Signed in successfully!")
+      router.push("/dashboard")
+      router.refresh()
+    } catch (err) {
+      setError("An unexpected error occurred. Please try again.")
+      setIsLoading(false)
+    }
   }
 
   return (

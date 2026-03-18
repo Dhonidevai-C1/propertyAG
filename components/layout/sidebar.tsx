@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from "react"
+import React from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { 
@@ -33,7 +33,7 @@ const navItems = [
   { label: "Properties", icon: Building2, href: "/properties" },
   { label: "Clients", icon: Users, href: "/clients" },
   { label: "Smart Matches", icon: Sparkles, href: "/matches" },
-  { label: "Notifications", icon: Bell, href: "/notifications", badge: 3 },
+  { label: "Notifications", icon: Bell, href: "/notifications" },
 ]
 
 const secondaryNavItems = [
@@ -46,8 +46,16 @@ interface SidebarProps {
   setIsCollapsed: (value: boolean) => void
 }
 
+import { useAuth } from "@/lib/context/auth-context"
+import { LogoutButton } from "@/components/auth/logout-button"
+
 export function Sidebar({ isCollapsed, setIsCollapsed }: SidebarProps) {
   const pathname = usePathname()
+  const { profile } = useAuth()
+  
+  const initials = profile?.full_name
+    ? profile.full_name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
+    : '??'
 
   return (
     <aside 
@@ -104,26 +112,26 @@ export function Sidebar({ isCollapsed, setIsCollapsed }: SidebarProps) {
           isCollapsed ? "justify-center" : "px-2 pb-2"
         )}>
           <Avatar className="w-8 h-8 border-2 border-emerald-500/20 cursor-pointer">
-            <AvatarFallback className="bg-emerald-600 text-white text-xs font-bold">JD</AvatarFallback>
+            <AvatarFallback className="bg-emerald-600 text-white text-xs font-bold">{initials}</AvatarFallback>
           </Avatar>
           
           {!isCollapsed && (
             <div className="flex-1 min-w-0 animate-in slide-in-from-left-2 duration-300">
-              <p className="text-sm font-medium text-slate-200 truncate leading-none mb-1">Jane Doe</p>
-              <p className="text-xs text-slate-500 truncate">Admin</p>
+              <p className="text-sm font-medium text-slate-200 truncate leading-none mb-1">{profile?.full_name || 'User'}</p>
+              <p className="text-xs text-slate-500 truncate capitalize">{profile?.role || 'Agent'}</p>
             </div>
           )}
 
           {!isCollapsed && (
-            <button className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-500 hover:text-white transition-colors">
+            <LogoutButton className="p-1.5 h-auto w-auto rounded-lg hover:bg-slate-800 text-slate-500 hover:text-white transition-colors">
               <LogOut className="w-4 h-4" />
-            </button>
+            </LogoutButton>
           )}
 
           {isCollapsed && (
-             <div className="absolute left-full ml-4 px-2 py-1 bg-slate-800 text-white text-[10px] rounded opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity">
-                Jane Doe (Admin)
-             </div>
+            <div className="absolute left-full ml-4 px-2 py-1 bg-slate-800 text-white text-[10px] rounded opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap">
+              {profile?.full_name || 'User'} · {profile?.role || 'Agent'}
+            </div>
           )}
         </div>
 
@@ -153,11 +161,12 @@ function NavItem({ item, isCollapsed, isActive }: {
   isCollapsed: boolean,
   isActive: boolean 
 }) {
-  const { icon: Icon, label, href, badge } = item
+  const { icon: Icon, label, href } = item
 
   const content = (
     <Link
       href={href}
+      prefetch={true}
       className={cn(
         "flex items-center h-11 transition-all duration-200 group mx-3 rounded-lg relative",
         isActive 
@@ -177,16 +186,6 @@ function NavItem({ item, isCollapsed, isActive }: {
           {label}
         </span>
       )}
-
-      {!isCollapsed && badge && (
-        <Badge className="ml-auto bg-emerald-500 hover:bg-emerald-600 text-[10px] px-1.5 py-0 h-5 min-w-5 flex items-center justify-center border-none">
-          {badge}
-        </Badge>
-      )}
-
-      {isCollapsed && badge && (
-        <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-emerald-500 rounded-full border border-slate-900" />
-      )}
     </Link>
   )
 
@@ -197,7 +196,7 @@ function NavItem({ item, isCollapsed, isActive }: {
           {content}
         </TooltipTrigger>
         <TooltipContent side="right" className="bg-slate-800 text-white border-slate-700">
-          {label} {badge && `(${badge})`}
+          {label}
         </TooltipContent>
       </Tooltip>
     )

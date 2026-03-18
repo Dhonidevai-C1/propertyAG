@@ -1,22 +1,23 @@
 'use client'
 
-import React, { useState, useEffect } from "react"
+import React, { useState } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
-import * as z from "zod"
-import { 
-  Plus, 
-  Minus, 
-  ArrowRight, 
-  ImagePlus, 
-  X, 
+import {
+  Plus,
+  Minus,
+  ImagePlus,
+  X,
   Loader2,
   AlertCircle,
-  Building2
+  Building2,
+  Check
 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
+import Image from "next/image"
 
+import { ImageCropperDialog } from "@/components/properties/image-cropper"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -30,42 +31,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Badge } from "@/components/ui/badge"
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogDescription, 
-  DialogFooter, 
-  DialogHeader, 
-  DialogTitle, 
-  DialogTrigger 
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
 } from "@/components/ui/dialog"
 import { cn } from "@/lib/utils"
-
-const propertyFormSchema = z.object({
-  title: z.string().min(5, "Title must be at least 5 characters"),
-  type: z.string().min(1, "Please select a property type"),
-  bhk: z.string().min(1, "Please select BHK"),
-  status: z.string().min(1, "Please select a status"),
-  description: z.string().min(20, "Description must be at least 20 characters"),
-  address: z.string().min(5, "Address is required"),
-  city: z.string().min(2, "City is required"),
-  area: z.string().min(2, "Area/Locality is required"),
-  pincode: z.string().regex(/^\d{6}$/, "Pincode must be 6 digits"),
-  bedrooms: z.number().min(0).max(10),
-  bathrooms: z.number().min(0).max(10),
-  floorNumber: z.string().optional(),
-  totalFloors: z.string().optional(),
-  sqft: z.number().min(1, "Area is required"),
-  facing: z.string().optional(),
-  furnishing: z.string().optional(),
-  parking: z.string().optional(),
-  price: z.number().min(1, "Price is required"),
-  negotiable: z.boolean(),
-  maintenance: z.number().optional(),
-})
-
-type PropertyFormValues = z.infer<typeof propertyFormSchema>
+import { PropertyFormSchema, PropertyFormValues } from "@/lib/validations/property"
+import { createProperty, updateProperty } from "@/lib/actions/properties"
 
 interface PropertyFormProps {
   initialData?: Partial<PropertyFormValues> & { id?: string }
@@ -75,66 +51,128 @@ interface PropertyFormProps {
 export function PropertyForm({ initialData, mode = "add" }: PropertyFormProps) {
   const router = useRouter()
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [isSavingDraft, setIsSavingDraft] = useState(false)
-  const [images, setImages] = useState<string[]>(initialData?.id ? ["img-1", "img-2"] : []) // Mock existing images for edit
+  const [uploadingImage, setUploadingImage] = useState(false)
   const [isDiscardDialogOpen, setIsDiscardDialogOpen] = useState(false)
+  const [imageToCrop, setImageToCrop] = useState<string | null>(null)
+
+  // Map initialData ensuring nulls from DB are handled correctly for the form
+  const defaultValues: PropertyFormValues = {
+    title: initialData?.title || "",
+    description: initialData?.description || "",
+    property_type: initialData?.property_type || "apartment",
+    status: initialData?.status || "available",
+    price: initialData?.price || 0,
+    price_negotiable: initialData?.price_negotiable ?? false,
+    locality: initialData?.locality || "",
+    city: initialData?.city || "",
+    address: initialData?.address || "",
+    bhk: initialData?.bhk || 0,
+    bedrooms: initialData?.bedrooms || 0,
+    bathrooms: initialData?.bathrooms || 0,
+    area_sqft: initialData?.area_sqft || 0,
+    furnishing: initialData?.furnishing || "unfurnished",
+    pincode: initialData?.pincode || "",
+    floor_number: initialData?.floor_number || "",
+    total_floors: initialData?.total_floors || "",
+    facing: initialData?.facing || "",
+    parking: initialData?.parking || "",
+    maintenance_charge: initialData?.maintenance_charge || 0,
+    cover_image_url: initialData?.cover_image_url || "",
+    image_urls: initialData?.image_urls || [],
+  }
 
   const {
     register,
     handleSubmit,
     setValue,
     watch,
-    reset,
     formState: { errors, isDirty },
   } = useForm<PropertyFormValues>({
-    resolver: zodResolver(propertyFormSchema),
-    defaultValues: {
-      title: initialData?.title || "",
-      type: initialData?.type || "",
-      bhk: initialData?.bhk || "",
-      status: initialData?.status || "Available",
-      description: initialData?.description || "",
-      address: initialData?.address || "",
-      city: initialData?.city || "",
-      area: initialData?.area || "",
-      pincode: initialData?.pincode || "",
-      bedrooms: initialData?.bedrooms || 0,
-      bathrooms: initialData?.bathrooms || 0,
-      sqft: initialData?.sqft || 0,
-      price: initialData?.price || 0,
-      negotiable: initialData?.negotiable ?? false,
-      floorNumber: initialData?.floorNumber || "",
-      totalFloors: initialData?.totalFloors || "",
-      facing: initialData?.facing || "",
-      furnishing: initialData?.furnishing || "",
-      parking: initialData?.parking || "",
-      maintenance: initialData?.maintenance,
-    },
+    resolver: zodResolver(PropertyFormSchema),
+    defaultValues,
   })
 
-  const bhkValue = watch("bhk")
-  const typeValue = watch("type")
+  const propertyTypeValue = watch("property_type")
   const statusValue = watch("status")
-  const facingValue = watch("facing")
   const furnishingValue = watch("furnishing")
-  const parkingValue = watch("parking")
-  const bedroomsValue = watch("bedrooms")
-  const bathroomsValue = watch("bathrooms")
-  const negotiableValue = watch("negotiable")
+  const bedroomsValue = watch("bedrooms") || 0
+  const bathroomsValue = watch("bathrooms") || 0
+  const negotiableValue = watch("price_negotiable")
+  const imageUrls = watch("image_urls") || []
+  const coverImageUrl = watch("cover_image_url")
 
   const onSubmit = async (data: PropertyFormValues) => {
     setIsSubmitting(true)
-    await new Promise(resolve => setTimeout(resolve, 1500))
-    toast.success(mode === "edit" ? "Property updated successfully!" : "Property listed successfully!")
-    setIsSubmitting(false)
-    router.push(mode === "edit" ? `/properties/${initialData?.id}` : "/properties")
+    try {
+      const result = mode === "edit" && initialData?.id
+        ? await updateProperty(initialData.id, data)
+        : await createProperty(data)
+
+      if (result.error) {
+        toast.error(result.error)
+      } else {
+        toast.success(mode === "edit" ? "Property updated successfully!" : "Property listed successfully!")
+        router.push(`/properties/${result.data?.id || ""}`)
+        router.refresh()
+      }
+    } catch (error) {
+      toast.error("Something went wrong. Please try again.")
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
-  const handleSaveDraft = async () => {
-    setIsSavingDraft(true)
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    toast.success("Saved as draft")
-    setIsSavingDraft(false)
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const url = URL.createObjectURL(file)
+    setImageToCrop(url)
+    // Clear input so we can select same file again if aborted
+    e.target.value = ""
+  }
+
+  const handleCropComplete = async (croppedBlob: Blob) => {
+    setImageToCrop(null)
+    setUploadingImage(true)
+    const formData = new FormData()
+    formData.append("file", croppedBlob, "upload.jpg")
+    if (initialData?.id) {
+      formData.append("propertyId", initialData.id)
+    }
+
+    try {
+      const res = await fetch("/api/properties/upload", {
+        method: "POST",
+        body: formData,
+      })
+      const result = await res.json()
+
+      if (result.error) {
+        toast.error(result.error)
+      } else {
+        const uploadedUrl = result.url || result.urls?.[0]
+        if (!uploadedUrl) throw new Error("No URL returned")
+
+        const newUrls = [...imageUrls, uploadedUrl]
+        setValue("image_urls", newUrls, { shouldDirty: true })
+        if (!coverImageUrl) {
+          setValue("cover_image_url", uploadedUrl, { shouldDirty: true })
+        }
+        toast.success("Image uploaded successfully")
+      }
+    } catch (error) {
+      toast.error("Failed to upload image")
+    } finally {
+      setUploadingImage(false)
+    }
+  }
+
+  const removeImage = (urlToRemove: string) => {
+    const newUrls = imageUrls.filter(url => url !== urlToRemove)
+    setValue("image_urls", newUrls, { shouldDirty: true })
+    if (coverImageUrl === urlToRemove) {
+      setValue("cover_image_url", newUrls[0] || "", { shouldDirty: true })
+    }
   }
 
   const handleDiscard = () => {
@@ -151,7 +189,7 @@ export function PropertyForm({ initialData, mode = "add" }: PropertyFormProps) {
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
+    <form onSubmit={handleSubmit(onSubmit as any)} className="space-y-8">
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
         <div className="lg:col-span-3 space-y-6">
           <Section title="Basic Info">
@@ -169,55 +207,35 @@ export function PropertyForm({ initialData, mode = "add" }: PropertyFormProps) {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="grid gap-2">
-                  <Label htmlFor="type" className={cn(errors.type && "text-red-500")}>Property Type</Label>
-                  <Select onValueChange={(v) => setValue("type", v as string, { shouldDirty: true })} value={typeValue}>
-                    <SelectTrigger className={cn(errors.type && "border-red-500")}>
+                  <Label htmlFor="property_type" className={cn(errors.property_type && "text-red-500")}>Property Type</Label>
+                  <Select onValueChange={(v) => setValue("property_type", v as any, { shouldDirty: true })} value={propertyTypeValue}>
+                    <SelectTrigger className={cn(errors.property_type && "border-red-500")}>
                       <SelectValue placeholder="Select type" />
                     </SelectTrigger>
                     <SelectContent className="bg-white">
-                      <SelectItem value="Apartment">Apartment</SelectItem>
-                      <SelectItem value="Villa">Villa</SelectItem>
-                      <SelectItem value="Independent House">Independent House</SelectItem>
-                      <SelectItem value="Plot">Plot</SelectItem>
-                      <SelectItem value="Commercial">Commercial</SelectItem>
-                      <SelectItem value="Farmhouse">Farmhouse</SelectItem>
-                      <SelectItem value="Penthouse">Penthouse</SelectItem>
+                      <SelectItem value="apartment">Apartment</SelectItem>
+                      <SelectItem value="villa">Villa</SelectItem>
+                      <SelectItem value="independent_house">Independent House</SelectItem>
+                      <SelectItem value="plot">Plot</SelectItem>
+                      <SelectItem value="commercial">Commercial</SelectItem>
+                      <SelectItem value="farmhouse">Farmhouse</SelectItem>
+                      <SelectItem value="penthouse">Penthouse</SelectItem>
                     </SelectContent>
                   </Select>
-                  {errors.type && <p className="text-xs text-red-500">{errors.type.message}</p>}
+                  {errors.property_type && <p className="text-xs text-red-500">{errors.property_type.message}</p>}
                 </div>
 
-                <div className="grid gap-2">
-                  <Label htmlFor="bhk" className={cn(errors.bhk && "text-red-500")}>BHK</Label>
-                  <Select onValueChange={(v) => setValue("bhk", v as string, { shouldDirty: true })} value={bhkValue}>
-                    <SelectTrigger className={cn(errors.bhk && "border-red-500")}>
-                      <SelectValue placeholder="Select BHK" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-white">
-                      <SelectItem value="1 BHK">1 BHK</SelectItem>
-                      <SelectItem value="2 BHK">2 BHK</SelectItem>
-                      <SelectItem value="3 BHK">3 BHK</SelectItem>
-                      <SelectItem value="4 BHK">4 BHK</SelectItem>
-                      <SelectItem value="5+ BHK">5+ BHK</SelectItem>
-                      <SelectItem value="Studio">Studio</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  {errors.bhk && <p className="text-xs text-red-500">{errors.bhk.message}</p>}
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="grid gap-2">
                   <Label htmlFor="status" className={cn(errors.status && "text-red-500")}>Status</Label>
-                  <Select onValueChange={(v) => setValue("status", v as string, { shouldDirty: true })} value={statusValue}>
+                  <Select onValueChange={(v) => setValue("status", v as any, { shouldDirty: true })} value={statusValue}>
                     <SelectTrigger className={cn(errors.status && "border-red-500")}>
                       <SelectValue placeholder="Select status" />
                     </SelectTrigger>
                     <SelectContent className="bg-white">
-                      <SelectItem value="Available">Available</SelectItem>
-                      <SelectItem value="Reserved">Reserved</SelectItem>
-                      <SelectItem value="Sold">Sold</SelectItem>
-                      <SelectItem value="Rented">Rented</SelectItem>
+                      <SelectItem value="available">Available</SelectItem>
+                      <SelectItem value="reserved">Reserved</SelectItem>
+                      <SelectItem value="sold">Sold</SelectItem>
+                      <SelectItem value="rented">Rented</SelectItem>
                     </SelectContent>
                   </Select>
                   {errors.status && <p className="text-xs text-red-500">{errors.status.message}</p>}
@@ -240,22 +258,26 @@ export function PropertyForm({ initialData, mode = "add" }: PropertyFormProps) {
 
           <Section title="Location">
             <div className="space-y-4">
-              <div className="grid gap-2">
-                <Label htmlFor="address" className={cn(errors.address && "text-red-500")}>Address Line</Label>
-                <Input id="address" {...register("address")} className={cn(errors.address && "border-red-500")} />
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="locality" className={cn(errors.locality && "text-red-500")}>Locality/Area</Label>
+                  <Input id="locality" {...register("locality")} className={cn(errors.locality && "border-red-500")} />
+                  {errors.locality && <p className="text-xs text-red-500">{errors.locality.message}</p>}
+                </div>
                 <div className="grid gap-2">
                   <Label htmlFor="city" className={cn(errors.city && "text-red-500")}>City</Label>
                   <Input id="city" {...register("city")} className={cn(errors.city && "border-red-500")} />
+                  {errors.city && <p className="text-xs text-red-500">{errors.city.message}</p>}
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="address">Full Address (Optional)</Label>
+                  <Input id="address" {...register("address")} />
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="area" className={cn(errors.area && "text-red-500")}>Area</Label>
-                  <Input id="area" {...register("area")} className={cn(errors.area && "border-red-500")} />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="pincode" className={cn(errors.pincode && "text-red-500")}>Pincode</Label>
-                  <Input id="pincode" {...register("pincode")} className={cn(errors.pincode && "border-red-500")} />
+                  <Label htmlFor="pincode">Pincode</Label>
+                  <Input id="pincode" {...register("pincode")} />
                 </div>
               </div>
             </div>
@@ -263,61 +285,66 @@ export function PropertyForm({ initialData, mode = "add" }: PropertyFormProps) {
 
           <Section title="Specifications">
             <div className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
-                <NumberStepper label="Bedrooms" value={bedroomsValue} onChange={(val) => setValue("bedrooms", val, { shouldDirty: true })} />
-                <NumberStepper label="Bathrooms" value={bathroomsValue} onChange={(val) => setValue("bathrooms", val, { shouldDirty: true })} />
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <NumberStepper
+                  label="BHK"
+                  value={watch("bhk") || 0}
+                  onChange={(val) => setValue("bhk", val, { shouldDirty: true })}
+                />
+                <NumberStepper
+                  label="Bedrooms"
+                  value={bedroomsValue}
+                  onChange={(val) => setValue("bedrooms", val, { shouldDirty: true })}
+                />
+                <NumberStepper
+                  label="Bathrooms"
+                  value={bathroomsValue}
+                  onChange={(val) => setValue("bathrooms", val, { shouldDirty: true })}
+                />
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="grid gap-2">
-                  <Label>Floor Number</Label>
-                  <Input placeholder="Floor No." {...register("floorNumber")} />
-                </div>
-                <div className="grid gap-2">
-                  <Label>Total Floors</Label>
-                  <Input placeholder="Total Floors" {...register("totalFloors")} />
-                </div>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="grid gap-2">
-                  <Label>Area (sq ft)</Label>
-                  <Input type="number" placeholder="Area (sq ft)" {...register("sqft", { valueAsNumber: true })} />
-                </div>
-                <div className="grid gap-2">
-                  <Label>Facing</Label>
-                  <Select onValueChange={(v) => setValue("facing", v as string, { shouldDirty: true })} value={facingValue}>
-                    <SelectTrigger><SelectValue placeholder="Facing" /></SelectTrigger>
-                    <SelectContent className="bg-white">
-                      <SelectItem value="North">North</SelectItem>
-                      <SelectItem value="South">South</SelectItem>
-                      <SelectItem value="East">East</SelectItem>
-                      <SelectItem value="West">West</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Label htmlFor="area_sqft" className={cn(errors.area_sqft && "text-red-500")}>Super Area (sq ft)</Label>
+                  <Input
+                    id="area_sqft"
+                    type="number"
+                    placeholder="Area in sq ft"
+                    {...register("area_sqft", { valueAsNumber: true })}
+                    className={cn(errors.area_sqft && "border-red-500")}
+                  />
+                  {errors.area_sqft && <p className="text-xs text-red-500">{errors.area_sqft.message}</p>}
                 </div>
                 <div className="grid gap-2">
                   <Label>Furnishing</Label>
-                  <Select onValueChange={(v) => setValue("furnishing", v as string, { shouldDirty: true })} value={furnishingValue}>
+                  <Select onValueChange={(v) => setValue("furnishing", v as any, { shouldDirty: true })} value={furnishingValue}>
                     <SelectTrigger><SelectValue placeholder="Furnishing" /></SelectTrigger>
                     <SelectContent className="bg-white">
-                      <SelectItem value="Unfurnished">Unfurnished</SelectItem>
-                      <SelectItem value="Semi-furnished">Semi-furnished</SelectItem>
-                      <SelectItem value="Fully furnished">Fully furnished</SelectItem>
+                      <SelectItem value="unfurnished">Unfurnished</SelectItem>
+                      <SelectItem value="semi_furnished">Semi-furnished</SelectItem>
+                      <SelectItem value="fully_furnished">Fully furnished</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
               </div>
-              <div className="grid gap-2 max-w-[200px]">
-                <Label>Parking</Label>
-                <Select onValueChange={(v) => setValue("parking", v as string, { shouldDirty: true })} value={parkingValue}>
-                  <SelectTrigger><SelectValue placeholder="Parking" /></SelectTrigger>
-                  <SelectContent className="bg-white">
-                    <SelectItem value="None">None</SelectItem>
-                    <SelectItem value="1">1</SelectItem>
-                    <SelectItem value="2">2</SelectItem>
-                    <SelectItem value="Covered">Covered</SelectItem>
-                    <SelectItem value="Open">Open</SelectItem>
-                  </SelectContent>
-                </Select>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div className="grid gap-2">
+                  <Label htmlFor="floor_number">Floor No.</Label>
+                  <Input id="floor_number" placeholder="e.g. 5" {...register("floor_number")} />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="total_floors">Total Floors</Label>
+                  <Input id="total_floors" placeholder="e.g. 12" {...register("total_floors")} />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="facing">Facing</Label>
+                  <Input id="facing" placeholder="e.g. East" {...register("facing")} />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="parking">Parking</Label>
+                  <Input id="parking" placeholder="e.g. 1 Covered" {...register("parking")} />
+                </div>
               </div>
             </div>
           </Section>
@@ -326,17 +353,28 @@ export function PropertyForm({ initialData, mode = "add" }: PropertyFormProps) {
             <div className="space-y-6">
               <div className="flex flex-col md:flex-row gap-6">
                 <div className="grid gap-2 flex-1">
-                  <Label>Price</Label>
-                  <Input type="number" placeholder="Price" {...register("price", { valueAsNumber: true })} />
+                  <Label className={cn(errors.price && "text-red-500")}>Price (₹)</Label>
+                  <Input
+                    type="number"
+                    placeholder="Total Price"
+                    {...register("price", { valueAsNumber: true })}
+                    className={cn(errors.price && "border-red-500")}
+                  />
+                  {errors.price && <p className="text-xs text-red-500">{errors.price.message}</p>}
                 </div>
-                <div className="flex items-center gap-3 pt-6">
-                  <Switch checked={negotiableValue} onCheckedChange={(checked) => setValue("negotiable", checked, { shouldDirty: true })} />
-                  <Label>Price negotiable</Label>
+                <div className="grid gap-2 flex-1">
+                  <Label htmlFor="maintenance_charge">Maintenance / Month (₹)</Label>
+                  <Input
+                    id="maintenance_charge"
+                    type="number"
+                    placeholder="Maintenance fee"
+                    {...register("maintenance_charge", { valueAsNumber: true })}
+                  />
                 </div>
               </div>
-              <div className="grid gap-2 max-w-[250px]">
-                <Label>Maintenance Charge</Label>
-                <Input type="number" placeholder="Maintenance" {...register("maintenance", { valueAsNumber: true })} />
+              <div className="flex items-center gap-3 pt-2">
+                <Switch checked={negotiableValue} onCheckedChange={(checked) => setValue("price_negotiable", checked, { shouldDirty: true })} />
+                <Label>Price negotiable</Label>
               </div>
             </div>
           </Section>
@@ -345,32 +383,73 @@ export function PropertyForm({ initialData, mode = "add" }: PropertyFormProps) {
         <div className="lg:col-span-2">
           <div className="sticky top-24 space-y-6">
             <Section title="Property Images">
-              <div className="border-2 border-dashed border-slate-200 rounded-xl p-8 bg-slate-50 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => setImages([...images, "new-img"])}>
-                <ImagePlus className="w-8 h-8 text-slate-400 mb-2" />
-                <p className="text-xs text-slate-500 font-medium">Add more images</p>
-              </div>
-              {images.length > 0 && (
-                <div className="space-y-4 mt-6">
-                  <div className="grid grid-cols-3 gap-2">
-                    {images.map((img, i) => (
-                      <div key={i} className="aspect-square bg-slate-100 rounded-lg relative overflow-hidden group border border-slate-200">
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <Building2 className="w-6 h-6 text-slate-200" />
+              <div className="space-y-4">
+                <div className="relative border-2 border-dashed border-slate-200 rounded-xl p-8 bg-slate-50 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-slate-100 transition-colors">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="absolute inset-0 opacity-0 cursor-pointer"
+                    onChange={handleImageSelect}
+                    disabled={uploadingImage}
+                  />
+                  {uploadingImage ? (
+                    <Loader2 className="w-8 h-8 text-emerald-500 animate-spin mb-2" />
+                  ) : (
+                    <ImagePlus className="w-8 h-8 text-slate-400 mb-2" />
+                  )}
+                  <p className="text-xs text-slate-500 font-medium">
+                    {uploadingImage ? "Uploading..." : "Click to upload images"}
+                  </p>
+                </div>
+
+                {imageUrls.length > 0 && (
+                  <div className="grid grid-cols-2 gap-3 mt-4">
+                    {imageUrls.map((url, i) => (
+                      <div key={url} className="aspect-square rounded-lg relative overflow-hidden group border border-slate-200 shadow-sm">
+                        <Image
+                          src={url}
+                          alt={`Property ${i + 1}`}
+                          fill
+                          className="object-cover"
+                        />
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setValue("cover_image_url", url, { shouldDirty: true })}
+                            className={cn(
+                              "bg-white rounded-full p-2 text-slate-600 hover:text-emerald-500 transition-colors",
+                              coverImageUrl === url && "text-emerald-500 bg-emerald-50"
+                            )}
+                            title="Set as cover image"
+                          >
+                            {coverImageUrl === url ? <Check className="w-4 h-4" /> : <Building2 className="w-4 h-4" />}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => removeImage(url)}
+                            className="bg-white rounded-full p-2 text-slate-600 hover:text-red-500 transition-colors"
+                            title="Remove image"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
                         </div>
-                        <button type="button" onClick={() => setImages(images.filter((_, idx) => idx !== i))} className="absolute top-1 right-1 bg-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity shadow-sm"><X className="w-3 h-3 text-slate-400 hover:text-red-500" /></button>
+                        {coverImageUrl === url && (
+                          <div className="absolute top-2 left-2 bg-emerald-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm">
+                            COVER
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
-                  {mode === "edit" && <p className="text-slate-400 text-[10px] font-medium italic">Already uploaded images</p>}
-                </div>
-              )}
+                )}
+              </div>
             </Section>
-            
-            <div className="hidden lg:flex flex-col gap-3">
-              <Button type="submit" disabled={isSubmitting} className="bg-emerald-500 hover:bg-emerald-600 text-white border-none h-11 text-base font-semibold">
+
+            <div className="flex flex-col gap-3">
+              <Button type="submit" disabled={isSubmitting || uploadingImage} className="bg-emerald-500 hover:bg-emerald-600 text-white border-none h-11 text-base font-semibold rounded-lg shadow-sm">
                 {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : mode === "edit" ? "Save Changes" : "Publish Property"}
               </Button>
-              <Button type="button" variant="ghost" className="text-slate-600" onClick={handleDiscard}>
+              <Button type="button" variant="ghost" className="text-slate-600 hover:bg-slate-50 rounded-lg" onClick={handleDiscard}>
                 {mode === "edit" ? "Discard changes" : "Cancel"}
               </Button>
             </div>
@@ -378,7 +457,6 @@ export function PropertyForm({ initialData, mode = "add" }: PropertyFormProps) {
         </div>
       </div>
 
-      {/* Discard Confirmation Dialog */}
       <Dialog open={isDiscardDialogOpen} onOpenChange={setIsDiscardDialogOpen}>
         <DialogContent className="bg-white rounded-2xl max-w-[400px]">
           <DialogHeader>
@@ -391,15 +469,23 @@ export function PropertyForm({ initialData, mode = "add" }: PropertyFormProps) {
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="flex gap-3 sm:justify-start pt-4">
-             <Button variant="outline" className="flex-1 border-slate-200 rounded-xl" onClick={() => setIsDiscardDialogOpen(false)}>
+            <Button variant="outline" className="flex-1 border-slate-200 rounded-xl h-10" onClick={() => setIsDiscardDialogOpen(false)}>
               Keep editing
             </Button>
-            <Button className="flex-1 bg-red-500 hover:bg-red-600 text-white border-none rounded-xl" onClick={confirmDiscard}>
+            <Button className="flex-1 bg-red-500 hover:bg-red-600 text-white border-none rounded-xl h-10" onClick={confirmDiscard}>
               Discard
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {imageToCrop && (
+        <ImageCropperDialog
+          imageSrc={imageToCrop}
+          onCropComplete={handleCropComplete}
+          onCancel={() => setImageToCrop(null)}
+        />
+      )}
     </form>
   )
 }
@@ -413,22 +499,22 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   )
 }
 
-function NumberStepper({ 
-  label, 
-  value, 
-  onChange 
-}: { 
-  label: string; 
-  value: number; 
+function NumberStepper({
+  label,
+  value,
+  onChange
+}: {
+  label: string;
+  value: number;
   onChange: (val: number) => void;
 }) {
   return (
     <div className="space-y-2">
       <Label className="text-sm font-medium">{label}</Label>
       <div className="flex items-center gap-1 bg-slate-50 border border-slate-200 rounded-lg p-1 w-fit">
-        <button type="button" onClick={() => onChange(Math.max(0, value - 1))} className="w-8 h-8 flex items-center justify-center rounded-md hover:bg-white text-slate-500"><Minus className="w-4 h-4" /></button>
-        <div className="w-10 text-center font-bold text-slate-900">{value}</div>
-        <button type="button" onClick={() => onChange(Math.min(10, value + 1))} className="w-8 h-8 flex items-center justify-center rounded-md hover:bg-white text-slate-500"><Plus className="w-4 h-4" /></button>
+        <button type="button" onClick={() => onChange(Math.max(0, value - 1))} className="w-8 h-8 flex items-center justify-center rounded-md hover:bg-white text-slate-500 transition-colors"><Minus className="w-4 h-4" /></button>
+        <div className="min-w-10 text-center font-bold text-slate-900">{value}</div>
+        <button type="button" onClick={() => onChange(Math.min(20, value + 1))} className="w-8 h-8 flex items-center justify-center rounded-md hover:bg-white text-slate-500 transition-colors"><Plus className="w-4 h-4" /></button>
       </div>
     </div>
   )

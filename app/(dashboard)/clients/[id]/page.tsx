@@ -1,298 +1,359 @@
-'use client'
-
-import React, { use } from "react"
+import React from "react"
 import Link from "next/link"
-import { 
-  ChevronLeft, 
-  MoreVertical, 
-  Pencil, 
-  Phone, 
-  Mail, 
-  Calendar as CalendarIcon, 
-  Sparkles, 
-  History,
+import {
+  ChevronLeft,
+  Pencil,
+  Phone,
+  Mail,
+  Calendar as CalendarIcon,
+  Sparkles,
   Building2,
-  Clock,
   User,
-  ArrowRight,
   Plus,
-  CheckCircle2
+  MapPin,
+  IndianRupee,
+  BedDouble,
+  Ruler,
+  Sofa,
+  Clock,
+  Tag,
+  UserCheck,
+  AlertCircle,
+  Home,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card } from "@/components/ui/card"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { getClient } from "@/lib/actions/clients"
+import { getMatchesForClient } from "@/lib/actions/matches"
+import { notFound } from "next/navigation"
+import { formatRelativeTime, formatBudgetRange, formatPrice } from "@/lib/utils/format"
+import { ClientActionsDropdown } from "@/components/clients/client-actions-dropdown"
+import { ClientRunMatchButton } from "@/components/clients/client-run-match-button"
 
-const clientData = {
-  id: "c101",
-  name: "Priya Sharma",
-  status: "Active",
-  avatar: null,
-  phone: "+91 98290 88776",
-  email: "priya.sharma@example.com",
-  source: "Walk-in customer",
-  addedDate: "January 15, 2025",
-  assignedAgent: {
-    name: "Ravi Kumar",
-    avatar: null
-  },
-  notes: "Looking for a quiet neighborhood near Vaishali Nagar. Prefers west-facing if possible. Flexible on floor but needs good ventilation.",
-  requirements: {
-    lookingFor: "Buy",
-    type: "Apartment, Villa",
-    location: "Vaishali Nagar, Bani Park",
-    budget: "₹60L – ₹1.2Cr",
-    bedrooms: "3+",
-    area: "1200+ sq ft",
-    furnishing: "Semi-furnished",
-    timeline: "Within 3 months"
-  },
-  activity: [
-    { title: "Client added by Ravi Kumar", time: "10 days ago", type: "added" },
-    { title: "Smart match run", time: "10 days ago", subtitle: "4 matches found", type: "match" },
-    { title: "Match viewed: 3BHK Bani Park", time: "8 days ago", type: "view" },
-    { title: "Follow-up scheduled", time: "5 days ago", type: "followup" },
-  ],
-  matchedProperties: [
-    { id: "p1", name: "Luxury 3BHK Apartment", price: "₹85,00,000", score: "88%", image: null },
-    { id: "p2", name: "Modern Villa in Bani Park", price: "₹1,25,00,000", score: "82%", image: null },
-    { id: "p3", name: "Semi-furnished 2BHK", price: "₹55,00,000", score: "75%", image: null },
-  ],
-  nextFollowUp: {
-    date: "March 20, 2025",
-    time: "10:30 AM",
-    agent: "Ravi Kumar"
+export default async function ClientDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
+
+  const [client, clientMatches] = await Promise.all([
+    getClient(id),
+    getMatchesForClient(id),
+  ])
+  if (!client) notFound()
+
+  const initials = client.full_name?.substring(0, 2).toUpperCase() || "C"
+
+  const priorityConfig = {
+    high: { label: "High Priority", cls: "bg-red-100 text-red-700", dot: "bg-red-500" },
+    medium: { label: "Medium Priority", cls: "bg-amber-100 text-amber-700", dot: "bg-amber-500" },
+    low: { label: "Low Priority", cls: "bg-slate-100 text-slate-600", dot: "bg-slate-400" },
   }
-}
+  const priority = priorityConfig[(client.priority as keyof typeof priorityConfig) || "medium"]
 
-export default function ClientDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params)
+  const statusConfig = {
+    active: "bg-emerald-100 text-emerald-700",
+    matched: "bg-amber-100 text-amber-700",
+    closed: "bg-slate-100 text-slate-600",
+  }
+  const statusClass = statusConfig[(client.status as keyof typeof statusConfig)] || "bg-slate-100 text-slate-600"
+
+  // preferred_bhks — the column exists as int4[]
+  const preferredBhks: number[] = (client as any).preferred_bhks || []
+
+  const isTodayOrPast = client.follow_up_date && new Date(client.follow_up_date) <= new Date()
 
   return (
-    <div className="space-y-6 pb-20">
-      {/* Page Header */}
-      <div className="flex flex-col gap-4">
-        <Link 
-          href="/clients" 
+    <div className="space-y-6 pb-24">
+      {/* Header */}
+      <div className="flex flex-col gap-3">
+        <Link
+          href="/clients"
           className="inline-flex items-center text-sm text-slate-500 hover:text-emerald-600 transition-colors group w-fit"
         >
           <ChevronLeft className="w-4 h-4 mr-1 group-hover:-translate-x-0.5 transition-transform" />
           Back to clients
         </Link>
-        
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">{clientData.name}</h1>
-            <Badge className="bg-emerald-100 text-emerald-700 border-none rounded-full px-3 py-0.5 text-xs font-bold">
-              {clientData.status}
-            </Badge>
+
+        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+          <div className="flex items-start gap-4">
+            <Avatar className="h-14 w-14 text-lg font-bold rounded-2xl bg-gradient-to-br from-violet-100 to-purple-100 text-purple-700 shrink-0">
+              <AvatarFallback className="rounded-2xl bg-gradient-to-br from-violet-100 to-purple-100 text-purple-700 font-bold">{initials}</AvatarFallback>
+            </Avatar>
+            <div className="space-y-1.5">
+              <h1 className="text-2xl font-bold text-slate-900 tracking-tight">{client.full_name}</h1>
+              <div className="flex items-center gap-2 flex-wrap">
+                <Badge className={cn("border-none rounded-full px-3 py-0.5 text-xs font-bold capitalize", statusClass)}>
+                  {client.status}
+                </Badge>
+                <span className={cn("inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-full", priority.cls)}>
+                  <span className={cn("w-1.5 h-1.5 rounded-full", priority.dot)} />
+                  {priority.label}
+                </span>
+                {client.source && (
+                  <span className="inline-flex items-center gap-1 text-xs font-medium text-slate-500 bg-slate-50 px-2 py-1 rounded-full border border-slate-100">
+                    <Tag className="w-3 h-3" />
+                    {client.source}
+                  </span>
+                )}
+              </div>
+            </div>
           </div>
-          
-          <div className="flex items-center gap-2">
+
+          <div className="flex items-center gap-2 shrink-0">
             <Link href={`/clients/${id}/edit`}>
-              <Button variant="outline" className="h-10 rounded-xl border-slate-200 text-slate-600 font-bold px-5">
-                <Pencil className="w-4 h-4 mr-2" />
-                Edit client
-              </Button>
+              <button className="inline-flex items-center gap-2 h-10 px-5 rounded-xl border-2 border-slate-200 text-slate-600 font-bold text-sm hover:border-slate-300 hover:bg-slate-50 transition-all">
+                <Pencil className="w-4 h-4" />
+                Edit
+              </button>
             </Link>
-            
-            <DropdownMenu>
-              <DropdownMenuTrigger render={
-                <Button variant="ghost" size="icon" className="h-10 w-10 text-slate-400 border border-slate-100 rounded-xl">
-                  <MoreVertical className="w-5 h-5" />
-                </Button>
-              } />
-              <DropdownMenuContent align="end" className="bg-white min-w-[160px]">
-                <DropdownMenuItem className="cursor-pointer font-medium">Mark as closed</DropdownMenuItem>
-                <DropdownMenuSeparator className="bg-slate-100" />
-                <DropdownMenuItem className="text-red-500 cursor-pointer font-medium focus:text-red-500">Delete client</DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <ClientActionsDropdown clientId={client.id} clientName={client.full_name} />
           </div>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Left Column */}
+        {/* ── Left Column ─────────────────────────────── */}
         <div className="lg:col-span-8 space-y-6">
-          {/* Client Info Card */}
-          <SectionCard>
-            <div className="flex flex-col sm:flex-row gap-6">
-              <Avatar className="h-16 w-16 text-xl font-bold rounded-2xl bg-purple-100 text-purple-700">
-                <AvatarFallback>{clientData.name.charAt(0)}</AvatarFallback>
-              </Avatar>
-              
-              <div className="flex-1 space-y-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4">
-                  <InfoItem icon={<Phone className="w-4 h-4" />} label="Phone">
-                    <a href={`tel:${clientData.phone}`} className="hover:text-emerald-600 transition-colors">
-                      {clientData.phone}
-                    </a>
-                  </InfoItem>
-                  <InfoItem icon={<Mail className="w-4 h-4" />} label="Email">
-                    <span className="truncate block">{clientData.email}</span>
-                  </InfoItem>
-                  <InfoItem icon={<User className="w-4 h-4" />} label="Source">
-                    {clientData.source}
-                  </InfoItem>
-                  <InfoItem icon={<CalendarIcon className="w-4 h-4" />} label="Added">
-                    {clientData.addedDate}
-                  </InfoItem>
-                </div>
-                
-                <div className="pt-4 border-t border-slate-50 flex items-center gap-3">
-                  <span className="text-xs text-slate-400 font-bold uppercase tracking-wider">Assigned Agent</span>
-                  <div className="flex items-center gap-2 px-3 py-1 bg-slate-50 rounded-full">
-                    <Avatar className="h-5 w-5 bg-slate-200">
-                      <AvatarFallback className="text-[10px]">{clientData.assignedAgent.name.charAt(0)}</AvatarFallback>
-                    </Avatar>
-                    <span className="text-xs font-bold text-slate-700">{clientData.assignedAgent.name}</span>
-                  </div>
-                </div>
 
-                <div className="space-y-1">
-                  <span className="text-xs text-slate-400 font-bold uppercase tracking-wider">Notes</span>
-                  <p className="text-sm text-slate-500 italic leading-relaxed">
-                    {clientData.notes || "No notes added"}
+          {/* Contact & Personal Info */}
+          <SectionCard title="Contact information" icon={<User className="w-4 h-4 text-blue-500" />}>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+              <InfoRow icon={<Phone className="w-4 h-4 text-emerald-500" />} label="Phone">
+                <a href={`tel:${client.phone}`} className="font-bold text-slate-900 hover:text-emerald-600 transition-colors">
+                  {client.phone}
+                </a>
+              </InfoRow>
+              <InfoRow icon={<Mail className="w-4 h-4 text-blue-500" />} label="Email">
+                {client.email ? (
+                  <a href={`mailto:${client.email}`} className="font-bold text-slate-900 hover:text-emerald-600 transition-colors truncate block">
+                    {client.email}
+                  </a>
+                ) : <span className="text-slate-400 font-medium italic">Not provided</span>}
+              </InfoRow>
+              <InfoRow icon={<Tag className="w-4 h-4 text-violet-500" />} label="Lead source">
+                <span className="font-bold text-slate-900">{client.source || "Unknown"}</span>
+              </InfoRow>
+              <InfoRow icon={<UserCheck className="w-4 h-4 text-slate-500" />} label="Assigned agent">
+                <div className="flex items-center gap-2">
+                  <Avatar className="h-5 w-5">
+                    <AvatarFallback className="text-[10px] bg-slate-100 text-slate-600">
+                      {client.assignee?.full_name?.charAt(0) || "S"}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="font-bold text-slate-900">{client.assignee?.full_name || "Unassigned"}</span>
+                </div>
+              </InfoRow>
+              <InfoRow icon={<CalendarIcon className="w-4 h-4 text-slate-400" />} label="Added">
+                <span className="font-semibold text-slate-700">{formatRelativeTime(client.created_at)}</span>
+              </InfoRow>
+              <InfoRow icon={<CalendarIcon className="w-4 h-4 text-slate-400" />} label="Last updated">
+                <span className="font-semibold text-slate-700">{formatRelativeTime(client.updated_at)}</span>
+              </InfoRow>
+            </div>
+
+            {client.notes && (
+              <div className="mt-5 pt-5 border-t border-slate-50">
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Notes</p>
+                <p className="text-sm text-slate-600 leading-relaxed whitespace-pre-wrap">{client.notes}</p>
+              </div>
+            )}
+          </SectionCard>
+
+          {/* Property Requirements */}
+          <SectionCard title="Property requirements" icon={<Sparkles className="w-4 h-4 text-amber-500" />}>
+            {/* Intent row */}
+            <div className="flex items-center gap-3 mb-6 p-3 bg-slate-50 rounded-xl border border-slate-100">
+              <div className="h-9 w-9 rounded-xl bg-white flex items-center justify-center shadow-sm text-lg shrink-0">
+                {client.looking_for === "rent" ? "🔑" : "🏠"}
+              </div>
+              <div>
+                <p className="text-xs text-slate-400 font-bold uppercase tracking-wider">Intent</p>
+                <p className="text-sm font-bold text-slate-900 capitalize">{client.looking_for === "rent" ? "Renting" : "Buying"}</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+              <ReqCard icon={<Home className="w-4 h-4 text-blue-500" />} label="Property types">
+                {client.property_types?.length ? (
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    {client.property_types.map(t => (
+                      <span key={t} className="px-2 py-0.5 bg-blue-50 text-blue-700 rounded-md text-[11px] font-bold capitalize">
+                        {t.replace("_", " ")}
+                      </span>
+                    ))}
+                  </div>
+                ) : <span className="text-sm font-bold text-slate-700 mt-1">Any</span>}
+              </ReqCard>
+
+              <ReqCard icon={<MapPin className="w-4 h-4 text-emerald-500" />} label="Preferred locations">
+                {client.preferred_locations?.length ? (
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    {client.preferred_locations.map(l => (
+                      <span key={l} className="px-2 py-0.5 bg-emerald-50 text-emerald-700 rounded-md text-[11px] font-bold">
+                        {l}
+                      </span>
+                    ))}
+                  </div>
+                ) : <span className="text-sm font-bold text-slate-700 mt-1">Any</span>}
+              </ReqCard>
+
+              <ReqCard icon={<IndianRupee className="w-4 h-4 text-emerald-500" />} label="Budget">
+                <span className="text-sm font-bold text-slate-900 mt-1">
+                  {formatBudgetRange(client.budget_min, client.budget_max)}
+                </span>
+              </ReqCard>
+
+              <ReqCard icon={<BedDouble className="w-4 h-4 text-violet-500" />} label="Preferred BHK">
+                {preferredBhks.length > 0 ? (
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    {preferredBhks.sort((a, b) => a - b).map(bhk => (
+                      <span key={bhk} className="w-8 h-7 bg-violet-50 text-violet-700 rounded-lg text-[11px] font-bold flex items-center justify-center">
+                        {bhk === 5 ? "5+" : bhk}
+                      </span>
+                    ))}
+                    <span className="text-[11px] text-slate-400 font-medium self-center">BHK</span>
+                  </div>
+                ) : <span className="text-sm font-bold text-slate-700 mt-1">Any</span>}
+              </ReqCard>
+
+              <ReqCard icon={<BedDouble className="w-4 h-4 text-slate-400" />} label="Min bedrooms">
+                <span className="text-sm font-bold text-slate-900 mt-1">
+                  {!client.min_bedrooms || client.min_bedrooms === 0 ? "Any" : client.min_bedrooms === 5 ? "5+" : `${client.min_bedrooms}+`}
+                </span>
+              </ReqCard>
+
+              <ReqCard icon={<Ruler className="w-4 h-4 text-slate-400" />} label="Min area">
+                <span className="text-sm font-bold text-slate-900 mt-1">
+                  {client.min_area_sqft ? `${client.min_area_sqft.toLocaleString()} sq ft` : "Any"}
+                </span>
+              </ReqCard>
+
+              <ReqCard icon={<Sofa className="w-4 h-4 text-slate-400" />} label="Furnishing">
+                <span className="text-sm font-bold text-slate-900 mt-1">
+                  {client.furnishing_preference || "Any"}
+                </span>
+              </ReqCard>
+
+              <ReqCard icon={<Clock className="w-4 h-4 text-slate-400" />} label="Timeline">
+                <span className="text-sm font-bold text-slate-900 mt-1">
+                  {client.possession_timeline || "Flexible"}
+                </span>
+              </ReqCard>
+            </div>
+          </SectionCard>
+
+        </div>
+
+        {/* ── Right Column ──────────────────────────────── */}
+        <div className="lg:col-span-4 space-y-6">
+
+          {/* Follow-up */}
+          <SectionCard title="Follow-up" icon={<CalendarIcon className="w-4 h-4 text-violet-500" />}>
+            {client.follow_up_date ? (
+              <div className={cn(
+                "flex items-start gap-3 p-3 rounded-xl border",
+                isTodayOrPast ? "bg-red-50 border-red-100" : "bg-violet-50 border-violet-100"
+              )}>
+                <div className={cn("h-9 w-9 rounded-xl flex items-center justify-center shrink-0", isTodayOrPast ? "bg-red-100" : "bg-violet-100")}>
+                  {isTodayOrPast
+                    ? <AlertCircle className="w-4 h-4 text-red-600" />
+                    : <CalendarIcon className="w-4 h-4 text-violet-600" />
+                  }
+                </div>
+                <div>
+                  <p className={cn("text-[11px] font-bold uppercase tracking-wider", isTodayOrPast ? "text-red-500" : "text-violet-500")}>
+                    {isTodayOrPast ? "Overdue!" : "Scheduled"}
+                  </p>
+                  <p className="text-sm font-bold text-slate-900">
+                    {new Date(client.follow_up_date).toLocaleDateString("en-IN", { month: "short", day: "numeric", year: "numeric" })}
                   </p>
                 </div>
               </div>
-            </div>
+            ) : (
+              <div className="space-y-3">
+                <p className="text-sm text-slate-400 font-medium italic">No follow-up scheduled</p>
+                <Link href={`/clients/${id}/edit`}>
+                  <button className="w-full flex items-center justify-center gap-2 h-10 rounded-xl border-2 border-dashed border-slate-200 text-slate-500 text-sm font-bold hover:border-emerald-300 hover:text-emerald-600 transition-all">
+                    <Plus className="w-4 h-4" />
+                    Schedule one
+                  </button>
+                </Link>
+              </div>
+            )}
           </SectionCard>
 
-          {/* Requirements Card */}
-          <SectionCard title="Property requirements" icon={<Sparkles className="w-5 h-5 text-amber-500" />}>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-5 gap-x-12">
-              <ReqGridItem label="Looking for" value={clientData.requirements.lookingFor} />
-              <ReqGridItem label="Property type" value={clientData.requirements.type} />
-              <ReqGridItem label="Location" value={clientData.requirements.location} />
-              <ReqGridItem label="Budget" value={clientData.requirements.budget} />
-              <ReqGridItem label="Bedrooms" value={clientData.requirements.bedrooms} />
-              <ReqGridItem label="Minimum Area" value={clientData.requirements.area} />
-              <ReqGridItem label="Furnishing" value={clientData.requirements.furnishing} />
-              <ReqGridItem label="Timeline" value={clientData.requirements.timeline} />
-            </div>
-          </SectionCard>
-
-          {/* Activity Timeline */}
-          <SectionCard title="Client activity" icon={<History className="w-5 h-5 text-emerald-500" />}>
-            <div className="relative space-y-8 before:absolute before:left-2 before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-100">
-              {clientData.activity.map((item, idx) => (
-                <div key={idx} className="relative pl-8">
-                  <div className={cn(
-                    "absolute left-0 top-1.5 w-4 h-4 rounded-full border-4 border-white shadow-sm ring-2 ring-transparent",
-                    item.type === 'added' ? "bg-slate-300" : 
-                    item.type === 'match' ? "bg-amber-400" :
-                    item.type === 'view' ? "bg-blue-400" : "bg-emerald-400"
-                  )} />
-                  <div className="space-y-0.5">
-                    <p className="text-sm font-bold text-slate-800">{item.title}</p>
-                    {item.subtitle && <p className="text-xs text-slate-500 font-medium">{item.subtitle}</p>}
-                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-tighter">{item.time}</span>
-                  </div>
+          {/* Matched Properties */}
+          <SectionCard
+            title="Matched properties"
+            icon={<Sparkles className="w-4 h-4 text-amber-500" />}
+            badge={String(clientMatches.length)}
+          >
+            {clientMatches.length > 0 ? (
+              <div className="space-y-3">
+                {clientMatches.slice(0, 5).map(match => (
+                  <Link key={match.id} href={`/matches/${match.id}`}>
+                    <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 border border-slate-100 hover:border-emerald-200 hover:bg-emerald-50/30 transition-all group cursor-pointer">
+                      <div className="w-10 h-10 rounded-lg bg-white shadow-sm flex items-center justify-center shrink-0">
+                        <Building2 className="w-5 h-5 text-slate-300" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-bold text-slate-800 truncate">{match.property?.title}</p>
+                        <p className="text-[10px] text-slate-500">{[match.property?.locality, match.property?.city].filter(Boolean).join(', ')}</p>
+                        <div className="flex items-center gap-1.5 mt-1.5">
+                          <div className="flex-1 h-1 bg-slate-200 rounded-full overflow-hidden">
+                            <div
+                              className={cn(
+                                "h-full rounded-full",
+                                match.score >= 80 ? "bg-emerald-500" : match.score >= 60 ? "bg-amber-400" : "bg-slate-400"
+                              )}
+                              style={{ width: `${match.score}%` }}
+                            />
+                          </div>
+                          <span className={cn(
+                            "text-[10px] font-black shrink-0",
+                            match.score >= 80 ? "text-emerald-600" : match.score >= 60 ? "text-amber-600" : "text-slate-500"
+                          )}>{match.score}%</span>
+                        </div>
+                      </div>
+                    </div>
+                  </Link>
+                ))}
+                {clientMatches.length > 5 && (
+                  <Link href={`/matches?search=${encodeURIComponent(client.full_name)}`}>
+                    <p className="text-xs font-bold text-emerald-600 text-center pt-1 hover:underline">
+                      View all {clientMatches.length} matches →
+                    </p>
+                  </Link>
+                )}
+              </div>
+            ) : (
+              <div className="py-6 flex flex-col items-center text-center">
+                <div className="w-12 h-12 bg-slate-50 rounded-full flex items-center justify-center mb-3">
+                  <Building2 className="w-6 h-6 text-slate-300" />
                 </div>
-              ))}
-            </div>
+                <p className="text-sm font-bold text-slate-700">No matches yet</p>
+                <p className="text-xs text-slate-400 font-medium mt-1 max-w-[180px]">Run the smart match engine to find properties</p>
+              </div>
+            )}
           </SectionCard>
-        </div>
 
-        {/* Right Column */}
-        <div className="lg:col-span-4 space-y-6">
           {/* Quick Actions */}
           <SectionCard title="Quick actions" noPadding>
             <div className="flex flex-col p-2">
               <Link href={`/clients/${id}/edit`} className="w-full">
-                <Button variant="ghost" className="w-full justify-start h-12 px-4 text-slate-600 font-bold hover:bg-slate-50 rounded-xl">
-                  <Pencil className="w-4 h-4 mr-3" />
+                <button className="w-full flex items-center gap-3 h-11 px-4 text-slate-600 font-bold text-sm rounded-xl hover:bg-slate-50 transition-colors">
+                  <Pencil className="w-4 h-4" />
                   Edit requirements
-                </Button>
+                </button>
               </Link>
-              <Button variant="ghost" className="w-full justify-start h-12 px-4 text-amber-600 font-bold hover:bg-amber-50 rounded-xl">
-                <Sparkles className="w-4 h-4 mr-3" />
-                Run match now
-              </Button>
-              <Button variant="ghost" className="w-full justify-start h-12 px-4 text-slate-600 font-bold hover:bg-slate-50 rounded-xl">
-                <Phone className="w-4 h-4 mr-3" />
-                Log follow-up
-              </Button>
+              <ClientRunMatchButton clientId={id} />
+              <Link href={`tel:${client.phone}`} className="w-full">
+                <button className="w-full flex items-center gap-3 h-11 px-4 text-emerald-600 font-bold text-sm rounded-xl hover:bg-emerald-50 transition-colors">
+                  <Phone className="w-4 h-4" />
+                  Call client
+                </button>
+              </Link>
             </div>
-          </SectionCard>
-
-          {/* Matched Properties */}
-          <SectionCard 
-            title="Matched properties" 
-            badge={clientData.matchedProperties.length.toString()}
-            noPadding
-          >
-            <div className="divide-y divide-slate-50">
-              {clientData.matchedProperties.map((prop) => (
-                <Link key={prop.id} href={`/properties/${prop.id}`}>
-                  <div className="p-4 hover:bg-slate-50 transition-colors group flex items-center gap-3">
-                    <div className="h-12 w-12 bg-slate-100 rounded-lg flex items-center justify-center shrink-0">
-                      <Building2 className="w-5 h-5 text-slate-300" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h4 className="text-sm font-bold text-slate-800 truncate group-hover:text-emerald-600">{prop.name}</h4>
-                      <p className="text-xs text-slate-500 font-medium">{prop.price}</p>
-                    </div>
-                    <Badge className="bg-amber-50 text-amber-600 border-none px-2 py-0 text-[10px] font-bold">
-                      {prop.score} match
-                    </Badge>
-                  </div>
-                </Link>
-              ))}
-            </div>
-            <div className="p-4 border-t border-slate-50">
-              <button className="text-xs font-bold text-emerald-600 hover:text-emerald-700 flex items-center gap-1 transition-colors">
-                View all matches
-                <ArrowRight className="w-3 h-3" />
-              </button>
-            </div>
-          </SectionCard>
-
-          {/* Next Follow-up */}
-          <SectionCard title="Next follow-up">
-            {clientData.nextFollowUp ? (
-              <div className="space-y-4">
-                <div className="flex items-start gap-4">
-                  <div className="h-10 w-10 bg-emerald-50 rounded-xl flex items-center justify-center shrink-0">
-                    <CalendarIcon className="w-5 h-5 text-emerald-600" />
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-sm font-bold text-slate-900">{clientData.nextFollowUp.date}</p>
-                    <p className="text-xs text-slate-500 font-medium">{clientData.nextFollowUp.time}</p>
-                  </div>
-                </div>
-                
-                <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100/50">
-                  <div className="flex items-center gap-2">
-                    <Avatar className="h-6 w-6">
-                      <AvatarFallback className="text-[10px]">RK</AvatarFallback>
-                    </Avatar>
-                    <span className="text-[11px] font-bold text-slate-600">Assigned to Ravi Kumar</span>
-                  </div>
-                  <Button variant="ghost" size="icon" className="h-6 w-6 text-slate-400 hover:text-emerald-600">
-                    <Pencil className="w-3.5 h-3.5" />
-                  </Button>
-                </div>
-              </div>
-            ) : (
-              <div className="py-2 space-y-3">
-                <p className="text-sm text-slate-400 font-medium italic">No follow-up scheduled</p>
-                <Button variant="outline" className="w-full rounded-xl border-dashed border-2 py-6 text-emerald-600 hover:bg-emerald-50">
-                  <Plus className="w-4 h-4 mr-2" />
-                  Schedule one
-                </Button>
-              </div>
-            )}
           </SectionCard>
         </div>
       </div>
@@ -300,48 +361,55 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
   )
 }
 
-function SectionCard({ title, icon, children, badge, noPadding }: { title?: string, icon?: React.ReactNode, children: React.ReactNode, badge?: string, noPadding?: boolean }) {
+function SectionCard({ title, icon, children, badge, noPadding }: {
+  title?: string
+  icon?: React.ReactNode
+  children: React.ReactNode
+  badge?: string
+  noPadding?: boolean
+}) {
   return (
     <Card className="border-slate-100 shadow-sm rounded-3xl bg-white overflow-hidden">
       {title && (
-        <div className="px-6 py-4 border-b border-slate-50 flex items-center justify-between">
+        <div className="px-5 py-4 border-b border-slate-50 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            {icon}
-            <h3 className="text-base font-bold text-slate-800 tracking-tight">{title}</h3>
+            {icon && <div className="w-7 h-7 rounded-lg bg-slate-50 flex items-center justify-center">{icon}</div>}
+            <h3 className="text-sm font-bold text-slate-800 tracking-tight">{title}</h3>
           </div>
-          {badge && (
-            <span className="bg-slate-100 text-slate-600 px-2 py-0.5 rounded-md text-[10px] font-bold">
-              {badge}
-            </span>
+          {badge !== undefined && (
+            <span className="bg-slate-100 text-slate-500 px-2 py-0.5 rounded-md text-[10px] font-bold">{badge}</span>
           )}
         </div>
       )}
-      <div className={cn(!noPadding && "p-6")}>
+      <div className={cn(!noPadding && "p-5")}>
         {children}
       </div>
     </Card>
   )
 }
 
-function InfoItem({ icon, label, children }: { icon: React.ReactNode, label: string, children: React.ReactNode }) {
+function InfoRow({ icon, label, children }: { icon: React.ReactNode, label: string, children: React.ReactNode }) {
   return (
-    <div className="space-y-1">
-      <div className="flex items-center gap-1.5 text-slate-400">
+    <div className="flex items-start gap-3">
+      <div className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center shrink-0 mt-0.5">
         {icon}
-        <span className="text-[10px] font-bold uppercase tracking-wider">{label}</span>
       </div>
-      <div className="text-sm font-semibold text-slate-700">
-        {children}
+      <div className="space-y-0.5 min-w-0">
+        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{label}</p>
+        <div className="text-sm">{children}</div>
       </div>
     </div>
   )
 }
 
-function ReqGridItem({ label, value }: { label: string, value: string }) {
+function ReqCard({ icon, label, children }: { icon: React.ReactNode, label: string, children: React.ReactNode }) {
   return (
-    <div className="flex flex-col gap-1">
-      <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{label}</span>
-      <span className="text-sm font-bold text-slate-700 leading-tight">{value}</span>
+    <div className="bg-slate-50 rounded-xl p-3 border border-slate-100 flex flex-col gap-1">
+      <div className="flex items-center gap-1.5">
+        {icon}
+        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider leading-tight">{label}</p>
+      </div>
+      {children}
     </div>
   )
 }

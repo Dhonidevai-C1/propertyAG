@@ -27,22 +27,13 @@ import {
 import { toast } from "sonner"
 import Link from "next/link"
 
-export type ClientStatus = "Active" | "Matched" | "Closed"
+import { ClientWithAssignee } from "@/lib/actions/clients"
+import { formatBudgetRange, formatRelativeTime, formatInitials } from "@/lib/utils/format"
 
-export interface Client {
-  id: string
-  name: string
-  phone: string
-  email: string
-  addedDate: string
-  budget: string
-  requirements: string[]
-  status: ClientStatus
-  matchCount: number
-}
+export type ClientStatus = "active" | "matched" | "closed"
 
 interface ClientRowProps {
-  client: Client
+  client: ClientWithAssignee
   isSelected: boolean
   onSelect: (id: string, checked: boolean) => void
   onDelete: (id: string) => void
@@ -50,7 +41,7 @@ interface ClientRowProps {
 
 export function ClientRow({ client, isSelected, onSelect, onDelete }: ClientRowProps) {
   const getAvatarColor = (name: string) => {
-    const firstLetter = name.charAt(0).toUpperCase()
+    const firstLetter = name ? name.charAt(0).toUpperCase() : 'U'
     const colors: Record<string, string> = {
       A: "bg-purple-100 text-purple-700",
       B: "bg-blue-100 text-blue-700",
@@ -65,9 +56,9 @@ export function ClientRow({ client, isSelected, onSelect, onDelete }: ClientRowP
   }
 
   const statusColors: Record<ClientStatus, string> = {
-    Active: "bg-green-100 text-green-700",
-    Matched: "bg-amber-100 text-amber-700",
-    Closed: "bg-slate-100 text-slate-500",
+    active: "bg-green-100 text-green-700",
+    matched: "bg-amber-100 text-amber-700",
+    closed: "bg-slate-100 text-slate-500",
   }
 
   const copyToClipboard = (text: string, type: string) => {
@@ -87,12 +78,12 @@ export function ClientRow({ client, isSelected, onSelect, onDelete }: ClientRowP
       
       <TableCell>
         <div className="flex items-center gap-3">
-          <Avatar className={cn("h-9 w-9 border-none font-bold", getAvatarColor(client.name))}>
-            <AvatarFallback>{client.name.charAt(0)}</AvatarFallback>
+          <Avatar className={cn("h-9 w-9 border-none font-bold", getAvatarColor(client.full_name))}>
+            <AvatarFallback>{formatInitials(client.full_name)}</AvatarFallback>
           </Avatar>
           <div className="flex flex-col">
-            <span className="font-medium text-slate-800">{client.name}</span>
-            <span className="text-xs text-slate-400">Added {client.addedDate}</span>
+            <span className="font-medium text-slate-800">{client.full_name}</span>
+            <span className="text-xs text-slate-400">Added {formatRelativeTime(client.created_at)}</span>
           </div>
         </div>
       </TableCell>
@@ -108,29 +99,37 @@ export function ClientRow({ client, isSelected, onSelect, onDelete }: ClientRowP
               <Copy className="w-3 h-3 text-slate-400" />
             </button>
           </div>
-          <span className="text-xs text-slate-500 truncate">{client.email}</span>
+          <span className="text-xs text-slate-500 truncate">{client.email || 'No email provided'}</span>
         </div>
       </TableCell>
       
       <TableCell>
-        <span className="text-sm font-medium text-slate-700">{client.budget}</span>
+        <span className="text-sm font-medium text-slate-700">{formatBudgetRange(client.budget_min, client.budget_max)}</span>
       </TableCell>
       
       <TableCell>
         <div className="flex flex-wrap gap-1.5 max-w-[250px]">
-          {client.requirements.map((req, i) => (
+          {client.property_types && client.property_types.map((req: string, i: number) => (
             <span 
               key={i} 
-              className="px-2 py-0.5 bg-slate-100 text-slate-600 text-[10px] sm:text-xs font-medium rounded-full whitespace-nowrap"
+              className="px-2 py-0.5 bg-slate-100 text-slate-600 text-[10px] sm:text-xs font-medium rounded-full whitespace-nowrap capitalize"
             >
-              {req}
+              {req.replace('_', ' ')}
+            </span>
+          ))}
+          {client.preferred_locations && client.preferred_locations.slice(0, 2).map((loc: string, i: number) => (
+            <span 
+              key={`loc-${i}`} 
+              className="px-2 py-0.5 bg-slate-100 text-slate-600 text-[10px] sm:text-xs font-medium rounded-full whitespace-nowrap capitalize"
+            >
+              {loc}
             </span>
           ))}
         </div>
       </TableCell>
       
       <TableCell>
-        <Badge className={cn("border-none px-2.5 py-0.5 text-[11px] font-semibold rounded-full", statusColors[client.status])}>
+        <Badge className={cn("border-none px-2.5 py-0.5 text-[11px] font-semibold rounded-full capitalize", statusColors[client.status as ClientStatus] || statusColors.active)}>
           {client.status}
         </Badge>
       </TableCell>
@@ -138,7 +137,7 @@ export function ClientRow({ client, isSelected, onSelect, onDelete }: ClientRowP
       <TableCell>
         <div className="flex items-center gap-1.5 text-amber-600 font-medium">
           <Sparkles className="w-4 h-4" />
-          <span className="text-sm">{client.matchCount} matches</span>
+          <span className="text-sm">matches</span>
         </div>
       </TableCell>
       

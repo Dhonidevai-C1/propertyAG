@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
         agency_id: profile.agency_id,
         role: role,
       },
-    redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/auth/callback?type=invite`,
+    redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/accept-invite`,
     })
 
     if (error) {

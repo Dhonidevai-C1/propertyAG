@@ -36,24 +36,50 @@ export default function AcceptInvitePage() {
     setStrength(s)
   }, [password])
 
-  // Check if we have an active session from the invite link
+  // The Supabase browser client auto-parses the #access_token hash on load
+  // and fires a SIGNED_IN / TOKEN_REFRESHED event — we listen for that here.
   useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session?.user) {
+          const user = session.user
+          setSessionUser({
+            email: user.email!,
+            agency_id: user.user_metadata?.agency_id,
+            role: user.user_metadata?.role ?? 'agent',
+          })
+          if (user.user_metadata?.full_name) {
+            setFullName(user.user_metadata.full_name)
+          }
+          setStep('form')
+        }
+      }
+    )
+
+    // Also try getUser() in case the session was already established
     supabase.auth.getUser().then(({ data }) => {
-      if (data.user) {
+      if (data.user && step === 'loading') {
         setSessionUser({
           email: data.user.email!,
           agency_id: data.user.user_metadata?.agency_id,
-          role: data.user.user_metadata?.role ?? "agent",
+          role: data.user.user_metadata?.role ?? 'agent',
         })
-        // Pre-fill name from metadata if available
         if (data.user.user_metadata?.full_name) {
           setFullName(data.user.user_metadata.full_name)
         }
-        setStep("form")
-      } else {
-        setStep("error")
+        setStep('form')
       }
     })
+
+    // Fallback: if no auth event fires in 6 seconds, show error
+    const timeout = setTimeout(() => {
+      setStep(prev => prev === 'loading' ? 'error' : prev)
+    }, 6000)
+
+    return () => {
+      subscription.unsubscribe()
+      clearTimeout(timeout)
+    }
   }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -83,7 +109,7 @@ export default function AcceptInvitePage() {
 
   if (step === "loading") {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-emerald-50/30 flex items-center justify-center">
+      <div className="min-h-screen bg-linear-to-br from-slate-50 to-emerald-50/30 flex items-center justify-center">
         <Loader2 className="w-8 h-8 text-emerald-500 animate-spin" />
       </div>
     )
@@ -91,7 +117,7 @@ export default function AcceptInvitePage() {
 
   if (step === "error") {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-emerald-50/30 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-linear-to-br from-slate-50 to-emerald-50/30 flex items-center justify-center p-4">
         <div className="bg-white rounded-3xl shadow-xl border border-slate-100 p-10 max-w-md w-full text-center space-y-4">
           <div className="w-16 h-16 bg-red-50 rounded-2xl flex items-center justify-center mx-auto">
             <span className="text-3xl">⚠️</span>
@@ -113,7 +139,7 @@ export default function AcceptInvitePage() {
 
   if (step === "done") {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-emerald-50/30 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-linear-to-br from-slate-50 to-emerald-50/30 flex items-center justify-center p-4">
         <div className="bg-white rounded-3xl shadow-xl border border-slate-100 p-10 max-w-md w-full text-center space-y-5">
           <div className="w-20 h-20 bg-emerald-50 rounded-full flex items-center justify-center mx-auto animate-in zoom-in-50 duration-500">
             <CheckCircle2 className="w-10 h-10 text-emerald-500" />

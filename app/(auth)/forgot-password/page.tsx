@@ -60,9 +60,7 @@ export default function ForgotPasswordPage() {
       <div className="w-full max-w-md relative z-10 animate-in fade-in slide-in-from-bottom-8 duration-700">
         <div className="flex flex-col items-center mb-10">
           <Link href="/" className="flex items-center gap-3 transition-transform hover:scale-105 active:scale-95">
-            <div className="w-12 h-12 bg-slate-900 rounded-2xl flex items-center justify-center shadow-xl shadow-slate-900/20">
-              <Building2 className="w-6 h-6 text-white" />
-            </div>
+            <img src="/logoprop.png" alt="Logo" className="w-12 h-12 object-contain shadow-xl rounded-2xl" />
             <span className="text-3xl font-bold tracking-tight text-slate-900">PropDesk</span>
           </Link>
         </div>

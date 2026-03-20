@@ -4,7 +4,6 @@ import React, { useEffect, useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import {
-  Building2,
   MapPin,
   IndianRupee,
   ChevronDown,
@@ -44,14 +43,12 @@ export default function LandingPage() {
         className={`fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 py-4 md:px-12 transition-all duration-300 ${scrolled ? "bg-white/70 backdrop-blur-lg border-b border-slate-200/50 shadow-sm py-3" : "bg-transparent py-6"
           }`}
       >
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-slate-900 rounded-xl flex items-center justify-center shadow-lg shadow-slate-900/20">
-            <Building2 className="w-5 h-5 text-white" />
-          </div>
+        <Link href="/" className="flex rounded items-center gap-3">
+          <img src="/logoprop.png" alt="Logo" className="w-10 h-10 object-contain shadow-lg rounded-xl" />
           <span className={`text-2xl font-bold tracking-tight transition-colors ${scrolled ? 'text-slate-900' : 'text-slate-900'}`}>
             PropDesk
           </span>
-        </div>
+        </Link>
 
         <div className="flex items-center gap-4">
           <div className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-full border border-slate-200/60 bg-white/50 backdrop-blur-md text-xs font-bold text-slate-700 shadow-sm">
@@ -148,9 +145,7 @@ export default function LandingPage() {
       <footer className="py-8 px-6 bg-slate-50">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-slate-900 rounded-lg flex items-center justify-center">
-              <Building2 className="w-4 h-4 text-white" />
-            </div>
+            <img src="/logoprop.png" alt="Logo" className="w-8 h-8 object-contain" />
             <span className="font-bold text-slate-900 text-lg">PropDesk</span>
           </div>
           <p className="text-xs font-bold uppercase tracking-[0.2em] text-slate-400">

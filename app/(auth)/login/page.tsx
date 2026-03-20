@@ -47,7 +47,7 @@ export default function LoginPage() {
   async function onSubmit(data: LoginFormValues) {
     setIsLoading(true)
     setError(null)
-    
+
     try {
       const supabase = createClient()
       const { error } = await supabase.auth.signInWithPassword({
@@ -75,9 +75,7 @@ export default function LoginPage() {
       <Card className="border-none shadow-none md:border md:shadow-md md:rounded-2xl transition-all duration-200">
         <CardHeader className="space-y-4 pt-10 px-6 md:px-10 text-center">
           <div className="flex justify-center">
-            <div className="w-12 h-12 bg-slate-200 rounded-lg flex items-center justify-center text-slate-600">
-              <Building2 className="w-8 h-8" />
-            </div>
+            <img src="/logoprop.png" alt="Logo" className="w-16 rounded h-16 object-contain" />
           </div>
           <div className="space-y-1">
             <CardTitle className="text-2xl font-semibold text-slate-900">

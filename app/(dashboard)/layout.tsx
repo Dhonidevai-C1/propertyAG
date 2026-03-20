@@ -69,9 +69,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         {/* Mobile Menu Sheet */}
         <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
           <SheetContent side="bottom" className="rounded-t-3xl h-auto max-h-[80vh] px-0 pb-10">
-            <SheetHeader className="px-6 pb-4">
-              <SheetTitle className="text-left text-lg font-bold">Menu</SheetTitle>
-              <SheetDescription className="hidden">Navigate through PropDesk</SheetDescription>
+            <SheetHeader className="px-6 pb-4 flex flex-row items-center gap-3">
+              <img src="/logoprop.png" alt="Logo" className="w-10 h-10 object-contain" />
+              <div className="flex flex-col text-left">
+                <SheetTitle className="text-lg font-bold">PropDesk</SheetTitle>
+                <SheetDescription className="text-xs">Manage your properties with ease</SheetDescription>
+              </div>
             </SheetHeader>
             <div className="px-2 space-y-1">
               {allNavItems.map(item => {

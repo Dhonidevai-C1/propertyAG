@@ -13,8 +13,7 @@ import {
   Settings,
   ChevronLeft,
   ChevronRight,
-  LogOut,
-  Building
+  LogOut
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -65,17 +64,22 @@ export function Sidebar({ isCollapsed, setIsCollapsed }: SidebarProps) {
       )}
     >
       {/* Logo Area */}
-      <div className="h-[60px] flex items-center px-4 shrink-0 overflow-hidden">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-emerald-500 rounded-lg flex items-center justify-center shrink-0">
-            <Building className="w-6 h-6 text-white" />
-          </div>
+      <div className="h-[70px] flex items-center px-4 shrink-0 overflow-hidden">
+        <Link href="/dashboard" className="flex items-center gap-3">
+          <img
+            src="/logoprop.png"
+            alt="Logo"
+            className={cn(
+              "transition-all duration-300 rounded-xl object-contain",
+              isCollapsed ? "w-10 h-10" : "w-auto h-12"
+            )}
+          />
           {!isCollapsed && (
             <span className="text-xl font-bold text-white tracking-tight animate-in fade-in duration-500">
               PropDesk
             </span>
           )}
-        </div>
+        </Link>
       </div>
 
       <Separator className="bg-slate-800" />

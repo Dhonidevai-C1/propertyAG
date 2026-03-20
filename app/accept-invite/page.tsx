@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useTransition } from "react"
 import { useRouter } from "next/navigation"
-import { Building, CheckCircle2, Eye, EyeOff, Loader2 } from "lucide-react"
+import { CheckCircle2, Eye, EyeOff, Loader2 } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -165,9 +165,7 @@ export default function AcceptInvitePage() {
         {/* Logo */}
         <div className="flex justify-center">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-emerald-500 rounded-2xl flex items-center justify-center shadow-lg shadow-emerald-200">
-              <Building className="w-7 h-7 text-white" />
-            </div>
+            <img src="/logoprop.png" alt="Logo" className="w-12 h-12 object-contain shadow-lg rounded-2xl" />
             <span className="text-2xl font-black text-slate-900 tracking-tight">PropDesk</span>
           </div>
         </div>

@@ -3,15 +3,15 @@
 import React from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { 
-  LayoutDashboard, 
-  Building2, 
-  Users, 
-  Sparkles, 
-  Bell, 
-  UserCog, 
-  Settings, 
-  ChevronLeft, 
+import {
+  LayoutDashboard,
+  Building2,
+  Users,
+  Sparkles,
+  Bell,
+  UserCog,
+  Settings,
+  ChevronLeft,
   ChevronRight,
   LogOut,
   Building
@@ -21,7 +21,7 @@ import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
-import { 
+import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
@@ -52,13 +52,13 @@ import { LogoutButton } from "@/components/auth/logout-button"
 export function Sidebar({ isCollapsed, setIsCollapsed }: SidebarProps) {
   const pathname = usePathname()
   const { profile } = useAuth()
-  
+
   const initials = profile?.full_name
     ? profile.full_name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
     : '??'
 
   return (
-    <aside 
+    <aside
       className={cn(
         "hidden lg:flex flex-col h-screen bg-slate-900 text-slate-400 transition-all duration-300 ease-in-out border-r border-slate-800 shrink-0",
         isCollapsed ? "w-[72px]" : "w-64"
@@ -83,24 +83,24 @@ export function Sidebar({ isCollapsed, setIsCollapsed }: SidebarProps) {
       {/* Navigation */}
       <div className="flex-1 overflow-y-auto overflow-x-hidden py-4 space-y-1">
         {navItems.map((item) => (
-          <NavItem 
-            key={item.label} 
-            item={item} 
-            isCollapsed={isCollapsed} 
-            isActive={pathname === item.href} 
+          <NavItem
+            key={item.label}
+            item={item}
+            isCollapsed={isCollapsed}
+            isActive={pathname === item.href}
           />
         ))}
-        
+
         <div className="px-4 py-2">
           <Separator className="bg-slate-800" />
         </div>
 
         {secondaryNavItems.map((item) => (
-          <NavItem 
-            key={item.label} 
-            item={item} 
-            isCollapsed={isCollapsed} 
-            isActive={pathname === item.href} 
+          <NavItem
+            key={item.label}
+            item={item}
+            isCollapsed={isCollapsed}
+            isActive={pathname === item.href}
           />
         ))}
       </div>
@@ -114,7 +114,7 @@ export function Sidebar({ isCollapsed, setIsCollapsed }: SidebarProps) {
           <Avatar className="w-8 h-8 border-2 border-emerald-500/20 cursor-pointer">
             <AvatarFallback className="bg-emerald-600 text-white text-xs font-bold">{initials}</AvatarFallback>
           </Avatar>
-          
+
           {!isCollapsed && (
             <div className="flex-1 min-w-0 animate-in slide-in-from-left-2 duration-300">
               <p className="text-sm font-medium text-slate-200 truncate leading-none mb-1">{profile?.full_name || 'User'}</p>
@@ -137,7 +137,7 @@ export function Sidebar({ isCollapsed, setIsCollapsed }: SidebarProps) {
 
         {/* Collapse Toggle */}
         <div className="flex justify-start">
-           <Button
+          <Button
             variant="ghost"
             size="icon"
             onClick={() => setIsCollapsed(!isCollapsed)}
@@ -156,10 +156,10 @@ export function Sidebar({ isCollapsed, setIsCollapsed }: SidebarProps) {
   )
 }
 
-function NavItem({ item, isCollapsed, isActive }: { 
-  item: typeof navItems[0], 
+function NavItem({ item, isCollapsed, isActive }: {
+  item: typeof navItems[0],
   isCollapsed: boolean,
-  isActive: boolean 
+  isActive: boolean
 }) {
   const { icon: Icon, label, href } = item
 
@@ -169,18 +169,18 @@ function NavItem({ item, isCollapsed, isActive }: {
       prefetch={true}
       className={cn(
         "flex items-center h-11 transition-all duration-200 group mx-3 rounded-lg relative",
-        isActive 
-          ? "bg-emerald-500/10 text-emerald-400 font-medium" 
+        isActive
+          ? "bg-emerald-500/10 text-emerald-400 font-medium"
           : "text-slate-400 hover:bg-slate-800 hover:text-slate-200",
-        isCollapsed ? "justify-center px-0 mx-3" : "px-3"
+        isCollapsed ? "justify-center px-2 mx-3" : "px-3"
       )}
     >
       {isActive && !isCollapsed && (
         <span className="absolute left-0 top-1/4 bottom-1/4 w-1 bg-emerald-500 rounded-r-full" />
       )}
-      
+
       <Icon className={cn("w-5 h-5 shrink-0 transition-transform group-hover:scale-110", isActive && "text-emerald-400")} />
-      
+
       {!isCollapsed && (
         <span className="ml-3 text-sm flex-1 truncate transition-all duration-300">
           {label}
@@ -195,7 +195,7 @@ function NavItem({ item, isCollapsed, isActive }: {
         <TooltipTrigger>
           {content}
         </TooltipTrigger>
-        <TooltipContent side="right" className="bg-slate-800 text-white border-slate-700">
+        <TooltipContent side="right" className="bg-slate-800  text-white border-slate-700">
           {label}
         </TooltipContent>
       </Tooltip>

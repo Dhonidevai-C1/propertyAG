@@ -106,14 +106,14 @@ export default async function DashboardPage() {
       color: "text-amber-600",
       bg: "bg-amber-50",
     },
-    {
-      label: "Follow-ups due",
-      value: stats.pendingFollowups,
-      icon: Clock,
-      sub: "need attention",
-      color: stats.pendingFollowups > 0 ? "text-red-500" : "text-emerald-600",
-      bg: stats.pendingFollowups > 0 ? "bg-red-50" : "bg-emerald-50",
-    },
+    // {
+    //   label: "Follow-ups due",
+    //   value: stats.pendingFollowups,
+    //   icon: Clock,
+    //   sub: "need attention",
+    //   color: stats.pendingFollowups > 0 ? "text-red-500" : "text-emerald-600",
+    //   bg: stats.pendingFollowups > 0 ? "bg-red-50" : "bg-emerald-50",
+    // },
   ]
 
   const hour = new Date().getHours()
@@ -167,9 +167,9 @@ export default async function DashboardPage() {
                   const Icon = notificationIcon(n.type)
                   const href =
                     n.reference_type === "client" ? `/clients/${n.reference_id}` :
-                    n.reference_type === "property" ? `/properties/${n.reference_id}` :
-                    n.reference_type === "match" ? `/matches/${n.reference_id}` :
-                    "/notifications"
+                      n.reference_type === "property" ? `/properties/${n.reference_id}` :
+                        n.reference_type === "match" ? `/matches/${n.reference_id}` :
+                          "/notifications"
                   return (
                     <Link key={n.id} href={href}
                       className="p-4 flex items-center gap-3 hover:bg-slate-50 transition-colors group"
@@ -271,8 +271,8 @@ export default async function DashboardPage() {
                       <Badge className={cn(
                         "ml-auto text-[10px] font-bold border-none capitalize",
                         property.status === "available" ? "bg-emerald-50 text-emerald-600" :
-                        property.status === "sold" ? "bg-red-50 text-red-600" :
-                        "bg-slate-50 text-slate-500"
+                          property.status === "sold" ? "bg-red-50 text-red-600" :
+                            "bg-slate-50 text-slate-500"
                       )}>
                         {property.status}
                       </Badge>

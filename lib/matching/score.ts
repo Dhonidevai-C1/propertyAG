@@ -64,11 +64,23 @@ export function scoreMatch(client: Client, property: Property): MatchScoreResult
   let area = 0
   if (!client.min_area_sqft) {
     area = 10
-  } else if (property.area_sqft != null) {
-    if (property.area_sqft >= client.min_area_sqft) {
-      area = 10
-    } else if (property.area_sqft >= client.min_area_sqft * 0.9) {
-      area = 5
+  } else {
+    // Normalize both to sq ft for comparison
+    const normalizeToSqft = (val: number, unit: string = 'sqft') => {
+      if (unit === 'sqyard') return val * 9
+      if (unit === 'sqm') return val * 10.7639
+      return val
+    }
+
+    const clientMinSqft = normalizeToSqft(client.min_area_sqft, client.min_area_unit)
+    const propertySqft = property.area_sqft ? normalizeToSqft(property.area_sqft, property.area_unit) : null
+
+    if (propertySqft != null) {
+      if (propertySqft >= clientMinSqft) {
+        area = 10
+      } else if (propertySqft >= clientMinSqft * 0.9) {
+        area = 5
+      }
     }
   }
 

@@ -14,6 +14,7 @@ export const ClientFormSchema = z.object({
   budget_max: z.number().nullable().optional(),
   min_bedrooms: z.number().min(0).max(10),
   min_area_sqft: z.number().nullable().optional(),
+  min_area_unit: z.enum(["sqft", "sqyard", "sqm"]),
   furnishing_preference: z.string().optional(),
   possession_timeline: z.string().optional(),
   priority: z.enum(["low", "medium", "high"]).optional(),

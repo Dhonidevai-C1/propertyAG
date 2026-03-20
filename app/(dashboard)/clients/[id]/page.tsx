@@ -224,7 +224,7 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
 
               <ReqCard icon={<Ruler className="w-4 h-4 text-slate-400" />} label="Min area">
                 <span className="text-sm font-bold text-slate-900 mt-1">
-                  {client.min_area_sqft ? `${client.min_area_sqft.toLocaleString()} sq ft` : "Any"}
+                  {client.min_area_sqft ? `${client.min_area_sqft.toLocaleString()} ${client.min_area_unit.replace('sq', 'sq. ')}` : "Any"}
                 </span>
               </ReqCard>
 

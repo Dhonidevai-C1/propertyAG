@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useMemo, useTransition } from "react"
-import { Search, LayoutGrid, List, UserX, Plus, X, Filter } from "lucide-react"
+import { Search, LayoutGrid, List, UserX, Plus, X, Filter, Download } from "lucide-react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -37,6 +37,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { deleteClient, ClientWithAssignee } from "@/lib/actions/clients"
 import Link from "next/link"
+import { exportToExcel } from "@/lib/utils/export-utils"
 
 interface ClientListProps {
   initialClients: ClientWithAssignee[]
@@ -142,6 +143,34 @@ export function ClientList({ initialClients }: ClientListProps) {
     setIsDeletingId(null)
   }
 
+  const handleExport = () => {
+    const dataToExport = filteredClients.map(c => ({
+      'Full Name': c.full_name,
+      'Phone': c.phone,
+      'Email': c.email || 'N/A',
+      'Status': c.status,
+      'Priority': c.priority,
+      'Looking For': c.looking_for || 'Any',
+      'Property Types': (c.property_types || []).join(', '),
+      'Preferred BHKs': (c.preferred_bhks || []).join(', '),
+      'Preferred Locations': (c.preferred_locations || []).join(', '),
+      'Budget Min (₹)': c.budget_min || 0,
+      'Budget Max (₹)': c.budget_max || 0,
+      'Min Bedrooms': c.min_bedrooms || 0,
+      'Min Area': c.min_area_sqft || 0,
+      'Min Area Unit': c.min_area_unit,
+      'Furnishing Preference': c.furnishing_preference || 'Any',
+      'Possession Timeline': c.possession_timeline || 'Flexible',
+      'Lead Source': c.source || 'N/A',
+      'Assigned To': c.assignee?.full_name || 'Unassigned',
+      'Notes': c.notes || '',
+      'Follow-up Date': c.follow_up_date ? new Date(c.follow_up_date).toLocaleDateString() : 'None',
+      'Created At': new Date(c.created_at).toLocaleString(),
+      'Last Updated': new Date(c.updated_at).toLocaleString(),
+    }))
+    exportToExcel(dataToExport, `clients_full_export_${new Date().toISOString().split('T')[0]}`)
+  }
+
   return (
     <>
       <BulkDeleteButton
@@ -173,6 +202,15 @@ export function ClientList({ initialClients }: ClientListProps) {
 
           {/* View toggle */}
           <div className="flex items-center gap-1 bg-slate-50 p-1 rounded-xl border border-slate-100 shrink-0">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleExport}
+              className="h-11 px-4 rounded-xl border-2 border-slate-200 text-slate-600 font-bold hover:bg-slate-50 transition-all gap-2"
+            >
+              <Download className="w-4 h-4" />
+              <span>Export</span>
+            </Button>
             <Button
               variant="ghost"
               size="icon"

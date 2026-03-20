@@ -70,6 +70,8 @@ export function PropertyForm({ initialData, mode = "add" }: PropertyFormProps) {
     bedrooms: initialData?.bedrooms || 0,
     bathrooms: initialData?.bathrooms || 0,
     area_sqft: initialData?.area_sqft || 0,
+    area_unit: initialData?.area_unit || "sqft",
+    road_info: initialData?.road_info || "",
     furnishing: initialData?.furnishing || "unfurnished",
     pincode: initialData?.pincode || "",
     floor_number: initialData?.floor_number || "",
@@ -94,6 +96,7 @@ export function PropertyForm({ initialData, mode = "add" }: PropertyFormProps) {
 
   const propertyTypeValue = watch("property_type")
   const statusValue = watch("status")
+  const areaUnitValue = watch("area_unit")
   const furnishingValue = watch("furnishing")
   const bedroomsValue = watch("bedrooms") || 0
   const bathroomsValue = watch("bathrooms") || 0
@@ -222,7 +225,7 @@ export function PropertyForm({ initialData, mode = "add" }: PropertyFormProps) {
                       <SelectItem value="penthouse">Penthouse</SelectItem>
                     </SelectContent>
                   </Select>
-                  {errors.property_type && <p className="text-xs text-red-500">{errors.property_type.message}</p>}
+                  {errors.property_type && <p className="text-xs  text-red-500">{errors.property_type.message}</p>}
                 </div>
 
                 <div className="grid gap-2">
@@ -280,6 +283,10 @@ export function PropertyForm({ initialData, mode = "add" }: PropertyFormProps) {
                   <Input id="pincode" {...register("pincode")} />
                 </div>
               </div>
+              <div className="grid gap-2">
+                <Label htmlFor="road_info">Road Information</Label>
+                <Input id="road_info" placeholder="e.g. 40ft wide main road" {...register("road_info")} />
+              </div>
             </div>
           </Section>
 
@@ -305,14 +312,26 @@ export function PropertyForm({ initialData, mode = "add" }: PropertyFormProps) {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="grid gap-2">
-                  <Label htmlFor="area_sqft" className={cn(errors.area_sqft && "text-red-500")}>Super Area (sq ft)</Label>
-                  <Input
-                    id="area_sqft"
-                    type="number"
-                    placeholder="Area in sq ft"
-                    {...register("area_sqft", { valueAsNumber: true })}
-                    className={cn(errors.area_sqft && "border-red-500")}
-                  />
+                  <Label htmlFor="area_sqft" className={cn(errors.area_sqft && "text-red-500")}>Area</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      id="area_sqft"
+                      type="number"
+                      placeholder="Area"
+                      {...register("area_sqft", { valueAsNumber: true })}
+                      className={cn("flex-1", errors.area_sqft && "border-red-500")}
+                    />
+                    <Select onValueChange={(v) => setValue("area_unit", v as any, { shouldDirty: true })} value={areaUnitValue}>
+                      <SelectTrigger className="w-[110px]">
+                        <SelectValue placeholder="Unit" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-white">
+                        <SelectItem value="sqft">sq. ft</SelectItem>
+                        <SelectItem value="sqyard">sq. yard</SelectItem>
+                        <SelectItem value="sqm">sq. meter</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                   {errors.area_sqft && <p className="text-xs text-red-500">{errors.area_sqft.message}</p>}
                 </div>
                 <div className="grid gap-2">

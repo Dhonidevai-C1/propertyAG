@@ -54,7 +54,7 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
     { label: "BHK", value: `${property.bhk ?? property.bedrooms} BHK` },
     { label: "Bedrooms", value: String(property.bedrooms) },
     { label: "Bathrooms", value: String(property.bathrooms) },
-    { label: "Total area", value: property.area_sqft ? `${Number(property.area_sqft).toLocaleString()} sq ft` : "—" },
+    { label: "Total area", value: property.area_sqft ? `${Number(property.area_sqft).toLocaleString()} ${property.area_unit.replace('sq', 'sq. ')}` : "—" },
   ]
 
   const rightDetails = [
@@ -62,6 +62,7 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
     property.facing ? { label: "Facing", value: property.facing } : null,
     property.parking ? { label: "Parking", value: property.parking } : null,
     floorValue ? { label: "Floor", value: floorValue } : null,
+    property.road_info ? { label: "Road Information", value: property.road_info } : null,
     property.maintenance_charge && Number(property.maintenance_charge) > 0
       ? { label: "Maintenance", value: `₹${Number(property.maintenance_charge).toLocaleString()}/mo` }
       : null,
@@ -160,7 +161,7 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
               <StatTile icon={<BedDouble className="w-4 h-4" />} label="BHK" value={`${property.bhk ?? property.bedrooms} BHK`} />
               <StatTile icon={<Bath className="w-4 h-4" />} label="Bathrooms" value={String(property.bathrooms)} />
-              <StatTile icon={<Maximize2 className="w-4 h-4" />} label="Area" value={property.area_sqft ? `${Number(property.area_sqft).toLocaleString()} sq ft` : "—"} />
+              <StatTile icon={<Maximize2 className="w-4 h-4" />} label="Area" value={property.area_sqft ? `${Number(property.area_sqft).toLocaleString()} ${property.area_unit.replace('sq', 'sq. ')}` : "—"} />
               <StatTile icon={<Armchair className="w-4 h-4" />} label="Furnishing" value={(property.furnishing || "Unfurnished").replace(/_/g, " ")} capitalize />
               {property.facing && <StatTile icon={<Compass className="w-4 h-4" />} label="Facing" value={property.facing} />}
               {property.parking && <StatTile icon={<CarFront className="w-4 h-4" />} label="Parking" value={property.parking} />}

@@ -19,6 +19,8 @@ export const PropertyFormSchema = z.object({
   bedrooms: z.number().min(0).optional(),
   bathrooms: z.number().min(0).optional(),
   area_sqft: z.number().min(1, "Area is required"),
+  area_unit: z.enum(["sqft", "sqyard", "sqm"]),
+  road_info: z.string().optional(),
   furnishing: z.enum(furnishingValues),
   floor_number: z.string().optional(),
   total_floors: z.string().optional(),

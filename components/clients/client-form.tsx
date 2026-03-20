@@ -106,6 +106,7 @@ export function ClientForm({ initialData, mode = "add" }: ClientFormProps) {
       priority: initialData?.priority || "medium",
       min_bedrooms: initialData?.min_bedrooms || 0,
       min_area_sqft: initialData?.min_area_sqft,
+      min_area_unit: initialData?.min_area_unit || "sqft",
       furnishing_preference: initialData?.furnishing_preference || "Any",
       possession_timeline: initialData?.possession_timeline || "Flexible",
       source: initialData?.source || "Walk-in",
@@ -131,6 +132,7 @@ export function ClientForm({ initialData, mode = "add" }: ClientFormProps) {
   const followUpDate = watch("follow_up_date")
   const minBeds = watch("min_bedrooms")
   const furnishing = watch("furnishing_preference")
+  const minAreaUnit = watch("min_area_unit")
   const timeline = watch("possession_timeline")
   const source = watch("source")
   const assignedTo = watch("assigned_to")
@@ -248,7 +250,7 @@ export function ClientForm({ initialData, mode = "add" }: ClientFormProps) {
 
           <FieldGroup label="Lead Source">
             <Select onValueChange={(v) => setValue("source", v ?? undefined)} value={source}>
-              <SelectTrigger className="h-11 rounded-xl bg-white border-slate-200">
+              <SelectTrigger className="p-5 w-full rounded-xl bg-white border-slate-200">
                 <SelectValue placeholder="Select source" />
               </SelectTrigger>
               <SelectContent className="bg-white">
@@ -447,19 +449,31 @@ export function ClientForm({ initialData, mode = "add" }: ClientFormProps) {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
             {/* Min Area */}
-            <FieldGroup label="Min area (sq ft)">
-              <Input
-                type="number"
-                placeholder="e.g. 1200"
-                {...register("min_area_sqft", { valueAsNumber: true })}
-                className="h-11 rounded-xl"
-              />
+            <FieldGroup label="Min area">
+              <div className="flex  gap-2">
+                <Input
+                  type="number"
+                  placeholder="e.g. 1200"
+                  {...register("min_area_sqft", { valueAsNumber: true })}
+                  className="h-11 rounded-xl flex-1"
+                />
+                <Select onValueChange={(v) => setValue("min_area_unit", v as any, { shouldDirty: true })} value={minAreaUnit}>
+                  <SelectTrigger className="py-5 rounded-xl bg-white border-slate-200 w-[110px]">
+                    <SelectValue placeholder="Unit" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white">
+                    <SelectItem value="sqft">sq. ft</SelectItem>
+                    <SelectItem value="sqyard">sq. yard</SelectItem>
+                    <SelectItem value="sqm">sq. meter</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </FieldGroup>
 
             {/* Furnishing */}
-            <FieldGroup label="Furnishing preference">
+            <FieldGroup label="Furnishing  preference">
               <Select onValueChange={(v) => setValue("furnishing_preference", v ?? undefined)} value={furnishing}>
-                <SelectTrigger className="h-11 rounded-xl bg-white border-slate-200">
+                <SelectTrigger className="p-5 w-full rounded-xl bg-white border-slate-200">
                   <SelectValue placeholder="Any" />
                 </SelectTrigger>
                 <SelectContent className="bg-white">
@@ -473,7 +487,7 @@ export function ClientForm({ initialData, mode = "add" }: ClientFormProps) {
             {/* Possession Timeline */}
             <FieldGroup label="Possession timeline">
               <Select onValueChange={(v) => setValue("possession_timeline", v ?? undefined)} value={timeline}>
-                <SelectTrigger className="h-11 rounded-xl bg-white border-slate-200">
+                <SelectTrigger className="p-5 h-full rounded-xl bg-white border-slate-200">
                   <SelectValue placeholder="Select" />
                 </SelectTrigger>
                 <SelectContent className="bg-white">
@@ -547,7 +561,7 @@ export function ClientForm({ initialData, mode = "add" }: ClientFormProps) {
             {/* Assigned To */}
             <FieldGroup label="Assigned to">
               <Select onValueChange={(v) => setValue("assigned_to", v ?? undefined)} value={assignedTo}>
-                <SelectTrigger className="h-11 rounded-xl bg-white border-slate-200">
+                <SelectTrigger className="p-5 w-full rounded-xl bg-white border-slate-200">
                   <SelectValue placeholder="Select team member" />
                 </SelectTrigger>
                 <SelectContent className="bg-white">
@@ -572,7 +586,7 @@ export function ClientForm({ initialData, mode = "add" }: ClientFormProps) {
         <div className="flex flex-col sm:flex-row gap-3">
           <button
             type="button"
-            className="flex-1 h-12 rounded-2xl font-bold text-slate-500 hover:text-slate-900 bg-white border-2 border-slate-200 hover:border-slate-300 transition-all"
+            className="flex-1 h-12 max-md:py-2 rounded-2xl font-bold text-slate-500 hover:text-slate-900 bg-white border-2 border-slate-200 hover:border-slate-300 transition-all"
             onClick={handleDiscard}
           >
             Discard changes
@@ -580,7 +594,7 @@ export function ClientForm({ initialData, mode = "add" }: ClientFormProps) {
           <Button
             type="submit"
             disabled={isSubmitting}
-            className="flex-2 h-12 rounded-2xl font-bold bg-emerald-500 hover:bg-emerald-600 text-white border-none"
+            className="flex-2 h-12 max-md:py-2 rounded-2xl font-bold bg-emerald-500 hover:bg-emerald-600 text-white border-none"
           >
             {isSubmitting ? (
               <Loader2 className="w-5 h-5 animate-spin" />

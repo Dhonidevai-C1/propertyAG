@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useMemo } from "react"
-import { Building2, LayoutGrid, List, Plus, Search, X, Filter } from "lucide-react"
+import { Building2, LayoutGrid, List, Plus, Search, X, Filter, Download } from "lucide-react"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/select"
 import { PropertyCard } from "@/components/properties/property-card"
 import { Property } from "@/lib/types/database"
+import { exportToExcel } from "@/lib/utils/export-utils"
 
 interface PropertyListProps {
   initialProperties: Property[]
@@ -78,6 +79,38 @@ export function PropertyList({ initialProperties }: PropertyListProps) {
     setPriceFilter("any")
   }
 
+  const handleExport = () => {
+    const dataToExport = filtered.map(p => ({
+      'Title': p.title,
+      'Property Type': p.property_type,
+      'Status': p.status,
+      'Price (₹)': p.price,
+      'Price Negotiable': p.price_negotiable ? 'Yes' : 'No',
+      'Maintenance Charge': p.maintenance_charge || 0,
+      'BHK': p.bhk || 'N/A',
+      'Bedrooms': p.bedrooms,
+      'Bathrooms': p.bathrooms,
+      'Area': p.area_sqft || 0,
+      'Area Unit': p.area_unit,
+      'Facing': p.facing || 'N/A',
+      'Furnishing': p.furnishing || 'N/A',
+      'Parking': p.parking || 'N/A',
+      'Floor Number': p.floor_number || 'N/A',
+      'Total Floors': p.total_floors || 'N/A',
+      'Road Info': p.road_info || 'N/A',
+      'Locality': p.locality || 'N/A',
+      'City': p.city || 'N/A',
+      'Pincode': p.pincode || 'N/A',
+      'Address': p.address || 'N/A',
+      'Description': p.description || '',
+      'Cover Image': p.cover_image_url || '',
+      'All Images': (p.image_urls || []).join(', '),
+      'Created At': new Date(p.created_at).toLocaleString(),
+      'Last Updated': new Date(p.updated_at).toLocaleString(),
+    }))
+    exportToExcel(dataToExport, `properties_full_export_${new Date().toISOString().split('T')[0]}`)
+  }
+
   return (
     <div className="space-y-4">
       {/* ── Filter Bar ───────────────────────────────────── */}
@@ -111,6 +144,15 @@ export function PropertyList({ initialProperties }: PropertyListProps) {
               className={cn("h-9 w-9 rounded-lg transition-all", viewMode === "grid" ? "bg-white text-emerald-600 shadow-sm" : "text-slate-400")}
             >
               <LayoutGrid className="w-4 h-4" />
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleExport}
+              className="h-11 px-4 rounded-xl border-2 border-slate-200 text-slate-600 font-bold hover:bg-slate-50 transition-all gap-2"
+            >
+              <Download className="w-4 h-4" />
+              <span>Export</span>
             </Button>
             <Button
               variant="ghost"

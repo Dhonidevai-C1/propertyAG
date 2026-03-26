@@ -130,7 +130,7 @@ export function PropertyCard({ property, viewMode }: PropertyCardProps) {
             </div>
             <div className="flex items-center gap-1 font-medium">
               <Maximize2 className="w-3.5 h-3.5" />
-              <span className="capitalize">{property.area_sqft} {property.area_unit.replace('sq', 'sq. ')}</span>
+              <span className="capitalize">{property.area_sqft} {(property.area_unit || 'sqft').replace('sq', 'sq. ')}</span>
             </div>
           </div>
         </div>
@@ -206,7 +206,7 @@ export function PropertyCard({ property, viewMode }: PropertyCardProps) {
           </div>
           <div className="flex items-center gap-1.5 font-medium">
             <Maximize2 className="w-3.5 h-3.5 text-slate-400" />
-            <span className="text-slate-600 text-[13px] capitalize">{property.area_sqft} {property.area_unit.replace('sq', 'sq. ')}</span>
+            <span className="text-slate-600 text-[13px] capitalize">{property.area_sqft} {(property.area_unit || 'sqft').replace('sq', 'sq. ')}</span>
           </div>
         </div>
 

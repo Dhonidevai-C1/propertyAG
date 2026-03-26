@@ -62,7 +62,7 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
     { label: "BHK", value: `${property.bhk ?? property.bedrooms} BHK` },
     { label: "Bedrooms", value: String(property.bedrooms) },
     { label: "Bathrooms", value: String(property.bathrooms) },
-    { label: "Total area", value: property.area_sqft ? `${Number(property.area_sqft).toLocaleString()} ${property.area_unit.replace('sq', 'sq. ')}` : "—" },
+    { label: "Total area", value: property.area_sqft ? `${Number(property.area_sqft).toLocaleString()} ${(property.area_unit || 'sqft').replace('sq', 'sq. ')}` : "—" },
   ]
 
   const rightDetails = [
@@ -196,7 +196,7 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
               {property.balconies !== null && property.balconies > 0 && (
                 <StatTile icon={<Zap className="w-4 h-4" />} label="Balconies" value={String(property.balconies)} />
               )}
-              <StatTile icon={<Maximize2 className="w-4 h-4" />} label="Area" value={property.area_sqft ? `${Number(property.area_sqft).toLocaleString()} ${property.area_unit.replace('sq', 'sq. ')}` : "—"} />
+              <StatTile icon={<Maximize2 className="w-4 h-4" />} label="Area" value={property.area_sqft ? `${Number(property.area_sqft).toLocaleString()} ${(property.area_unit || 'sqft').replace('sq', 'sq. ')}` : "—"} />
               <StatTile icon={<Armchair className="w-4 h-4" />} label="Furnishing" value={(property.furnishing || "Unfurnished").replace(/_/g, " ")} capitalize />
               {property.facing && <StatTile icon={<Compass className="w-4 h-4" />} label="Facing" value={property.facing} />}
               {property.parking && <StatTile icon={<CarFront className="w-4 h-4" />} label="Parking" value={property.parking} />}

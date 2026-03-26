@@ -4,7 +4,7 @@ import React, { useState, useCallback } from "react"
 import Cropper from "react-easy-crop"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
-import { RotateCw, ZoomIn, RotateCcw } from "lucide-react"
+import { RotateCw, ZoomIn } from "lucide-react"
 import { toast } from "sonner"
 
 interface ImageCropperProps {
@@ -114,10 +114,6 @@ export function ImageCropperDialog({ imageSrc, onCropComplete, onCancel }: Image
     }
   }
 
-  const rotate = (dir: 'left' | 'right') => {
-    setRotation(prev => (prev + (dir === 'right' ? 90 : -90)) % 360)
-  }
-
   return (
     <Dialog open={true} onOpenChange={(open) => !open && onCancel()}>
       <DialogContent className="max-w-2xl bg-white p-0 overflow-hidden gap-0 rounded-2xl">
@@ -156,18 +152,8 @@ export function ImageCropperDialog({ imageSrc, onCropComplete, onCancel }: Image
               />
             </div>
             <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-slate-600 text-sm font-medium">
-                  <RotateCw className="w-4 h-4" /> Fine Rotation
-                </div>
-                <div className="flex gap-2">
-                  <Button variant="outline" size="sm" className="h-8 px-2" onClick={() => rotate('left')}>
-                    <RotateCcw className="w-3.5 h-3.5 mr-1" /> -90°
-                  </Button>
-                  <Button variant="outline" size="sm" className="h-8 px-2" onClick={() => rotate('right')}>
-                    <RotateCw className="w-3.5 h-3.5 mr-1" /> +90°
-                  </Button>
-                </div>
+              <div className="flex items-center gap-2 text-slate-600 text-sm font-medium">
+                <RotateCw className="w-4 h-4" /> Rotation
               </div>
               <input
                 type="range"

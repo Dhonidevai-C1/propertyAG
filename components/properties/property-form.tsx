@@ -542,27 +542,44 @@ export function PropertyForm({ initialData, mode = "add" }: PropertyFormProps) {
 
                 {imageUrls.length > 0 && (
                   <div className="grid grid-cols-2 gap-3 mt-4">
-                    {imageUrls.map((url, i) => (
-                      <div key={url} className="aspect-square rounded-lg relative overflow-hidden group border border-slate-200 shadow-sm">
-                        <Image src={url} alt={`Property ${i + 1}`} fill className="object-cover" />
-                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                          <button
-                            type="button"
-                            onClick={() => setValue("cover_image_url", url, { shouldDirty: true })}
-                            className={cn(
-                              "bg-white rounded-full p-2 text-slate-600 hover:text-emerald-500 transition-colors",
-                              coverImageUrl === url && "text-emerald-500 bg-emerald-50"
-                            )}
-                            title="Set as cover image"
-                          >
-                            <Check className="w-4 h-4" />
-                          </button>
-                          <button type="button" onClick={() => removeImage(url)} className="bg-white rounded-full p-2 text-slate-600 hover:text-red-500 transition-colors">
-                            <X className="w-4 h-4" />
-                          </button>
+                    {imageUrls.map((url, i) => {
+                      const isCover = coverImageUrl === url
+                      return (
+                        <div key={url} className={cn(
+                          "aspect-square rounded-lg relative overflow-hidden group border transition-all",
+                          isCover ? "border-emerald-500 ring-2 ring-emerald-500/20 shadow-md" : "border-slate-200"
+                        )}>
+                          <Image src={url} alt={`Property ${i + 1}`} fill className="object-cover" loading="lazy" />
+                          
+                          {isCover && (
+                            <div className="absolute top-2 left-2 bg-emerald-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-lg z-10 animate-in zoom-in-50 duration-300">
+                              COVER
+                            </div>
+                          )}
+
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => setValue("cover_image_url", url, { shouldDirty: true })}
+                              className={cn(
+                                "bg-white rounded-full p-2 text-slate-600 hover:text-emerald-500 transition-colors shadow-xl",
+                                isCover && "text-emerald-500 bg-white"
+                              )}
+                              title={isCover ? "Current cover image" : "Set as cover image"}
+                            >
+                              <Check className="w-4 h-4" />
+                            </button>
+                            <button 
+                              type="button" 
+                              onClick={() => removeImage(url)} 
+                              className="bg-white rounded-full p-2 text-slate-600 hover:text-red-500 transition-colors shadow-xl"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      )
+                    })}
                   </div>
                 )}
               </div>

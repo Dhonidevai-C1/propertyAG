@@ -128,7 +128,7 @@ export async function getProperties(filters: PropertyFilters) {
 
   let query = supabase
     .from('properties')
-    .select('*')
+    .select('id, title, price, property_type, status, listing_type, city, locality, cover_image_url, is_featured, is_new, bedrooms, bathrooms, area_sqft, bhk, created_at, approval_type')
     .eq('agency_id', profile.agency_id)
     .eq('is_deleted', false)
     .order('created_at', { ascending: false })

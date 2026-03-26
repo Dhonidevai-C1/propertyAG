@@ -32,13 +32,16 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid role' }, { status: 400 })
     }
 
+    const { protocol, host } = new URL(req.url)
+    const origin = `${protocol}//${host}`
+
     // Send magic-link invite via Supabase Admin
     const { data, error } = await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
       data: {
         agency_id: profile.agency_id,
         role: role,
       },
-    redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/accept-invite`,
+    redirectTo: `${origin}/accept-invite`,
     })
 
     if (error) {

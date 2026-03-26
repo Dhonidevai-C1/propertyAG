@@ -179,6 +179,7 @@ export function PropertyForm({ initialData, mode = "add" }: PropertyFormProps) {
   }
 
   const handleCropComplete = async (base64: string) => {
+    console.log("Upload started: processing base64 data...")
     setUploadingImage(true)
     try {
       // 1. Validate Base64
@@ -187,6 +188,7 @@ export function PropertyForm({ initialData, mode = "add" }: PropertyFormProps) {
       }
 
       // 2. Convert base64 to Blob
+      console.log("Converting base64 to blob...")
       const res = await fetch(base64)
       const blob = await res.blob()
       
@@ -194,9 +196,11 @@ export function PropertyForm({ initialData, mode = "add" }: PropertyFormProps) {
       const fileExt = blob.type.split('/')[1] || 'jpg'
       const fileName = `${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`
       const filePath = `property-images/${fileName}`
+      console.log("Uploading to path:", filePath)
 
       // 4. Upload to Supabase Storage
       const supabase = createClient()
+      console.log("Connecting to Supabase Storage...")
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('property-images')
         .upload(filePath, blob, {
@@ -205,9 +209,11 @@ export function PropertyForm({ initialData, mode = "add" }: PropertyFormProps) {
         })
 
       if (uploadError) {
-        console.error("Supabase Upload Error:", uploadError)
+        console.error("Supabase Upload Error Object:", uploadError)
         throw new Error(`Storage upload failed: ${uploadError.message}`)
       }
+
+      console.log("Upload successful, fetching public URL...")
 
       // 5. Get Public URL
       const { data: { publicUrl } } = supabase.storage
@@ -217,6 +223,8 @@ export function PropertyForm({ initialData, mode = "add" }: PropertyFormProps) {
       if (!publicUrl) {
         throw new Error("Could not retrieve public URL for uploaded image.")
       }
+
+      console.log("Final Public URL:", publicUrl)
 
       // 6. Update form state (IMMEDIATELY replace base64 with URL)
       const newUrls = [...imageUrls, publicUrl]

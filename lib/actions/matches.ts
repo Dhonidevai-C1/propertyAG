@@ -31,6 +31,9 @@ export async function getMatches(filters: MatchFilters = {}): Promise<MatchWithD
 
   if (filters.minScore) {
     query = query.gte('score', filters.minScore)
+  } else {
+    // Default to 50% as requested
+    query = query.gte('score', 50)
   }
   if (filters.status && filters.status !== 'All' && filters.status !== 'all') {
     query = query.eq('status', filters.status.toLowerCase())
@@ -149,7 +152,8 @@ export async function getDashboardStats() {
       .from('matches')
       .select('id', { count: 'exact', head: true })
       .eq('agency_id', profile.agency_id)
-      .gte('matched_at', weekStart),
+      .gte('matched_at', weekStart)
+      .gte('score', 50),
     supabase
       .from('clients')
       .select('id', { count: 'exact', head: true })

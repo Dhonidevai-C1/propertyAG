@@ -28,6 +28,18 @@ export async function createProperty(formData: PropertyFormValues) {
 
   if (error) return { error: error.message }
   
+  // Record activity
+  await supabase
+    .from('activities')
+    .insert({
+      agency_id: profile.agency_id,
+      user_id: profile.id,
+      action_type: 'upload',
+      entity_type: 'property',
+      entity_id: data.id,
+      metadata: { title: data.title }
+    })
+
   revalidatePath('/properties')
   return { data: data as Property }
 }
@@ -45,6 +57,18 @@ export async function updateProperty(id: string, formData: Partial<PropertyFormV
 
   if (error) return { error: error.message }
   
+  // Record activity
+  await supabase
+    .from('activities')
+    .insert({
+      agency_id: profile.agency_id,
+      user_id: profile.id,
+      action_type: 'update',
+      entity_type: 'property',
+      entity_id: data.id,
+      metadata: { title: data.title }
+    })
+
   revalidatePath('/properties')
   revalidatePath(`/properties/${id}`)
   return { data: data as Property }
@@ -59,7 +83,7 @@ export async function deleteProperty(id: string) {
   // Only admin or creator can delete
   const { data: property, error: fetchError } = await supabase
     .from('properties')
-    .select('created_by, image_urls, cover_image_url')
+    .select('title, created_by, image_urls, cover_image_url')
     .eq('id', id)
     .single()
 
@@ -101,6 +125,18 @@ export async function deleteProperty(id: string) {
 
   if (error) return { error: error.message }
   
+  // Record activity
+  await supabaseAdmin
+    .from('activities')
+    .insert({
+      agency_id: profile.agency_id,
+      user_id: profile.id,
+      action_type: 'delete',
+      entity_type: 'property',
+      entity_id: id,
+      metadata: { title: property.title }
+    })
+
   revalidatePath('/properties')
   return { data: { success: true } }
 }

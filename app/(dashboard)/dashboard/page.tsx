@@ -18,10 +18,31 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { getDashboardStats, getRecentNotifications } from "@/lib/actions/matches"
+import { getRecentActivities, Activity } from "@/lib/actions/activities"
 import { getProperties } from "@/lib/actions/properties"
 import { requireProfile } from "@/lib/auth/get-session"
 import { Notification } from "@/lib/types/database"
 import { formatRelativeTime, formatPrice } from "@/lib/utils/format"
+
+function activityIcon(type: string) {
+  const map: Record<string, typeof Building2> = {
+    upload: UserPlus,
+    update: Building2,
+    delete: Clock,
+    match: Sparkles,
+  }
+  return map[type] ?? Clock
+}
+
+function activityColor(type: string) {
+  const map: Record<string, string> = {
+    upload: "bg-emerald-100 text-emerald-600",
+    update: "bg-blue-100 text-blue-600",
+    delete: "bg-red-100 text-red-600",
+    match: "bg-amber-100 text-amber-600",
+  }
+  return map[type] ?? "bg-slate-100 text-slate-600"
+}
 
 function notificationIcon(type: string) {
   const map: Record<string, typeof Building2> = {
@@ -74,10 +95,11 @@ const quickActions = [
 ]
 
 export default async function DashboardPage() {
-  const [profile, stats, notifications, recentProperties] = await Promise.all([
+  const [profile, stats, notifications, recentActivities, recentProperties] = await Promise.all([
     requireProfile(),
     getDashboardStats(),
-    getRecentNotifications(6),
+    getRecentNotifications(4),
+    getRecentActivities(8),
     getProperties({ limit: 3 } as any),
   ])
 
@@ -161,32 +183,38 @@ export default async function DashboardPage() {
             </Link>
           </div>
           <Card className="border-slate-100 shadow-sm rounded-2xl overflow-hidden">
-            {notifications.length > 0 ? (
+            {recentActivities.length > 0 ? (
               <div className="divide-y divide-slate-50">
-                {(notifications as Notification[]).map(n => {
-                  const Icon = notificationIcon(n.type)
+                {recentActivities.map(activity => {
+                  const Icon = activityIcon(activity.action_type)
                   const href =
-                    n.reference_type === "client" ? `/clients/${n.reference_id}` :
-                      n.reference_type === "property" ? `/properties/${n.reference_id}` :
-                        n.reference_type === "match" ? `/matches/${n.reference_id}` :
-                          "/notifications"
+                    activity.entity_type === "client" ? `/clients/${activity.entity_id}` :
+                      activity.entity_type === "property" ? `/properties/${activity.entity_id}` :
+                        activity.entity_type === "match" ? `/matches/${activity.entity_id}` :
+                          "/dashboard"
+                  
+                  const actionText = 
+                    activity.action_type === 'upload' ? 'added new' :
+                    activity.action_type === 'update' ? 'updated' :
+                    activity.action_type === 'delete' ? 'removed' : 'found match for'
+
                   return (
-                    <Link key={n.id} href={href}
+                    <Link key={activity.id} href={href}
                       className="p-4 flex items-center gap-3 hover:bg-slate-50 transition-colors group"
                     >
-                      <div className={cn("w-9 h-9 rounded-full flex items-center justify-center shrink-0", notificationColor(n.type))}>
+                      <div className={cn("w-9 h-9 rounded-full flex items-center justify-center shrink-0", activityColor(activity.action_type))}>
                         <Icon className="w-4 h-4" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className={cn(
-                          "text-sm truncate",
-                          n.is_read ? "text-slate-600 font-medium" : "text-slate-900 font-bold"
-                        )}>
-                          {n.message}
+                        <p className="text-sm text-slate-700">
+                          <span className="font-bold text-slate-900">{activity.profiles?.full_name}</span>
+                          {" "}{actionText}{" "}
+                          <span className="font-medium text-slate-600">
+                            {activity.metadata?.title || activity.entity_type}
+                          </span>
                         </p>
-                        <p className="text-xs text-slate-400 mt-0.5">{formatRelativeTime(n.created_at)}</p>
+                        <p className="text-xs text-slate-400 mt-0.5">{formatRelativeTime(activity.created_at)}</p>
                       </div>
-                      {!n.is_read && <span className="w-2 h-2 bg-emerald-500 rounded-full shrink-0" />}
                       <ArrowRight className="w-4 h-4 text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
                     </Link>
                   )

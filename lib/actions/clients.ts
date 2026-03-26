@@ -59,6 +59,18 @@ export async function createClient(formData: ClientFormValues) {
     reference_type: 'client'
   })
 
+  // Record activity
+  await supabase
+    .from('activities')
+    .insert({
+      agency_id: profile.agency_id,
+      user_id: profile.id,
+      action_type: 'upload',
+      entity_type: 'client',
+      entity_id: client.id,
+      metadata: { title: client.full_name }
+    })
+
   revalidatePath('/clients')
   return { data: client as Client }
 }
@@ -76,6 +88,18 @@ export async function updateClient(id: string, formData: Partial<ClientFormValue
 
   if (error) return { error: error.message }
   
+  // Record activity
+  await supabase
+    .from('activities')
+    .insert({
+      agency_id: profile.agency_id,
+      user_id: profile.id,
+      action_type: 'update',
+      entity_type: 'client',
+      entity_id: client.id,
+      metadata: { title: client.full_name }
+    })
+
   revalidatePath('/clients')
   revalidatePath(`/clients/${id}`)
   return { data: client as Client }
@@ -93,6 +117,18 @@ export async function deleteClient(id: string) {
     .match({ id, agency_id: profile.agency_id })
 
   if (error) return { error: error.message }
+
+  // Record activity
+  await supabaseAdmin
+    .from('activities')
+    .insert({
+      agency_id: profile.agency_id,
+      user_id: profile.id,
+      action_type: 'delete',
+      entity_type: 'client',
+      entity_id: id,
+      metadata: { title: 'Client removed' } // In deleteClient, we don't fetch full_name first, using generic label
+    })
 
   // Dismiss any related matches
   await supabaseAdmin

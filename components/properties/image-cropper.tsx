@@ -4,12 +4,12 @@ import React, { useState, useCallback } from "react"
 import Cropper from "react-easy-crop"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
-import { RotateCw, ZoomIn } from "lucide-react"
+import { RotateCw, ZoomIn, RotateCcw } from "lucide-react"
 import { toast } from "sonner"
 
 interface ImageCropperProps {
   imageSrc: string
-  onCropComplete: (croppedBlob: Blob) => void
+  onCropComplete: (base64: string) => void
   onCancel: () => void
 }
 
@@ -29,7 +29,7 @@ async function compressAndCropImage(
   imageSrc: string,
   pixelCrop: { x: number; y: number; width: number; height: number },
   rotation = 0
-): Promise<Blob> {
+): Promise<string> {
   const image = await createImage(imageSrc)
   const canvas = document.createElement('canvas')
   const ctx = canvas.getContext('2d')
@@ -75,14 +75,17 @@ async function compressAndCropImage(
           reject(new Error('Canvas is empty'))
           return
         }
-        // If file > 250kb, warn user but technically we used 0.7 quality to target ~200kb
-        if (blob.size > 250 * 1024) {
-          console.warn("Image slightly over 200kb, attempting slightly lower quality if needed.")
+        
+        // Convert to base64 for preview/storage consistency in this prototype
+        const reader = new FileReader()
+        reader.onloadend = () => {
+          resolve(reader.result as string)
         }
-        resolve(blob)
+        reader.onerror = reject
+        reader.readAsDataURL(blob)
       },
       'image/jpeg',
-      0.7
+      0.6 // Slightly lower quality to ensure < 1MB
     )
   })
 }
@@ -102,13 +105,17 @@ export function ImageCropperDialog({ imageSrc, onCropComplete, onCancel }: Image
     if (!croppedAreaPixels) return
     setIsProcessing(true)
     try {
-      const croppedBlob = await compressAndCropImage(imageSrc, croppedAreaPixels, rotation)
-      onCropComplete(croppedBlob)
+      const base64 = await compressAndCropImage(imageSrc, croppedAreaPixels, rotation)
+      onCropComplete(base64)
     } catch (e) {
       toast.error("Failed to crop image")
     } finally {
       setIsProcessing(false)
     }
+  }
+
+  const rotate = (dir: 'left' | 'right') => {
+    setRotation(prev => (prev + (dir === 'right' ? 90 : -90)) % 360)
   }
 
   return (
@@ -149,8 +156,18 @@ export function ImageCropperDialog({ imageSrc, onCropComplete, onCancel }: Image
               />
             </div>
             <div className="space-y-3">
-              <div className="flex items-center gap-2 text-slate-600 text-sm font-medium">
-                <RotateCw className="w-4 h-4" /> Rotation
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-slate-600 text-sm font-medium">
+                  <RotateCw className="w-4 h-4" /> Fine Rotation
+                </div>
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" className="h-8 px-2" onClick={() => rotate('left')}>
+                    <RotateCcw className="w-3.5 h-3.5 mr-1" /> -90°
+                  </Button>
+                  <Button variant="outline" size="sm" className="h-8 px-2" onClick={() => rotate('right')}>
+                    <RotateCw className="w-3.5 h-3.5 mr-1" /> +90°
+                  </Button>
+                </div>
               </div>
               <input
                 type="range"

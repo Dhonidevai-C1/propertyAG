@@ -170,25 +170,20 @@ export function PropertyForm({ initialData, mode = "add" }: PropertyFormProps) {
     const file = e.target.files?.[0]
     if (!file) return
 
-    setUploadingImage(true)
-    try {
-      // In a real app, you'd upload to Supabase Storage here
-      // For now, we'll simulate an upload and get a temporary URL
-      const reader = new FileReader()
-      reader.onloadend = () => {
-        const base64String = reader.result as string
-        const newUrls = [...imageUrls, base64String]
-        setValue("image_urls", newUrls, { shouldDirty: true })
-        if (!coverImageUrl) {
-          setValue("cover_image_url", base64String, { shouldDirty: true })
-        }
-      }
-      reader.readAsDataURL(file)
-    } catch (error) {
-      toast.error("Failed to upload image")
-    } finally {
-      setUploadingImage(false)
+    const reader = new FileReader()
+    reader.onloadend = () => {
+      setImageToCrop(reader.result as string)
     }
+    reader.readAsDataURL(file)
+  }
+
+  const handleCropComplete = (base64: string) => {
+    const newUrls = [...imageUrls, base64]
+    setValue("image_urls", newUrls, { shouldDirty: true })
+    if (!coverImageUrl) {
+      setValue("cover_image_url", base64, { shouldDirty: true })
+    }
+    setImageToCrop(null)
   }
 
   const removeImage = (urlToRemove: string) => {
@@ -581,6 +576,14 @@ export function PropertyForm({ initialData, mode = "add" }: PropertyFormProps) {
           </div>
         </div>
       </div>
+      
+      {imageToCrop && (
+        <ImageCropperDialog
+          imageSrc={imageToCrop}
+          onCropComplete={handleCropComplete}
+          onCancel={() => setImageToCrop(null)}
+        />
+      )}
     </form>
   )
 }

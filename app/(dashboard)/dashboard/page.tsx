@@ -188,6 +188,7 @@ export default async function DashboardPage() {
                 {recentActivities.map(activity => {
                   const Icon = activityIcon(activity.action_type)
                   const href =
+                    (activity.action_type === 'delete') ? null :
                     activity.entity_type === "client" ? `/clients/${activity.entity_id}` :
                       activity.entity_type === "property" ? `/properties/${activity.entity_id}` :
                         activity.entity_type === "match" ? `/matches/${activity.entity_id}` :
@@ -198,10 +199,8 @@ export default async function DashboardPage() {
                     activity.action_type === 'update' ? 'updated' :
                     activity.action_type === 'delete' ? 'removed' : 'found match for'
 
-                  return (
-                    <Link key={activity.id} href={href}
-                      className="p-4 flex items-center gap-3 hover:bg-slate-50 transition-colors group"
-                    >
+                  const content = (
+                    <div className="p-4 flex items-center gap-3 hover:bg-slate-50 transition-colors group">
                       <div className={cn("w-9 h-9 rounded-full flex items-center justify-center shrink-0", activityColor(activity.action_type))}>
                         <Icon className="w-4 h-4" />
                       </div>
@@ -215,7 +214,15 @@ export default async function DashboardPage() {
                         </p>
                         <p className="text-xs text-slate-400 mt-0.5">{formatRelativeTime(activity.created_at)}</p>
                       </div>
-                      <ArrowRight className="w-4 h-4 text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+                      {href && <ArrowRight className="w-4 h-4 text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />}
+                    </div>
+                  )
+
+                  if (!href) return <div key={activity.id}>{content}</div>
+
+                  return (
+                    <Link key={activity.id} href={href}>
+                      {content}
                     </Link>
                   )
                 })}

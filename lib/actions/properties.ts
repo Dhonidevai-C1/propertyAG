@@ -105,7 +105,6 @@ export async function deleteProperty(id: string) {
   return { data: { success: true } }
 }
 
-
 export async function updatePropertyStatus(id: string, status: PropertyStatus) {
   return updateProperty(id, { status } as any)
 }
@@ -117,7 +116,6 @@ export async function getProperty(id: string) {
     .from('properties')
     .select('*, profiles:created_by(full_name)')
     .eq('id', id)
-    .eq('is_deleted', false)
     .single()
 
   if (error) return null
@@ -154,6 +152,14 @@ export async function getProperties(filters: PropertyFilters) {
 
   if (filters.status && filters.status !== 'all') {
     query = query.eq('status', filters.status)
+  }
+
+  if (filters.listing_type && filters.listing_type !== 'all') {
+    query = query.eq('listing_type', filters.listing_type)
+  }
+
+  if (filters.approval_type && filters.approval_type !== 'all') {
+    query = query.eq('approval_type', filters.approval_type)
   }
 
   if (filters.bedrooms) {

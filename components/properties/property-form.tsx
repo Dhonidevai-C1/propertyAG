@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from "react"
+import React, { useState, useEffect } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import {
@@ -11,7 +11,10 @@ import {
   Loader2,
   AlertCircle,
   Building2,
-  Check
+  Check,
+  Star,
+  Zap,
+  ShieldCheck
 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
@@ -48,6 +51,16 @@ interface PropertyFormProps {
   mode?: "add" | "edit"
 }
 
+const AMENITIES_OPTIONS = [
+  "Swimming Pool", "Gym", "Clubhouse", "Park", "Security 24/7", 
+  "Power Backup", "Car Parking", "CCTV", "Lift", "Fire Safety",
+  "Gas Pipeline", "Jogging Track", "Intercom", "Maintenance Staff"
+]
+
+const APPROVAL_OPTIONS = ["JDA", "HBA", "Society", "90B", "Other"]
+
+const FACING_OPTIONS = ["North", "South", "East", "West", "North-East", "North-West", "South-East", "South-West"]
+
 export function PropertyForm({ initialData, mode = "add" }: PropertyFormProps) {
   const router = useRouter()
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -61,6 +74,7 @@ export function PropertyForm({ initialData, mode = "add" }: PropertyFormProps) {
     description: initialData?.description || "",
     property_type: initialData?.property_type || "apartment",
     status: initialData?.status || "available",
+    listing_type: initialData?.listing_type || "sale",
     price: initialData?.price || 0,
     price_negotiable: initialData?.price_negotiable ?? false,
     locality: initialData?.locality || "",
@@ -81,6 +95,16 @@ export function PropertyForm({ initialData, mode = "add" }: PropertyFormProps) {
     maintenance_charge: initialData?.maintenance_charge || 0,
     cover_image_url: initialData?.cover_image_url || "",
     image_urls: initialData?.image_urls || [],
+    // New fields
+    seller_name: initialData?.seller_name || "",
+    seller_phone: initialData?.seller_phone || "",
+    approval_type: initialData?.approval_type || "",
+    slug: initialData?.slug || "",
+    is_featured: initialData?.is_featured ?? false,
+    is_new: initialData?.is_new ?? true,
+    amenities: initialData?.amenities || [],
+    balconies: initialData?.balconies || 0,
+    google_maps_url: initialData?.google_maps_url || "",
   }
 
   const {
@@ -90,12 +114,14 @@ export function PropertyForm({ initialData, mode = "add" }: PropertyFormProps) {
     watch,
     formState: { errors, isDirty },
   } = useForm<PropertyFormValues>({
-    resolver: zodResolver(PropertyFormSchema),
-    defaultValues,
+    resolver: zodResolver(PropertyFormSchema) as any,
+    defaultValues: defaultValues as any,
   })
 
   const propertyTypeValue = watch("property_type")
   const statusValue = watch("status")
+  const listingTypeValue = watch("listing_type")
+  const approvalTypeValue = watch("approval_type")
   const areaUnitValue = watch("area_unit")
   const furnishingValue = watch("furnishing")
   const bedroomsValue = watch("bedrooms") || 0
@@ -103,6 +129,21 @@ export function PropertyForm({ initialData, mode = "add" }: PropertyFormProps) {
   const negotiableValue = watch("price_negotiable")
   const imageUrls = watch("image_urls") || []
   const coverImageUrl = watch("cover_image_url")
+  const isFeatured = watch("is_featured")
+  const isNew = watch("is_new")
+  const selectedAmenities = watch("amenities") || []
+
+  // Auto-generate slug from title if empty
+  const titleValue = watch("title")
+  useEffect(() => {
+    if (mode === "add" && titleValue && !watch("slug")) {
+      const generatedSlug = titleValue
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, "")
+      setValue("slug", generatedSlug)
+    }
+  }, [titleValue, setValue, mode])
 
   const onSubmit = async (data: PropertyFormValues) => {
     setIsSubmitting(true)
@@ -115,54 +156,34 @@ export function PropertyForm({ initialData, mode = "add" }: PropertyFormProps) {
         toast.error(result.error)
       } else {
         toast.success(mode === "edit" ? "Property updated successfully!" : "Property listed successfully!")
-        router.push(`/properties/${result.data?.id || ""}`)
+        router.push("/properties")
         router.refresh()
       }
     } catch (error) {
-      toast.error("Something went wrong. Please try again.")
+      toast.error("Something went wrong")
     } finally {
       setIsSubmitting(false)
     }
   }
 
-  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
-    const url = URL.createObjectURL(file)
-    setImageToCrop(url)
-    // Clear input so we can select same file again if aborted
-    e.target.value = ""
-  }
 
-  const handleCropComplete = async (croppedBlob: Blob) => {
-    setImageToCrop(null)
     setUploadingImage(true)
-    const formData = new FormData()
-    formData.append("file", croppedBlob, "upload.jpg")
-    if (initialData?.id) {
-      formData.append("propertyId", initialData.id)
-    }
-
     try {
-      const res = await fetch("/api/properties/upload", {
-        method: "POST",
-        body: formData,
-      })
-      const result = await res.json()
-
-      if (result.error) {
-        toast.error(result.error)
-      } else {
-        const uploadedUrl = result.url || result.urls?.[0]
-        if (!uploadedUrl) throw new Error("No URL returned")
-
-        const newUrls = [...imageUrls, uploadedUrl]
+      // In a real app, you'd upload to Supabase Storage here
+      // For now, we'll simulate an upload and get a temporary URL
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        const base64String = reader.result as string
+        const newUrls = [...imageUrls, base64String]
         setValue("image_urls", newUrls, { shouldDirty: true })
         if (!coverImageUrl) {
-          setValue("cover_image_url", uploadedUrl, { shouldDirty: true })
+          setValue("cover_image_url", base64String, { shouldDirty: true })
         }
-        toast.success("Image uploaded successfully")
       }
+      reader.readAsDataURL(file)
     } catch (error) {
       toast.error("Failed to upload image")
     } finally {
@@ -176,6 +197,13 @@ export function PropertyForm({ initialData, mode = "add" }: PropertyFormProps) {
     if (coverImageUrl === urlToRemove) {
       setValue("cover_image_url", newUrls[0] || "", { shouldDirty: true })
     }
+  }
+
+  const toggleAmenity = (amenity: string) => {
+    const next = selectedAmenities.includes(amenity)
+      ? selectedAmenities.filter(a => a !== amenity)
+      : [...selectedAmenities, amenity]
+    setValue("amenities", next, { shouldDirty: true })
   }
 
   const handleDiscard = () => {
@@ -192,7 +220,7 @@ export function PropertyForm({ initialData, mode = "add" }: PropertyFormProps) {
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit as any)} className="space-y-8">
+    <form onSubmit={handleSubmit(onSubmit as any)} className="space-y-8 pb-20">
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
         <div className="lg:col-span-3 space-y-6">
           <Section title="Basic Info">
@@ -208,9 +236,21 @@ export function PropertyForm({ initialData, mode = "add" }: PropertyFormProps) {
                 {errors.title && <p className="text-xs text-red-500">{errors.title.message}</p>}
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="grid gap-2">
-                  <Label htmlFor="property_type" className={cn(errors.property_type && "text-red-500")}>Property Type</Label>
+                  <Label htmlFor="listing_type">Listing Type</Label>
+                  <Select onValueChange={(v) => setValue("listing_type", v as any, { shouldDirty: true })} value={listingTypeValue}>
+                    <SelectTrigger className="bg-emerald-50 border-none font-bold text-emerald-700">
+                      <SelectValue placeholder="Sale/Rent" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-white">
+                      <SelectItem value="sale">For Sale</SelectItem>
+                      <SelectItem value="rent">For Rent</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="property_type">Property Type</Label>
                   <Select onValueChange={(v) => setValue("property_type", v as any, { shouldDirty: true })} value={propertyTypeValue}>
                     <SelectTrigger className={cn(errors.property_type && "border-red-500")}>
                       <SelectValue placeholder="Select type" />
@@ -225,14 +265,12 @@ export function PropertyForm({ initialData, mode = "add" }: PropertyFormProps) {
                       <SelectItem value="penthouse">Penthouse</SelectItem>
                     </SelectContent>
                   </Select>
-                  {errors.property_type && <p className="text-xs  text-red-500">{errors.property_type.message}</p>}
                 </div>
-
                 <div className="grid gap-2">
-                  <Label htmlFor="status" className={cn(errors.status && "text-red-500")}>Status</Label>
+                  <Label htmlFor="status">Status</Label>
                   <Select onValueChange={(v) => setValue("status", v as any, { shouldDirty: true })} value={statusValue}>
-                    <SelectTrigger className={cn(errors.status && "border-red-500")}>
-                      <SelectValue placeholder="Select status" />
+                    <SelectTrigger className="bg-slate-50 border-none font-bold text-slate-700">
+                      <SelectValue placeholder="Status" />
                     </SelectTrigger>
                     <SelectContent className="bg-white">
                       <SelectItem value="available">Available</SelectItem>
@@ -241,7 +279,6 @@ export function PropertyForm({ initialData, mode = "add" }: PropertyFormProps) {
                       <SelectItem value="rented">Rented</SelectItem>
                     </SelectContent>
                   </Select>
-                  {errors.status && <p className="text-xs text-red-500">{errors.status.message}</p>}
                 </div>
               </div>
 
@@ -252,136 +289,231 @@ export function PropertyForm({ initialData, mode = "add" }: PropertyFormProps) {
                   placeholder="Describe the property..."
                   rows={4}
                   {...register("description")}
-                  className={cn("resize-none", errors.description && "border-red-500")}
+                  className={cn("rounded-2xl bg-slate-50 border-transparent focus:bg-white transition-all", errors.description && "border-red-500")}
                 />
                 {errors.description && <p className="text-xs text-red-500">{errors.description.message}</p>}
               </div>
             </div>
           </Section>
 
-          <Section title="Location">
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="locality" className={cn(errors.locality && "text-red-500")}>Locality/Area</Label>
-                  <Input id="locality" {...register("locality")} className={cn(errors.locality && "border-red-500")} />
-                  {errors.locality && <p className="text-xs text-red-500">{errors.locality.message}</p>}
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="city" className={cn(errors.city && "text-red-500")}>City</Label>
-                  <Input id="city" {...register("city")} className={cn(errors.city && "border-red-500")} />
-                  {errors.city && <p className="text-xs text-red-500">{errors.city.message}</p>}
-                </div>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="address">Full Address (Optional)</Label>
-                  <Input id="address" {...register("address")} />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="pincode">Pincode</Label>
-                  <Input id="pincode" {...register("pincode")} />
-                </div>
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="road_info">Road Information</Label>
-                <Input id="road_info" placeholder="e.g. 40ft wide main road" {...register("road_info")} />
-              </div>
-            </div>
-          </Section>
-
           <Section title="Specifications">
             <div className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <NumberStepper
-                  label="BHK"
-                  value={watch("bhk") || 0}
-                  onChange={(val) => setValue("bhk", val, { shouldDirty: true })}
-                />
-                <NumberStepper
-                  label="Bedrooms"
-                  value={bedroomsValue}
-                  onChange={(val) => setValue("bedrooms", val, { shouldDirty: true })}
-                />
-                <NumberStepper
-                  label="Bathrooms"
-                  value={bathroomsValue}
-                  onChange={(val) => setValue("bathrooms", val, { shouldDirty: true })}
-                />
-              </div>
-
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="grid gap-2">
-                  <Label htmlFor="area_sqft" className={cn(errors.area_sqft && "text-red-500")}>Area</Label>
+                  <Label>Area & Measurement</Label>
                   <div className="flex gap-2">
                     <Input
-                      id="area_sqft"
                       type="number"
                       placeholder="Area"
                       {...register("area_sqft", { valueAsNumber: true })}
-                      className={cn("flex-1", errors.area_sqft && "border-red-500")}
+                      className="flex-1"
                     />
                     <Select onValueChange={(v) => setValue("area_unit", v as any, { shouldDirty: true })} value={areaUnitValue}>
-                      <SelectTrigger className="w-[110px]">
+                      <SelectTrigger className="w-28 bg-slate-50 border-none font-medium">
                         <SelectValue placeholder="Unit" />
                       </SelectTrigger>
                       <SelectContent className="bg-white">
-                        <SelectItem value="sqft">sq. ft</SelectItem>
-                        <SelectItem value="sqyard">sq. yard</SelectItem>
-                        <SelectItem value="sqm">sq. meter</SelectItem>
+                        <SelectItem value="sqft">Sq. Ft</SelectItem>
+                        <SelectItem value="sqyard">Sq. Yard</SelectItem>
+                        <SelectItem value="sqm">Sq. Meter</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
-                  {errors.area_sqft && <p className="text-xs text-red-500">{errors.area_sqft.message}</p>}
                 </div>
                 <div className="grid gap-2">
-                  <Label>Furnishing</Label>
+                  <Label htmlFor="road_info">Road Information</Label>
+                  <Input id="road_info" placeholder="e.g. 40ft wide road" {...register("road_info")} />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="bhk">BHK</Label>
+                  <Input id="bhk" type="number" {...register("bhk", { valueAsNumber: true })} />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="bedrooms">Bedrooms</Label>
+                  <Input id="bedrooms" type="number" {...register("bedrooms", { valueAsNumber: true })} />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="bathrooms">Bathrooms</Label>
+                  <Input id="bathrooms" type="number" {...register("bathrooms", { valueAsNumber: true })} />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="balconies">Balconies</Label>
+                  <Input id="balconies" type="number" {...register("balconies", { valueAsNumber: true })} />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="furnishing">Furnishing</Label>
                   <Select onValueChange={(v) => setValue("furnishing", v as any, { shouldDirty: true })} value={furnishingValue}>
-                    <SelectTrigger><SelectValue placeholder="Furnishing" /></SelectTrigger>
+                    <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
                     <SelectContent className="bg-white">
                       <SelectItem value="unfurnished">Unfurnished</SelectItem>
-                      <SelectItem value="semi_furnished">Semi-furnished</SelectItem>
-                      <SelectItem value="fully_furnished">Fully furnished</SelectItem>
+                      <SelectItem value="semi_furnished">Semi Furnished</SelectItem>
+                      <SelectItem value="fully_furnished">Fully Furnished</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t border-slate-50">
                 <div className="grid gap-2">
-                  <Label htmlFor="floor_number">Floor No.</Label>
-                  <Input id="floor_number" placeholder="e.g. 5" {...register("floor_number")} />
+                  <Label htmlFor="facing">Facing Direction</Label>
+                  <Select onValueChange={(v) => setValue("facing", v, { shouldDirty: true })} value={watch("facing") || ""}>
+                    <SelectTrigger><SelectValue placeholder="Select Facing" /></SelectTrigger>
+                    <SelectContent className="bg-white">
+                      {FACING_OPTIONS.map(opt => (
+                        <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="floor_number">Floor Number</Label>
+                  <Input id="floor_number" placeholder="e.g. 4th" {...register("floor_number")} />
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="total_floors">Total Floors</Label>
-                  <Input id="total_floors" placeholder="e.g. 12" {...register("total_floors")} />
+                  <Input id="total_floors" placeholder="e.g. 10" {...register("total_floors")} />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-slate-50 mt-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="approval_type">Approval Authority</Label>
+                  <Select onValueChange={(v) => setValue("approval_type", v, { shouldDirty: true })} value={approvalTypeValue}>
+                    <SelectTrigger className="bg-blue-50 border-none font-bold text-blue-700">
+                      <SelectValue placeholder="Select Authority" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-white font-bold">
+                      {APPROVAL_OPTIONS.map(opt => (
+                        <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="facing">Facing</Label>
-                  <Input id="facing" placeholder="e.g. East" {...register("facing")} />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="parking">Parking</Label>
-                  <Input id="parking" placeholder="e.g. 1 Covered" {...register("parking")} />
+                  <Label htmlFor="slug">Property Slug (URL)</Label>
+                  <Input id="slug" placeholder="e.g. luxury-3bhk-villa" {...register("slug")} />
                 </div>
               </div>
             </div>
           </Section>
 
-          <Section title="Pricing">
-            <div className="space-y-6">
-              <div className="flex flex-col md:flex-row gap-6">
-                <div className="grid gap-2 flex-1">
+          <Section title="Location">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <Label htmlFor="locality">Locality</Label>
+                <Input id="locality" placeholder="e.g. Mansarovar" {...register("locality")} />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="city">City</Label>
+                <Input id="city" placeholder="e.g. Jaipur" {...register("city")} />
+              </div>
+              <div className="grid gap-2 text-left">
+                <Label htmlFor="pincode">Pincode</Label>
+                <Input id="pincode" placeholder="e.g. 302001" {...register("pincode")} />
+              </div>
+              <div className="grid gap-2 md:col-span-2">
+                <Label htmlFor="address">Full Address</Label>
+                <Textarea id="address" placeholder="Complete property address..." rows={2} {...register("address")} />
+              </div>
+              <div className="grid gap-2 md:col-span-2">
+                <Label htmlFor="google_maps_url">Google Maps URL</Label>
+                <Input id="google_maps_url" placeholder="https://goo.gl/maps/..." {...register("google_maps_url")} />
+                <p className="text-[10px] text-slate-400 italic">Paste the link from Google Maps to help buyers find the exact location.</p>
+              </div>
+            </div>
+          </Section>
+
+          <Section title="Seller Details">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <Label htmlFor="seller_name">Seller Name</Label>
+                <Input id="seller_name" placeholder="Contact person name" {...register("seller_name")} defaultValue={initialData?.seller_name || ""} />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="seller_phone">Seller Phone</Label>
+                <Input id="seller_phone" placeholder="+91 XXXXX XXXXX" {...register("seller_phone")} defaultValue={initialData?.seller_phone || ""} />
+              </div>
+            </div>
+          </Section>
+
+          <Section title="Amenities">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              {AMENITIES_OPTIONS.map((item) => (
+                <button
+                  key={item}
+                  type="button"
+                  onClick={() => toggleAmenity(item)}
+                  className={cn(
+                    "flex items-center gap-2 px-3 py-2 rounded-xl border text-sm font-medium transition-all text-left",
+                    selectedAmenities.includes(item)
+                      ? "bg-emerald-50 border-emerald-200 text-emerald-700 shadow-sm"
+                      : "bg-white border-slate-100 text-slate-500 hover:border-slate-200 hover:bg-slate-50"
+                  )}
+                >
+                  <div className={cn(
+                    "w-4 h-4 rounded-full border flex items-center justify-center transition-colors",
+                    selectedAmenities.includes(item) ? "bg-emerald-500 border-emerald-500" : "border-slate-300"
+                  )}>
+                    {selectedAmenities.includes(item) && <Check className="w-2.5 h-2.5 text-white" />}
+                  </div>
+                  {item}
+                </button>
+              ))}
+            </div>
+          </Section>
+        </div>
+
+        <div className="lg:col-span-2">
+          <div className="sticky top-24 space-y-6">
+            <Section title="Status & Badges">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-100">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-orange-100 flex items-center justify-center">
+                      <Star className="w-4 h-4 text-orange-500 fill-orange-500" />
+                    </div>
+                    <div className="space-y-0.5">
+                      <Label className="text-sm font-bold text-slate-900">Featured Property</Label>
+                      <p className="text-[10px] text-slate-500">Show on the homepage</p>
+                    </div>
+                  </div>
+                  <Switch checked={isFeatured} onCheckedChange={(c) => setValue("is_featured", c, { shouldDirty: true })} />
+                </div>
+
+                <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-100">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center">
+                      <Zap className="w-4 h-4 text-blue-500 fill-blue-500" />
+                    </div>
+                    <div className="space-y-0.5">
+                      <Label className="text-sm font-bold text-slate-900">New Listing</Label>
+                      <p className="text-[10px] text-slate-500">Add 'NEW' badge icon</p>
+                    </div>
+                  </div>
+                  <Switch checked={isNew} onCheckedChange={(c) => setValue("is_new", c, { shouldDirty: true })} />
+                </div>
+              </div>
+            </Section>
+
+            <Section title="Pricing">
+              <div className="space-y-6">
+                <div className="grid gap-2">
                   <Label className={cn(errors.price && "text-red-500")}>Price (₹)</Label>
                   <Input
                     type="number"
                     placeholder="Total Price"
                     {...register("price", { valueAsNumber: true })}
-                    className={cn(errors.price && "border-red-500")}
+                    className={cn(errors.price && "border-red-500 h-12 text-lg font-bold text-emerald-600")}
                   />
-                  {errors.price && <p className="text-xs text-red-500">{errors.price.message}</p>}
                 </div>
-                <div className="grid gap-2 flex-1">
+                <div className="flex items-center gap-3">
+                  <Switch checked={negotiableValue} onCheckedChange={(checked) => setValue("price_negotiable", checked, { shouldDirty: true })} />
+                  <Label className="font-bold text-slate-700">Price negotiable</Label>
+                </div>
+                <div className="grid gap-2">
                   <Label htmlFor="maintenance_charge">Maintenance / Month (₹)</Label>
                   <Input
                     id="maintenance_charge"
@@ -391,16 +523,8 @@ export function PropertyForm({ initialData, mode = "add" }: PropertyFormProps) {
                   />
                 </div>
               </div>
-              <div className="flex items-center gap-3 pt-2">
-                <Switch checked={negotiableValue} onCheckedChange={(checked) => setValue("price_negotiable", checked, { shouldDirty: true })} />
-                <Label>Price negotiable</Label>
-              </div>
-            </div>
-          </Section>
-        </div>
+            </Section>
 
-        <div className="lg:col-span-2">
-          <div className="sticky top-24 space-y-6">
             <Section title="Property Images">
               <div className="space-y-4">
                 <div className="relative border-2 border-dashed border-slate-200 rounded-xl p-8 bg-slate-50 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-slate-100 transition-colors">
@@ -425,12 +549,7 @@ export function PropertyForm({ initialData, mode = "add" }: PropertyFormProps) {
                   <div className="grid grid-cols-2 gap-3 mt-4">
                     {imageUrls.map((url, i) => (
                       <div key={url} className="aspect-square rounded-lg relative overflow-hidden group border border-slate-200 shadow-sm">
-                        <Image
-                          src={url}
-                          alt={`Property ${i + 1}`}
-                          fill
-                          className="object-cover"
-                        />
+                        <Image src={url} alt={`Property ${i + 1}`} fill className="object-cover" />
                         <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                           <button
                             type="button"
@@ -441,22 +560,12 @@ export function PropertyForm({ initialData, mode = "add" }: PropertyFormProps) {
                             )}
                             title="Set as cover image"
                           >
-                            {coverImageUrl === url ? <Check className="w-4 h-4" /> : <Building2 className="w-4 h-4" />}
+                            <Check className="w-4 h-4" />
                           </button>
-                          <button
-                            type="button"
-                            onClick={() => removeImage(url)}
-                            className="bg-white rounded-full p-2 text-slate-600 hover:text-red-500 transition-colors"
-                            title="Remove image"
-                          >
+                          <button type="button" onClick={() => removeImage(url)} className="bg-white rounded-full p-2 text-slate-600 hover:text-red-500 transition-colors">
                             <X className="w-4 h-4" />
                           </button>
                         </div>
-                        {coverImageUrl === url && (
-                          <div className="absolute top-2 left-2 bg-emerald-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm">
-                            COVER
-                          </div>
-                        )}
                       </div>
                     ))}
                   </div>
@@ -465,76 +574,25 @@ export function PropertyForm({ initialData, mode = "add" }: PropertyFormProps) {
             </Section>
 
             <div className="flex flex-col gap-3">
-              <Button type="submit" disabled={isSubmitting || uploadingImage} className="bg-emerald-500 hover:bg-emerald-600 text-white border-none h-11 text-base font-semibold rounded-lg shadow-sm">
-                {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : mode === "edit" ? "Save Changes" : "Publish Property"}
-              </Button>
-              <Button type="button" variant="ghost" className="text-slate-600 hover:bg-slate-50 rounded-lg" onClick={handleDiscard}>
-                {mode === "edit" ? "Discard changes" : "Cancel"}
+              <Button type="submit" disabled={isSubmitting || uploadingImage} className="bg-emerald-500 hover:bg-emerald-600 text-white border-none h-12 text-base font-bold rounded-xl shadow-lg shadow-emerald-100">
+                {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : mode === "edit" ? "Save Changes" : "Publish Property →"}
               </Button>
             </div>
           </div>
         </div>
       </div>
-
-      <Dialog open={isDiscardDialogOpen} onOpenChange={setIsDiscardDialogOpen}>
-        <DialogContent className="bg-white rounded-2xl max-w-[400px]">
-          <DialogHeader>
-            <div className="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center mb-4">
-              <AlertCircle className="w-6 h-6 text-red-500" />
-            </div>
-            <DialogTitle className="text-xl font-bold text-slate-900">Discard unsaved changes?</DialogTitle>
-            <DialogDescription className="text-slate-500 pt-1">
-              Your edits will not be saved. This action cannot be undone.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="flex gap-3 sm:justify-start pt-4">
-            <Button variant="outline" className="flex-1 border-slate-200 rounded-xl h-10" onClick={() => setIsDiscardDialogOpen(false)}>
-              Keep editing
-            </Button>
-            <Button className="flex-1 bg-red-500 hover:bg-red-600 text-white border-none rounded-xl h-10" onClick={confirmDiscard}>
-              Discard
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {imageToCrop && (
-        <ImageCropperDialog
-          imageSrc={imageToCrop}
-          onCropComplete={handleCropComplete}
-          onCancel={() => setImageToCrop(null)}
-        />
-      )}
     </form>
   )
 }
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <Card className="p-6 border-slate-100 shadow-sm rounded-xl bg-white">
-      <h3 className="text-lg font-bold text-slate-900 mb-6">{title}</h3>
+    <Card className="p-6 border-slate-100 shadow-sm rounded-3xl bg-white overflow-hidden">
+      <h3 className="text-lg font-bold text-slate-900 mb-6 flex items-center gap-2">
+        <div className="w-1.5 h-6 bg-emerald-500 rounded-full" />
+        {title}
+      </h3>
       {children}
     </Card>
-  )
-}
-
-function NumberStepper({
-  label,
-  value,
-  onChange
-}: {
-  label: string;
-  value: number;
-  onChange: (val: number) => void;
-}) {
-  return (
-    <div className="space-y-2">
-      <Label className="text-sm font-medium">{label}</Label>
-      <div className="flex items-center gap-1 bg-slate-50 border border-slate-200 rounded-lg p-1 w-fit">
-        <button type="button" onClick={() => onChange(Math.max(0, value - 1))} className="w-8 h-8 flex items-center justify-center rounded-md hover:bg-white text-slate-500 transition-colors"><Minus className="w-4 h-4" /></button>
-        <div className="min-w-10 text-center font-bold text-slate-900">{value}</div>
-        <button type="button" onClick={() => onChange(Math.min(20, value + 1))} className="w-8 h-8 flex items-center justify-center rounded-md hover:bg-white text-slate-500 transition-colors"><Plus className="w-4 h-4" /></button>
-      </div>
-    </div>
   )
 }

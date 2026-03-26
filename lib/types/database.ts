@@ -123,6 +123,16 @@ export interface Property {
   image_urls: string[]
   cover_image_url: string | null
   is_deleted: boolean
+  seller_name: string | null
+  seller_phone: string | null
+  approval_type: string | null
+  slug: string | null
+  listing_type: 'sale' | 'rent'
+  is_featured: boolean
+  is_new: boolean
+  amenities: string[]
+  balconies: number | null
+  google_maps_url: string | null
   created_at: string
   updated_at: string
 }

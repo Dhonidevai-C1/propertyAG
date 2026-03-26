@@ -15,6 +15,12 @@ import {
   Layers,
   IndianRupee,
   Hash,
+  Phone,
+  User,
+  CheckCircle2,
+  Star,
+  Zap,
+  Navigation,
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -50,7 +56,9 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
 
   const leftDetails = [
     { label: "Property type", value: property.property_type.replace(/_/g, " ") },
+    { label: "Listing type", value: property.listing_type },
     { label: "Status", value: property.status },
+    { label: "Approval Authority", value: property.approval_type || "General" },
     { label: "BHK", value: `${property.bhk ?? property.bedrooms} BHK` },
     { label: "Bedrooms", value: String(property.bedrooms) },
     { label: "Bathrooms", value: String(property.bathrooms) },
@@ -68,7 +76,6 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
       : null,
     { label: "Price negotiable", value: property.price_negotiable ? "Yes" : "No" },
     { label: "Listed on", value: new Date(property.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) },
-    { label: "Last updated", value: new Date(property.updated_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) },
   ].filter(Boolean) as { label: string; value: string }[]
 
   return (
@@ -104,6 +111,16 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
             )}>
               {property.status}
             </Badge>
+            {property.is_new && (
+              <Badge className="bg-blue-500 text-white border-none gap-1 font-black px-2">
+                <Zap className="w-3 h-3 fill-white" /> NEW
+              </Badge>
+            )}
+            {property.is_featured && (
+              <Badge className="bg-orange-400 text-white border-none gap-1 font-black px-2">
+                <Star className="w-3 h-3 fill-white" /> FEATURED
+              </Badge>
+            )}
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -131,6 +148,10 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
           {/* Price + stat row */}
           <Card className="p-6 border-slate-100 shadow-sm rounded-xl bg-white space-y-6 print:shadow-none print:border-none print:p-0">
             <div className="space-y-2 print:hidden">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-[10px] bg-slate-100 text-slate-500 font-black px-2 py-0.5 rounded-full uppercase tracking-widest">{property.listing_type}</span>
+                {property.approval_type && <span className="text-[10px] bg-emerald-50 text-emerald-600 font-bold px-2 py-0.5 rounded-full uppercase">✓ {property.approval_type}</span>}
+              </div>
               <div className="flex items-baseline gap-3 flex-wrap">
                 <p className="text-3xl font-bold text-slate-900 tracking-tight">{formatCurrency(property.price)}</p>
                 {property.price_negotiable && (
@@ -149,6 +170,17 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
                     {property.address}
                   </div>
                 )}
+                {property.google_maps_url && (
+                  <a 
+                    href={property.google_maps_url} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1.5 text-emerald-600 font-bold hover:underline"
+                  >
+                    <Navigation className="w-3.5 h-3.5 fill-emerald-600/10" />
+                    View on Google Maps
+                  </a>
+                )}
               </div>
             </div>
 
@@ -161,6 +193,9 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
               <StatTile icon={<BedDouble className="w-4 h-4" />} label="BHK" value={`${property.bhk ?? property.bedrooms} BHK`} />
               <StatTile icon={<Bath className="w-4 h-4" />} label="Bathrooms" value={String(property.bathrooms)} />
+              {property.balconies !== null && property.balconies > 0 && (
+                <StatTile icon={<Zap className="w-4 h-4" />} label="Balconies" value={String(property.balconies)} />
+              )}
               <StatTile icon={<Maximize2 className="w-4 h-4" />} label="Area" value={property.area_sqft ? `${Number(property.area_sqft).toLocaleString()} ${property.area_unit.replace('sq', 'sq. ')}` : "—"} />
               <StatTile icon={<Armchair className="w-4 h-4" />} label="Furnishing" value={(property.furnishing || "Unfurnished").replace(/_/g, " ")} capitalize />
               {property.facing && <StatTile icon={<Compass className="w-4 h-4" />} label="Facing" value={property.facing} />}
@@ -177,6 +212,23 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
             <Card className="p-6 border-slate-100 shadow-sm rounded-xl bg-white print:shadow-none print:border-none print:p-0">
               <h3 className="text-lg font-bold text-slate-900 mb-4">About this property</h3>
               <p className="text-slate-600 leading-relaxed text-sm whitespace-pre-wrap">{property.description}</p>
+            </Card>
+          )}
+
+          {/* Amenities */}
+          {property.amenities && property.amenities.length > 0 && (
+            <Card className="p-6 border-slate-100 shadow-sm rounded-xl bg-white">
+              <h3 className="text-lg font-bold text-slate-900 mb-6">Amenities</h3>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                {property.amenities.map((item, idx) => (
+                  <div key={idx} className="flex items-center gap-3 text-slate-600">
+                    <div className="w-6 h-6 rounded-full bg-emerald-50 flex items-center justify-center shrink-0">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                    </div>
+                    <span className="text-sm font-medium">{item}</span>
+                  </div>
+                ))}
+              </div>
             </Card>
           )}
 
@@ -206,6 +258,40 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
 
         {/* Right Column */}
         <div className="lg:col-span-4 space-y-6 print:hidden">
+          {/* Seller Details */}
+          {(property.seller_name || property.seller_phone) && (
+            <Card className="p-6 border-slate-100 shadow-sm rounded-2xl bg-slate-900 text-white space-y-4">
+              <h3 className="text-sm font-black uppercase tracking-widest text-emerald-400">Seller Contact</h3>
+              <div className="space-y-4">
+                {property.seller_name && (
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center">
+                      <User className="w-5 h-5 text-emerald-400" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-400">Owner/Agent</p>
+                      <p className="font-bold text-lg">{property.seller_name}</p>
+                    </div>
+                  </div>
+                )}
+                {property.seller_phone && (
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center">
+                      <Phone className="w-5 h-5 text-emerald-400" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-400">Phone Number</p>
+                      <p className="font-bold text-lg">{property.seller_phone}</p>
+                    </div>
+                  </div>
+                )}
+                <Button className="w-full bg-emerald-500 hover:bg-emerald-600 text-white border-none h-12 font-bold rounded-xl mt-2">
+                  <Phone className="w-4 h-4 mr-2" /> Call Seller Now
+                </Button>
+              </div>
+            </Card>
+          )}
+
           {/* Quick Actions */}
           <Card className="p-6 border-slate-100 shadow-sm rounded-xl bg-white space-y-3">
             <Link href={`/properties/${property.id}/edit`} className={cn(buttonVariants({ variant: "default" }), "w-full bg-emerald-500 hover:bg-emerald-600 text-white border-none h-11 text-base font-semibold rounded-xl")}>

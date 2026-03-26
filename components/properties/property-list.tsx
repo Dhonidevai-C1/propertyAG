@@ -102,7 +102,7 @@ export function PropertyList({ initialProperties }: PropertyListProps) {
       'Bedrooms': p.bedrooms,
       'Bathrooms': p.bathrooms,
       'Area': p.area_sqft || 0,
-      'Area Unit': p.area_unit,
+      'Area Unit': p.area_unit || 'sqft',
       'Amenities': (p.amenities || []).join(', '),
       'Is Featured': p.is_featured ? 'Yes' : 'No',
       'Is New': p.is_new ? 'Yes' : 'No',

@@ -181,38 +181,55 @@ export function PropertyForm({ initialData, mode = "add" }: PropertyFormProps) {
   const handleCropComplete = async (base64: string) => {
     setUploadingImage(true)
     try {
-      // 1. Convert base64 to Blob
+      // 1. Validate Base64
+      if (!base64.startsWith('data:image')) {
+        throw new Error("Invalid image data format.")
+      }
+
+      // 2. Convert base64 to Blob
       const res = await fetch(base64)
       const blob = await res.blob()
       
-      // 2. Prepare file name
+      // 3. Prepare file name & path
       const fileExt = blob.type.split('/')[1] || 'jpg'
       const fileName = `${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`
       const filePath = `property-images/${fileName}`
 
-      // 3. Upload to Supabase Storage
+      // 4. Upload to Supabase Storage
       const supabase = createClient()
-      const { data, error } = await supabase.storage
+      const { data: uploadData, error: uploadError } = await supabase.storage
         .from('property-images')
-        .upload(filePath, blob)
+        .upload(filePath, blob, {
+          cacheControl: '3600',
+          upsert: false
+        })
 
-      if (error) throw error
+      if (uploadError) {
+        console.error("Supabase Upload Error:", uploadError)
+        throw new Error(`Storage upload failed: ${uploadError.message}`)
+      }
 
-      // 4. Get Public URL
+      // 5. Get Public URL
       const { data: { publicUrl } } = supabase.storage
         .from('property-images')
         .getPublicUrl(filePath)
 
-      // 5. Update form state
+      if (!publicUrl) {
+        throw new Error("Could not retrieve public URL for uploaded image.")
+      }
+
+      // 6. Update form state (IMMEDIATELY replace base64 with URL)
       const newUrls = [...imageUrls, publicUrl]
       setValue("image_urls", newUrls, { shouldDirty: true })
-      if (!coverImageUrl) {
+      
+      if (!coverImageUrl || coverImageUrl.startsWith('data:image')) {
         setValue("cover_image_url", publicUrl, { shouldDirty: true })
       }
-      toast.success("Image uploaded successfully")
+
+      toast.success("Image uploaded to cloud storage")
     } catch (error: any) {
-      console.error("Upload error:", error)
-      toast.error(`Upload failed: ${error.message}`)
+      console.error("Critical Upload Error:", error)
+      toast.error(error.message || "Failed to process image")
     } finally {
       setUploadingImage(false)
       setImageToCrop(null)

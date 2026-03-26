@@ -16,7 +16,17 @@ import { Button } from "@/components/ui/button"
 
 export default function LandingPage() {
   const router = useRouter()
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const [scrolled, setScrolled] = useState(false)
+
+  // Handle accidental landings with auth code from Supabase
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const code = params.get('code')
+    if (code) {
+      router.replace(`/auth/callback?code=${code}`)
+    }
+  }, [router])
 
   // Handle Supabase auth redirect
   useEffect(() => {

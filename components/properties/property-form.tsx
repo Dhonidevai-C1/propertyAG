@@ -19,6 +19,7 @@ import {
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import Image from "next/image"
+import { createClient } from "@/lib/supabase/client"
 
 import { ImageCropperDialog } from "@/components/properties/image-cropper"
 import { Button } from "@/components/ui/button"
@@ -177,13 +178,45 @@ export function PropertyForm({ initialData, mode = "add" }: PropertyFormProps) {
     reader.readAsDataURL(file)
   }
 
-  const handleCropComplete = (base64: string) => {
-    const newUrls = [...imageUrls, base64]
-    setValue("image_urls", newUrls, { shouldDirty: true })
-    if (!coverImageUrl) {
-      setValue("cover_image_url", base64, { shouldDirty: true })
+  const handleCropComplete = async (base64: string) => {
+    setUploadingImage(true)
+    try {
+      // 1. Convert base64 to Blob
+      const res = await fetch(base64)
+      const blob = await res.blob()
+      
+      // 2. Prepare file name
+      const fileExt = blob.type.split('/')[1] || 'jpg'
+      const fileName = `${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`
+      const filePath = `property-images/${fileName}`
+
+      // 3. Upload to Supabase Storage
+      const supabase = createClient()
+      const { data, error } = await supabase.storage
+        .from('property-images')
+        .upload(filePath, blob)
+
+      if (error) throw error
+
+      // 4. Get Public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('property-images')
+        .getPublicUrl(filePath)
+
+      // 5. Update form state
+      const newUrls = [...imageUrls, publicUrl]
+      setValue("image_urls", newUrls, { shouldDirty: true })
+      if (!coverImageUrl) {
+        setValue("cover_image_url", publicUrl, { shouldDirty: true })
+      }
+      toast.success("Image uploaded successfully")
+    } catch (error: any) {
+      console.error("Upload error:", error)
+      toast.error(`Upload failed: ${error.message}`)
+    } finally {
+      setUploadingImage(false)
+      setImageToCrop(null)
     }
-    setImageToCrop(null)
   }
 
   const removeImage = (urlToRemove: string) => {

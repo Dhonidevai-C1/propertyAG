@@ -61,7 +61,7 @@ const agencySchema = z.object({
   rera_number: z.string().optional(),
 })
 
-type TabType = "Profile" | "Agency" | "Security" | "Notifications"
+type TabType = "Profile" | "Agency" | "Security"
 
 interface SettingsClientProps {
   initialProfile: Profile
@@ -122,7 +122,6 @@ export function SettingsClient({ initialProfile, initialAgency }: SettingsClient
     { id: "Profile" as TabType, label: "Profile", icon: User, dirty: profileForm.formState.isDirty },
     ...(isAdmin ? [{ id: "Agency" as TabType, label: "Agency", icon: Building2, dirty: agencyForm.formState.isDirty }] : []),
     { id: "Security" as TabType, label: "Security", icon: Lock, dirty: false },
-    { id: "Notifications" as TabType, label: "Notifications", icon: Bell, dirty: false },
   ]
 
   const initials = initialProfile.full_name
@@ -310,8 +309,8 @@ export function SettingsClient({ initialProfile, initialAgency }: SettingsClient
               <SecurityTab />
             )}
 
-            {activeTab === "Notifications" && (
-              <NotificationsTab />
+            {activeTab === "Security" && (
+              <SecurityTab />
             )}
           </div>
         </main>
@@ -404,55 +403,6 @@ function SecurityTab() {
           </div>
         </div>
       </div>
-    </Card>
-  )
-}
-
-function NotificationsTab() {
-  const [prefs, setPrefs] = useState({
-    newClient: true,
-    matchFound: true,
-    statusChange: true,
-    teamJoined: true,
-    weeklySummary: false,
-  })
-  const [dirty, setDirty] = useState(false)
-
-  const toggle = (key: keyof typeof prefs) => {
-    setPrefs(p => ({ ...p, [key]: !p[key] }))
-    setDirty(true)
-  }
-
-  const rows = [
-    { key: "newClient" as const, label: "New client added", desc: "When a team member adds a new client" },
-    { key: "matchFound" as const, label: "Match found", desc: "When the engine finds a property match" },
-    { key: "statusChange" as const, label: "Property status change", desc: "When a property is sold, rented or reserved" },
-    { key: "teamJoined" as const, label: "Team member joined", desc: "When an invite is accepted" },
-    { key: "weeklySummary" as const, label: "Weekly summary", desc: "Activity digest every Monday morning" },
-  ]
-
-  return (
-    <Card className="p-6 border-slate-100 shadow-sm rounded-3xl bg-white">
-      <div className="space-y-2">
-        {rows.map(row => (
-          <div key={row.key} className="flex items-center justify-between py-5 border-b border-slate-50 last:border-none">
-            <div className="space-y-0.5 pr-4">
-              <Label className="text-sm font-bold text-slate-800">{row.label}</Label>
-              <p className="text-xs text-slate-500 font-medium leading-relaxed">{row.desc}</p>
-            </div>
-            <Switch checked={prefs[row.key]} onCheckedChange={() => toggle(row.key)} className="data-[state=checked]:bg-emerald-500" />
-          </div>
-        ))}
-      </div>
-      {dirty && (
-        <div className="flex justify-end pt-6">
-          <Button onClick={() => { setDirty(false); toast.success("Notification preferences saved") }}
-            className="h-12 px-8 rounded-xl bg-emerald-500 hover:bg-emerald-600 font-bold text-white shadow-lg shadow-emerald-100"
-          >
-            Save preferences
-          </Button>
-        </div>
-      )}
     </Card>
   )
 }

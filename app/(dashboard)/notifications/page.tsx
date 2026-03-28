@@ -130,19 +130,6 @@ export default function NotificationsPage() {
     // No-op for now as matches/activities are in-sync with DB
   }
 
-  if (isLoading) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4 animate-in fade-in duration-500">
-        <div className="relative">
-          <div className="absolute inset-0 bg-emerald-100 rounded-full blur-xl opacity-20 animate-pulse" />
-          <Loader2 className="w-12 h-12 text-emerald-500 animate-spin relative z-10" />
-        </div>
-        <div className="space-y-1 text-center relative z-10">
-          <p className="text-slate-500 text-sm font-bold tracking-tight">Syncing your agency feed...</p>
-        </div>
-      </div>
-    )
-  }
 
   if (mergedItems.length === 0) {
     return (

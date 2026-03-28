@@ -13,6 +13,7 @@ import {
   X,
   ArrowRight,
   Inbox,
+  Loader2,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -131,32 +132,14 @@ export default function NotificationsPage() {
 
   if (isLoading) {
     return (
-      <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in duration-500">
-        <div className="flex items-center justify-between">
-          <Skeleton className="h-10 w-48 rounded-lg" />
-          <Skeleton className="h-10 w-32 rounded-lg" />
+      <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4 animate-in fade-in duration-500">
+        <div className="relative">
+          <div className="absolute inset-0 bg-emerald-100 rounded-full blur-xl opacity-20 animate-pulse" />
+          <Loader2 className="w-12 h-12 text-emerald-500 animate-spin relative z-10" />
         </div>
-        <div className="flex gap-8 border-b border-slate-100 pb-px">
-          <Skeleton className="h-6 w-16" />
-          <Skeleton className="h-6 w-32" />
-          <Skeleton className="h-6 w-24" />
+        <div className="space-y-1 text-center relative z-10">
+          <p className="text-slate-500 text-sm font-bold tracking-tight">Syncing your agency feed...</p>
         </div>
-        {[1, 2, 3].map(i => (
-          <div key={i} className="space-y-4 pt-4">
-            <Skeleton className="h-4 w-24 mb-2" />
-            <div className="bg-white rounded-2xl border border-slate-100 p-6 space-y-6 shadow-sm shadow-slate-200/50">
-              {[1, 2].map(j => (
-                <div key={j} className="flex gap-4">
-                  <Skeleton className="w-12 h-12 rounded-full shrink-0" />
-                  <div className="flex-1 space-y-2">
-                    <Skeleton className="h-4 w-1/3" />
-                    <Skeleton className="h-4 w-2/3" />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        ))}
       </div>
     )
   }

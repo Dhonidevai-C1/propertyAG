@@ -188,7 +188,7 @@ export function MatchList({ initialMatches, initialFilters }: MatchListProps) {
               Sort by
             </label>
             <Select value={sortBy} onValueChange={v => setSortBy(v ?? "Highest match")}>
-              <SelectTrigger className="h-11 rounded-xl bg-slate-50 border-transparent font-medium">
+              <SelectTrigger className="h-11 rounded-xl bg-slate-500 border-transparent font-medium">
                 <div className="flex items-center gap-2">
                   <ArrowUpDown className="w-3.5 h-3.5 text-slate-400" />
                   <SelectValue />

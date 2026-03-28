@@ -189,15 +189,15 @@ export default async function DashboardPage() {
                   const Icon = activityIcon(activity.action_type)
                   const href =
                     (activity.action_type === 'delete') ? null :
-                    activity.entity_type === "client" ? `/clients/${activity.entity_id}` :
-                      activity.entity_type === "property" ? `/properties/${activity.entity_id}` :
-                        activity.entity_type === "match" ? `/matches/${activity.entity_id}` :
-                          "/dashboard"
-                  
-                  const actionText = 
+                      activity.entity_type === "client" ? `/clients/${activity.entity_id}` :
+                        activity.entity_type === "property" ? `/properties/${activity.entity_id}` :
+                          activity.entity_type === "match" ? `/matches/${activity.entity_id}` :
+                            "/dashboard"
+
+                  const actionText =
                     activity.action_type === 'upload' ? 'added new' :
-                    activity.action_type === 'update' ? 'updated' :
-                    activity.action_type === 'delete' ? 'removed' : 'found match for'
+                      activity.action_type === 'update' ? 'updated' :
+                        activity.action_type === 'delete' ? 'removed' : 'found match for'
 
                   const content = (
                     <div className="p-4 flex items-center gap-3 hover:bg-slate-50 transition-colors group">

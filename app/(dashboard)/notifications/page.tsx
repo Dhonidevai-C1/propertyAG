@@ -65,7 +65,17 @@ export default function NotificationsPage() {
   const filteredItems = useMemo(() => {
     const tabType = TABS.find(t => t.label === activeTab)?.type
     if (!tabType) return mergedItems
-    return mergedItems.filter(item => (item as any).type === tabType)
+    
+    return mergedItems.filter(item => {
+      if (item.itemType === 'notification') {
+        return (item as any).type === tabType
+      } else {
+        const a = item as Activity
+        if (tabType === 'new_client') return a.action_type === 'upload' && a.entity_type === 'client'
+        if (tabType === 'match_found') return a.entity_type === 'match'
+        return false
+      }
+    })
   }, [mergedItems, activeTab])
 
   const groupedItems = useMemo(() => {
@@ -109,7 +119,7 @@ export default function NotificationsPage() {
     setNotifications(prev => prev.filter(n => n.id !== id))
   }
 
-  if (notifications.length === 0) {
+  if (mergedItems.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
         <div className="h-24 w-24 bg-slate-50 rounded-full flex items-center justify-center animate-in zoom-in-95">
@@ -117,7 +127,7 @@ export default function NotificationsPage() {
         </div>
         <div className="space-y-1 text-center">
           <h3 className="text-xl font-bold text-slate-800">You're all caught up!</h3>
-          <p className="text-slate-500 text-sm font-medium">No notifications to show.</p>
+          <p className="text-slate-500 text-sm font-medium">No notifications or activities to show.</p>
         </div>
       </div>
     )

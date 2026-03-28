@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useMemo } from "react"
+import React, { useMemo, useEffect } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import {
@@ -22,16 +22,17 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
+import { Skeleton } from "@/components/ui/skeleton"
 import { useNotifications } from "@/components/notifications/notification-provider"
 import { getRecentActivities, Activity } from "@/lib/actions/activities"
-import { Notification } from "@/lib/types/database"
+import { getMatches } from "@/lib/actions/matches"
+import { Notification, MatchWithDetails } from "@/lib/types/database"
 import { formatRelativeTime } from "@/lib/utils/format"
 
 const TABS = [
-  { label: "All", type: null },
-  { label: "New clients", type: "new_client" },
-  { label: "Matches", type: "match_found" },
-  { label: "System", type: "system" },
+  { label: "All", id: "all" },
+  { label: "Recent activities", id: "activities" },
+  { label: "Matches", id: "matches" },
 ]
 
 function dateGroup(createdAt: string): 'Today' | 'Yesterday' | 'Earlier this week' | 'Older' {
@@ -46,36 +47,52 @@ function dateGroup(createdAt: string): 'Today' | 'Yesterday' | 'Earlier this wee
 
 export default function NotificationsPage() {
   const router = useRouter()
-  const { notifications, setNotifications, unreadCount, markRead, markAllRead } = useNotifications()
-  const [activeTab, setActiveTab] = React.useState("All")
+  const { markRead, markAllRead } = useNotifications()
+  const [activeTab, setActiveTab] = React.useState("all")
   const [activities, setActivities] = React.useState<Activity[]>([])
+  const [matches, setMatches] = React.useState<MatchWithDetails[]>([])
+  const [isLoading, setIsLoading] = React.useState(true)
 
-  React.useEffect(() => {
-    getRecentActivities(20).then(setActivities)
+  useEffect(() => {
+    const fetchData = async () => {
+      setIsLoading(true)
+      try {
+        const [acts, matchData] = await Promise.all([
+          getRecentActivities(30),
+          getMatches({ minScore: 50 })
+        ])
+        setActivities(acts)
+        setMatches(matchData)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    fetchData()
   }, [])
 
   const mergedItems = useMemo(() => {
     const combined = [
-      ...notifications.map(n => ({ ...n, itemType: 'notification' as const })),
-      ...activities.map(a => ({ ...a, itemType: 'activity' as const }))
+      ...activities.map(a => ({ 
+        ...a, 
+        itemType: 'activity' as const,
+        sortDate: a.created_at 
+      })),
+      ...matches.map(m => ({ 
+        ...m, 
+        itemType: 'match_entry' as const,
+        sortDate: m.matched_at,
+        id: m.id,
+        created_at: m.matched_at
+      }))
     ]
-    return combined.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-  }, [notifications, activities])
+    return combined.sort((a, b) => new Date(b.sortDate).getTime() - new Date(a.sortDate).getTime())
+  }, [activities, matches])
 
   const filteredItems = useMemo(() => {
-    const tabType = TABS.find(t => t.label === activeTab)?.type
-    if (!tabType) return mergedItems
-    
-    return mergedItems.filter(item => {
-      if (item.itemType === 'notification') {
-        return (item as any).type === tabType
-      } else {
-        const a = item as Activity
-        if (tabType === 'new_client') return a.action_type === 'upload' && a.entity_type === 'client'
-        if (tabType === 'match_found') return a.entity_type === 'match'
-        return false
-      }
-    })
+    if (activeTab === "all") return mergedItems
+    if (activeTab === "activities") return mergedItems.filter(i => i.itemType === 'activity')
+    if (activeTab === "matches") return mergedItems.filter(i => i.itemType === 'match_entry')
+    return mergedItems
   }, [mergedItems, activeTab])
 
   const groupedItems = useMemo(() => {
@@ -86,25 +103,18 @@ export default function NotificationsPage() {
       Older: [],
     }
     filteredItems.forEach(item => {
-      const g = dateGroup(item.created_at)
+      const g = dateGroup(item.sortDate)
       groups[g].push(item)
     })
     return groups
   }, [filteredItems])
 
   const handleItemClick = async (item: any) => {
-    if (item.itemType === 'notification') {
-      const n = item as Notification
-      if (!n.is_read) await markRead(n.id)
-      const link =
-        n.reference_type === 'client' ? `/clients/${n.reference_id}` :
-        n.reference_type === 'property' ? `/properties/${n.reference_id}` :
-        n.reference_type === 'match' ? `/matches/${n.reference_id}` :
-        '/notifications'
-      router.push(link)
-    } else {
+    if (item.itemType === 'match_entry') {
+      router.push(`/matches/${item.id}`)
+    } else if (item.itemType === 'activity') {
       const a = item as Activity
-      if (a.action_type === 'delete') return // No link for deleted items
+      if (a.action_type === 'delete') return
       const link =
         a.entity_type === "client" ? `/clients/${a.entity_id}` :
         a.entity_type === "property" ? `/properties/${a.entity_id}` :
@@ -116,7 +126,39 @@ export default function NotificationsPage() {
 
   const dismiss = (id: string, e: React.MouseEvent) => {
     e.stopPropagation()
-    setNotifications(prev => prev.filter(n => n.id !== id))
+    // No-op for now as matches/activities are in-sync with DB
+  }
+
+  if (isLoading) {
+    return (
+      <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in duration-500">
+        <div className="flex items-center justify-between">
+          <Skeleton className="h-10 w-48 rounded-lg" />
+          <Skeleton className="h-10 w-32 rounded-lg" />
+        </div>
+        <div className="flex gap-8 border-b border-slate-100 pb-px">
+          <Skeleton className="h-6 w-16" />
+          <Skeleton className="h-6 w-32" />
+          <Skeleton className="h-6 w-24" />
+        </div>
+        {[1, 2, 3].map(i => (
+          <div key={i} className="space-y-4 pt-4">
+            <Skeleton className="h-4 w-24 mb-2" />
+            <div className="bg-white rounded-2xl border border-slate-100 p-6 space-y-6 shadow-sm shadow-slate-200/50">
+              {[1, 2].map(j => (
+                <div key={j} className="flex gap-4">
+                  <Skeleton className="w-12 h-12 rounded-full shrink-0" />
+                  <div className="flex-1 space-y-2">
+                    <Skeleton className="h-4 w-1/3" />
+                    <Skeleton className="h-4 w-2/3" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    )
   }
 
   if (mergedItems.length === 0) {
@@ -127,7 +169,7 @@ export default function NotificationsPage() {
         </div>
         <div className="space-y-1 text-center">
           <h3 className="text-xl font-bold text-slate-800">You're all caught up!</h3>
-          <p className="text-slate-500 text-sm font-medium">No notifications or activities to show.</p>
+          <p className="text-slate-500 text-sm font-medium">No recent activities or matches found.</p>
         </div>
       </div>
     )
@@ -152,11 +194,11 @@ export default function NotificationsPage() {
       {/* Tabs */}
       <div className="flex border-b border-slate-200 gap-8 overflow-x-auto no-scrollbar">
         {TABS.map(tab => {
-          const isActive = activeTab === tab.label
+          const isActive = activeTab === tab.id
           return (
             <button
-              key={tab.label}
-              onClick={() => setActiveTab(tab.label)}
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
               className={cn(
                 "pb-4 text-sm font-bold transition-all relative whitespace-nowrap",
                 isActive
@@ -164,14 +206,7 @@ export default function NotificationsPage() {
                   : "text-slate-500 hover:text-slate-800"
               )}
             >
-              <span className="flex items-center gap-2">
-                {tab.label}
-                {tab.label === "All" && unreadCount > 0 && (
-                  <span className="bg-emerald-500 text-white text-[10px] w-5 h-5 rounded-full flex items-center justify-center animate-in zoom-in-50">
-                    {unreadCount}
-                  </span>
-                )}
-              </span>
+              {tab.label}
             </button>
           )
         })}
@@ -226,50 +261,48 @@ function ActivityOrNotificationItem({
   onToggleRead: (e: React.MouseEvent) => void
   onDismiss: (e: React.MouseEvent) => void
 }) {
-  const isNotification = item.itemType === 'notification'
-
-  const IconMap = {
-    new_client: UserPlus,
-    match_found: Sparkles,
-    property_update: Building2,
-    team_member: Users,
-    system: Bell,
-    upload: UserPlus,
-    update: Building2,
-    delete: Inbox,
-    match: Sparkles,
+  const content = (item: any) => {
+    if (item.itemType === 'match_entry') {
+      return {
+        icon: Sparkles,
+        colors: "bg-amber-50 text-amber-600",
+        title: `${item.score}% Match Found`,
+        message: `${item.client?.full_name} matches with ${item.property?.title}`
+      }
+    }
+    
+    const a = item as Activity
+    const IconMap = {
+      upload: UserPlus,
+      update: Building2,
+      delete: Inbox,
+      match: Sparkles,
+    }
+    const colorMap = {
+      upload: "bg-emerald-50 text-emerald-600",
+      update: "bg-blue-50 text-blue-600",
+      delete: "bg-red-50 text-red-600",
+      match: "bg-amber-50 text-amber-600",
+    }
+    
+    return {
+      icon: (IconMap as any)[a.action_type] || Bell,
+      colors: (colorMap as any)[a.action_type] || "bg-slate-50 text-slate-600",
+      title: a.profiles?.full_name || 'Team Action',
+      message: `${a.action_type === 'upload' ? 'Added new' : a.action_type === 'update' ? 'Updated' : 'Removed'} ${a.metadata?.title || a.entity_type}`
+    }
   }
 
-  const Icon = (IconMap as any)[item.type || item.action_type] ?? Bell
-
-  const iconColorsMap = {
-    new_client: "bg-purple-50 text-purple-600",
-    match_found: "bg-amber-50 text-amber-600",
-    property_update: "bg-blue-50 text-blue-600",
-    team_member: "bg-teal-50 text-teal-600",
-    system: "bg-slate-50 text-slate-600",
-    upload: "bg-emerald-50 text-emerald-600",
-    update: "bg-blue-50 text-blue-600",
-    delete: "bg-red-50 text-red-600",
-    match: "bg-amber-50 text-amber-600",
-  }
-  const iconColors = (iconColorsMap as any)[item.type || item.action_type] ?? "bg-slate-50 text-slate-600"
-
-  const title = isNotification ? item.title : `${item.profiles?.full_name || 'System'}`
-  const message = isNotification ? item.message : 
-    `${item.action_type === 'upload' ? 'Added new' : item.action_type === 'update' ? 'Updated' : 'Removed'} ${item.metadata?.title || item.entity_type}`
-
-  const isClickable = isNotification || item.action_type !== 'delete'
+  const { icon: Icon, colors: iconColors, title, message } = content(item)
+  const isClickable = item.itemType === 'match_entry' || item.action_type !== 'delete'
 
   return (
     <div
       onClick={isClickable ? onClick : undefined}
       className={cn(
         "flex gap-4 p-4 transition-all group relative",
-        isClickable ? "cursor-pointer" : "cursor-default",
-        isNotification && !item.is_read
-          ? "bg-emerald-50/20 border-l-2 border-emerald-400"
-          : "hover:bg-slate-50 border-l-2 border-transparent"
+        isClickable ? "cursor-pointer hover:bg-slate-50" : "cursor-default",
+        "border-l-2 border-transparent"
       )}
     >
       <div className={cn("w-11 h-11 rounded-full flex items-center justify-center shrink-0", iconColors)}>
@@ -277,35 +310,20 @@ function ActivityOrNotificationItem({
       </div>
 
       <div className="flex-1 min-w-0 space-y-0.5">
-        <p className={cn("text-sm font-bold", (isNotification && item.is_read) ? "text-slate-600" : "text-slate-900")}>
+        <p className="text-sm font-bold text-slate-900">
           {title}
         </p>
-        <p className="text-sm text-slate-500 font-medium line-clamp-2 leading-relaxed">
+        <p className="text-sm text-slate-600 font-medium line-clamp-2 leading-relaxed">
           {message}
         </p>
         <span className="text-[11px] font-bold text-slate-400 uppercase tracking-tight block pt-1">
-          {formatRelativeTime(item.created_at)}
+          {formatRelativeTime(item.sortDate)}
         </span>
       </div>
 
       <div className="flex flex-col items-end gap-2 shrink-0">
-        {isNotification && !item.is_read && (
-          <div className="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-pulse mt-1" />
-        )}
         <div className="opacity-0 group-hover:opacity-100 flex items-center gap-1 transition-opacity bg-white/80 backdrop-blur px-1 py-1 rounded-lg border border-slate-100 shadow-sm">
           <TooltipProvider>
-            {isNotification && (
-              <Tooltip>
-                <TooltipTrigger render={
-                  <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-emerald-600 rounded-md" onClick={onToggleRead}>
-                    <CheckCheck className="w-4 h-4" />
-                  </Button>
-                } />
-                <TooltipContent className="bg-slate-800 text-white border-none py-1 px-2 rounded-md">
-                  <p className="text-[10px] font-bold">Mark as read</p>
-                </TooltipContent>
-              </Tooltip>
-            )}
             <Tooltip>
               <TooltipTrigger render={
                 <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-red-500 rounded-md" onClick={onDismiss}>

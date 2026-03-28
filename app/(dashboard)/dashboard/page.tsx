@@ -99,7 +99,7 @@ export default async function DashboardPage() {
     requireProfile(),
     getDashboardStats(),
     getRecentNotifications(4),
-    getRecentActivities(8),
+    getRecentActivities(5),
     getProperties({ limit: 3 } as any),
   ])
 

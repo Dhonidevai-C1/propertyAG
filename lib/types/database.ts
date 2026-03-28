@@ -113,7 +113,7 @@ export interface Property {
   bedrooms: number
   bathrooms: number
   area_sqft: number | null
-  area_unit: 'sqft' | 'sqyard' | 'sqm'
+  area_unit: 'sqft' | 'sqyard' | 'sqm' | 'gaj'
   road_info: string | null
   floor_number: string | null
   total_floors: string | null
@@ -158,7 +158,7 @@ export interface Client {
   budget_max: number | null
   min_bedrooms: number
   min_area_sqft: number | null
-  min_area_unit: 'sqft' | 'sqyard' | 'sqm'
+  min_area_unit: 'sqft' | 'sqyard' | 'sqm' | 'gaj'
   furnishing_preference: string | null
   possession_timeline: string | null
   is_deleted: boolean

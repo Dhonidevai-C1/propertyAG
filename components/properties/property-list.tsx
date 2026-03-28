@@ -194,8 +194,8 @@ export function PropertyList({ initialProperties }: PropertyListProps) {
               listingTypeFilter !== "any" ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-600 hover:bg-slate-200"
             )}>
               <SelectValue>
-                {listingTypeFilter === "any" ? "Sale/Rent" : 
-                 listingTypeFilter === "sale" ? "For Sale" : "For Rent"}
+                {listingTypeFilter === "any" ? "Sale/Rent" :
+                  listingTypeFilter === "sale" ? "For Sale" : "For Rent"}
               </SelectValue>
             </SelectTrigger>
             <SelectContent className="bg-white font-bold">
@@ -212,14 +212,14 @@ export function PropertyList({ initialProperties }: PropertyListProps) {
               approvalFilter !== "any" ? "bg-blue-100 text-blue-700 font-black" : "bg-slate-100 text-slate-600 hover:bg-slate-200"
             )}>
               <SelectValue>
-                {approvalFilter === "any" ? "Approval Type" : 
-                 approvalFilter.toUpperCase()}
+                {approvalFilter === "any" ? "Approval Type" :
+                  approvalFilter.toUpperCase()}
               </SelectValue>
             </SelectTrigger>
             <SelectContent className="bg-white font-bold">
               <SelectItem value="any">All Approvals</SelectItem>
               <SelectItem value="JDA">JDA Approved</SelectItem>
-              <SelectItem value="HBA">HBA Approved</SelectItem>
+              <SelectItem value="HB">HB Approved</SelectItem>
               <SelectItem value="Society">Society</SelectItem>
               <SelectItem value="90B">90B</SelectItem>
               <SelectItem value="Other">Other</SelectItem>

@@ -14,7 +14,9 @@ import {
   Check,
   Star,
   Zap,
-  ShieldCheck
+  ShieldCheck,
+  CheckCircle2,
+  Trash2
 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
@@ -46,19 +48,25 @@ import {
 import { cn } from "@/lib/utils"
 import { PropertyFormSchema, PropertyFormValues } from "@/lib/validations/property"
 import { createProperty, updateProperty } from "@/lib/actions/properties"
+import { 
+  getAgencyAmenities, 
+  addAgencyAmenity, 
+  getAgencyApprovalTypes, 
+  addAgencyApprovalType 
+} from "@/lib/actions/options"
 
 interface PropertyFormProps {
   initialData?: Partial<PropertyFormValues> & { id?: string }
   mode?: "add" | "edit"
 }
 
-const AMENITIES_OPTIONS = [
-  "Swimming Pool", "Gym", "Clubhouse", "Park", "Security 24/7", 
+const DEFAULT_AMENITIES = [
+  "Swimming Pool", "Gym", "Clubhouse", "Park", "Security 24/7",
   "Power Backup", "Car Parking", "CCTV", "Lift", "Fire Safety",
   "Gas Pipeline", "Jogging Track", "Intercom", "Maintenance Staff"
 ]
 
-const APPROVAL_OPTIONS = ["JDA", "HBA", "Society", "90B", "Other"]
+const DEFAULT_APPROVALS = ["JDA", "HB", "Society", "90B"]
 
 const FACING_OPTIONS = ["North", "South", "East", "West", "North-East", "North-West", "South-East", "South-West"]
 
@@ -68,6 +76,30 @@ export function PropertyForm({ initialData, mode = "add" }: PropertyFormProps) {
   const [uploadingImage, setUploadingImage] = useState(false)
   const [isDiscardDialogOpen, setIsDiscardDialogOpen] = useState(false)
   const [imageToCrop, setImageToCrop] = useState<string | null>(null)
+  
+  const [dbAmenities, setDbAmenities] = useState<string[]>([])
+  const [dbApprovalTypes, setDbApprovalTypes] = useState<string[]>([])
+  const [customAmenity, setCustomAmenity] = useState("")
+  const [isAddingAmenity, setIsAddingAmenity] = useState(false)
+  const [customApproval, setCustomApproval] = useState("")
+  const [isAddingApproval, setIsAddingApproval] = useState(false)
+  const [isOtherApproval, setIsOtherApproval] = useState(false)
+
+  // Fetch global options
+  useEffect(() => {
+    const fetchOptions = async () => {
+      const [amenities, approvals] = await Promise.all([
+        getAgencyAmenities(),
+        getAgencyApprovalTypes()
+      ])
+      setDbAmenities(amenities)
+      setDbApprovalTypes(approvals)
+    }
+    fetchOptions()
+  }, [])
+
+  const amenitiesOptions = Array.from(new Set([...DEFAULT_AMENITIES, ...dbAmenities]))
+  const approvalOptions = Array.from(new Set([...DEFAULT_APPROVALS, ...dbApprovalTypes]))
 
   // Map initialData ensuring nulls from DB are handled correctly for the form
   const defaultValues: PropertyFormValues = {
@@ -191,7 +223,7 @@ export function PropertyForm({ initialData, mode = "add" }: PropertyFormProps) {
       console.log("Converting base64 to blob...")
       const res = await fetch(base64)
       const blob = await res.blob()
-      
+
       // 3. Prepare file name & path
       const fileExt = blob.type.split('/')[1] || 'jpg'
       const fileName = `${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`
@@ -229,7 +261,7 @@ export function PropertyForm({ initialData, mode = "add" }: PropertyFormProps) {
       // 6. Update form state (IMMEDIATELY replace base64 with URL)
       const newUrls = [...imageUrls, publicUrl]
       setValue("image_urls", newUrls, { shouldDirty: true })
-      
+
       if (!coverImageUrl || coverImageUrl.startsWith('data:image')) {
         setValue("cover_image_url", publicUrl, { shouldDirty: true })
       }
@@ -259,6 +291,37 @@ export function PropertyForm({ initialData, mode = "add" }: PropertyFormProps) {
     setValue("amenities", next, { shouldDirty: true })
   }
 
+  const handleAddCustomAmenity = async () => {
+    if (!customAmenity.trim()) return
+    setIsAddingAmenity(true)
+    const res = await addAgencyAmenity(customAmenity.trim())
+    if (res.error) {
+      toast.error(res.error)
+    } else {
+      setDbAmenities(prev => [...prev, customAmenity.trim()])
+      toggleAmenity(customAmenity.trim())
+      setCustomAmenity("")
+      toast.success("Added to global amenities")
+    }
+    setIsAddingAmenity(false)
+  }
+
+  const handleAddCustomApproval = async () => {
+    if (!customApproval.trim()) return
+    setIsAddingApproval(true)
+    const res = await addAgencyApprovalType(customApproval.trim())
+    if (res.error) {
+      toast.error(res.error)
+    } else {
+      setDbApprovalTypes(prev => [...prev, customApproval.trim()])
+      setValue("approval_type", customApproval.trim(), { shouldDirty: true })
+      setCustomApproval("")
+      setIsOtherApproval(false)
+      toast.success("Added to global approval types")
+    }
+    setIsAddingApproval(false)
+  }
+
   const handleDiscard = () => {
     if (isDirty) {
       setIsDiscardDialogOpen(true)
@@ -279,14 +342,16 @@ export function PropertyForm({ initialData, mode = "add" }: PropertyFormProps) {
           <Section title="Basic Info">
             <div className="space-y-4">
               <div className="grid gap-2">
-                <Label htmlFor="title" className={cn(errors.title && "text-red-500")}>Property Title</Label>
+                <Label htmlFor="title" className={cn("flex items-center gap-1", errors.title && "text-red-500")}>
+                  Property Title <span className="text-red-500">*</span>
+                </Label>
                 <Input
                   id="title"
                   placeholder="e.g. 3BHK Luxury Apartment"
                   {...register("title")}
                   className={cn(errors.title && "border-red-500")}
                 />
-                {errors.title && <p className="text-xs text-red-500">{errors.title.message}</p>}
+                {errors.title && <p className="text-xs text-red-500 font-bold">{errors.title.message}</p>}
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -303,7 +368,9 @@ export function PropertyForm({ initialData, mode = "add" }: PropertyFormProps) {
                   </Select>
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="property_type">Property Type</Label>
+                  <Label htmlFor="property_type" className="flex items-center gap-1">
+                    Property Type <span className="text-red-500">*</span>
+                  </Label>
                   <Select onValueChange={(v) => setValue("property_type", v as any, { shouldDirty: true })} value={propertyTypeValue}>
                     <SelectTrigger className={cn(errors.property_type && "border-red-500")}>
                       <SelectValue placeholder="Select type" />
@@ -318,9 +385,12 @@ export function PropertyForm({ initialData, mode = "add" }: PropertyFormProps) {
                       <SelectItem value="penthouse">Penthouse</SelectItem>
                     </SelectContent>
                   </Select>
+                  {errors.property_type && <p className="text-xs text-red-500 font-bold">{errors.property_type.message}</p>}
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="status">Status</Label>
+                  <Label htmlFor="status" className="flex items-center gap-1">
+                    Status <span className="text-red-500">*</span>
+                  </Label>
                   <Select onValueChange={(v) => setValue("status", v as any, { shouldDirty: true })} value={statusValue}>
                     <SelectTrigger className="bg-slate-50 border-none font-bold text-slate-700">
                       <SelectValue placeholder="Status" />
@@ -332,11 +402,14 @@ export function PropertyForm({ initialData, mode = "add" }: PropertyFormProps) {
                       <SelectItem value="rented">Rented</SelectItem>
                     </SelectContent>
                   </Select>
+                  {errors.status && <p className="text-xs text-red-500 font-bold">{errors.status.message}</p>}
                 </div>
               </div>
 
               <div className="grid gap-2">
-                <Label htmlFor="description" className={cn(errors.description && "text-red-500")}>Description</Label>
+                <Label htmlFor="description" className={cn("flex items-center gap-1", errors.description && "text-red-500")}>
+                  Description <span className="text-red-500">*</span>
+                </Label>
                 <Textarea
                   id="description"
                   placeholder="Describe the property..."
@@ -344,7 +417,7 @@ export function PropertyForm({ initialData, mode = "add" }: PropertyFormProps) {
                   {...register("description")}
                   className={cn("rounded-2xl bg-slate-50 border-transparent focus:bg-white transition-all", errors.description && "border-red-500")}
                 />
-                {errors.description && <p className="text-xs text-red-500">{errors.description.message}</p>}
+                {errors.description && <p className="text-xs text-red-500 font-bold">{errors.description.message}</p>}
               </div>
             </div>
           </Section>
@@ -369,6 +442,7 @@ export function PropertyForm({ initialData, mode = "add" }: PropertyFormProps) {
                         <SelectItem value="sqft">Sq. Ft</SelectItem>
                         <SelectItem value="sqyard">Sq. Yard</SelectItem>
                         <SelectItem value="sqm">Sq. Meter</SelectItem>
+                        <SelectItem value="gaj">Gaj</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -434,20 +508,62 @@ export function PropertyForm({ initialData, mode = "add" }: PropertyFormProps) {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-slate-50 mt-4">
                 <div className="grid gap-2">
                   <Label htmlFor="approval_type">Approval Authority</Label>
-                  <Select onValueChange={(v) => setValue("approval_type", v, { shouldDirty: true })} value={approvalTypeValue}>
-                    <SelectTrigger className="bg-blue-50 border-none font-bold text-blue-700">
-                      <SelectValue placeholder="Select Authority" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-white font-bold">
-                      {APPROVAL_OPTIONS.map(opt => (
-                        <SelectItem key={opt} value={opt}>{opt}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  {isOtherApproval ? (
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder="Enter custom authority"
+                        value={customApproval}
+                        onChange={(e) => setCustomApproval(e.target.value)}
+                        className="bg-emerald-50 border-emerald-100"
+                      />
+                      <Button 
+                        type="button" 
+                        size="sm" 
+                        onClick={handleAddCustomApproval}
+                        disabled={isAddingApproval}
+                        className="bg-emerald-500 hover:bg-emerald-600 h-10 px-3 shrink-0"
+                      >
+                        {isAddingApproval ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save"}
+                      </Button>
+                      <Button 
+                        type="button" 
+                        variant="ghost" 
+                        size="icon" 
+                        onClick={() => setIsOtherApproval(false)}
+                        className="h-10 w-10 shrink-0 text-slate-400"
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <Select 
+                      onValueChange={(v) => {
+                        if (v === "other") {
+                          setIsOtherApproval(true)
+                        } else {
+                          setValue("approval_type", v, { shouldDirty: true })
+                        }
+                      }} 
+                      value={approvalTypeValue}
+                    >
+                      <SelectTrigger className="bg-blue-50 border-none font-bold text-blue-700">
+                        <SelectValue placeholder="Select Authority" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-white font-bold">
+                        {approvalOptions.map(opt => (
+                          <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                        ))}
+                        <SelectItem value="other" className="text-emerald-600 font-black">+ Add Other Type</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="slug">Property Slug (URL)</Label>
-                  <Input id="slug" placeholder="e.g. luxury-3bhk-villa" {...register("slug")} />
+                  <Label htmlFor="slug" className="flex items-center gap-1">
+                    Property Slug (URL) <span className="text-red-500">*</span>
+                  </Label>
+                  <Input id="slug" placeholder="e.g. luxury-3bhk-villa" {...register("slug")} className={cn(errors.slug && "border-red-500")} />
+                  {errors.slug && <p className="text-xs text-red-500 font-bold">{errors.slug.message}</p>}
                 </div>
               </div>
             </div>
@@ -456,16 +572,25 @@ export function PropertyForm({ initialData, mode = "add" }: PropertyFormProps) {
           <Section title="Location">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="grid gap-2">
-                <Label htmlFor="locality">Locality</Label>
-                <Input id="locality" placeholder="e.g. Mansarovar" {...register("locality")} />
+                <Label htmlFor="locality" className="flex items-center gap-1">
+                  Locality <span className="text-red-500">*</span>
+                </Label>
+                <Input id="locality" placeholder="e.g. Mansarovar" {...register("locality")} className={cn(errors.locality && "border-red-500")} />
+                {errors.locality && <p className="text-xs text-red-500 font-bold">{errors.locality.message}</p>}
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="city">City</Label>
-                <Input id="city" placeholder="e.g. Jaipur" {...register("city")} />
+                <Label htmlFor="city" className="flex items-center gap-1">
+                  City <span className="text-red-500">*</span>
+                </Label>
+                <Input id="city" placeholder="e.g. Jaipur" {...register("city")} className={cn(errors.city && "border-red-500")} />
+                {errors.city && <p className="text-xs text-red-500 font-bold">{errors.city.message}</p>}
               </div>
               <div className="grid gap-2 text-left">
-                <Label htmlFor="pincode">Pincode</Label>
-                <Input id="pincode" placeholder="e.g. 302001" {...register("pincode")} />
+                <Label htmlFor="pincode" className="flex items-center gap-1">
+                  Pincode <span className="text-red-500">*</span>
+                </Label>
+                <Input id="pincode" placeholder="e.g. 302001" {...register("pincode")} className={cn(errors.pincode && "border-red-500")} />
+                {errors.pincode && <p className="text-xs text-red-500 font-bold">{errors.pincode.message}</p>}
               </div>
               <div className="grid gap-2 md:col-span-2">
                 <Label htmlFor="address">Full Address</Label>
@@ -493,28 +618,62 @@ export function PropertyForm({ initialData, mode = "add" }: PropertyFormProps) {
           </Section>
 
           <Section title="Amenities">
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-              {AMENITIES_OPTIONS.map((item) => (
-                <button
-                  key={item}
-                  type="button"
-                  onClick={() => toggleAmenity(item)}
-                  className={cn(
-                    "flex items-center gap-2 px-3 py-2 rounded-xl border text-sm font-medium transition-all text-left",
-                    selectedAmenities.includes(item)
-                      ? "bg-emerald-50 border-emerald-200 text-emerald-700 shadow-sm"
-                      : "bg-white border-slate-100 text-slate-500 hover:border-slate-200 hover:bg-slate-50"
-                  )}
-                >
-                  <div className={cn(
-                    "w-4 h-4 rounded-full border flex items-center justify-center transition-colors",
-                    selectedAmenities.includes(item) ? "bg-emerald-500 border-emerald-500" : "border-slate-300"
-                  )}>
-                    {selectedAmenities.includes(item) && <Check className="w-2.5 h-2.5 text-white" />}
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                {amenitiesOptions.map((item) => (
+                  <button
+                    key={item}
+                    type="button"
+                    onClick={() => toggleAmenity(item)}
+                    className={cn(
+                      "flex items-center gap-2 px-3 py-2 rounded-xl border text-sm font-medium transition-all text-left",
+                      selectedAmenities.includes(item)
+                        ? "bg-emerald-50 border-emerald-200 text-emerald-700 shadow-sm"
+                        : "bg-white border-slate-100 text-slate-500 hover:border-slate-200 hover:bg-slate-50"
+                    )}
+                  >
+                    <div className={cn(
+                      "w-4 h-4 rounded-full border flex items-center justify-center shrink-0 transition-colors",
+                      selectedAmenities.includes(item) ? "bg-emerald-500 border-emerald-500" : "border-slate-300"
+                    )}>
+                      {selectedAmenities.includes(item) && <Check className="w-2.5 h-2.5 text-white" />}
+                    </div>
+                    <span className="truncate">{item}</span>
+                  </button>
+                ))}
+              </div>
+              
+              <div className="pt-4 border-t border-slate-50">
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <Plus className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                    <Input
+                      placeholder="Add custom amenity (e.g. Solar Panels)"
+                      value={customAmenity}
+                      onChange={(e) => setCustomAmenity(e.target.value)}
+                      className="pl-9 bg-slate-50 border-none focus:bg-white text-sm"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault()
+                          handleAddCustomAmenity()
+                        }
+                      }}
+                    />
                   </div>
-                  {item}
-                </button>
-              ))}
+                  <Button 
+                    type="button" 
+                    onClick={handleAddCustomAmenity} 
+                    disabled={isAddingAmenity || !customAmenity.trim()}
+                    className="bg-emerald-500 hover:bg-emerald-600 h-10 px-4 font-bold text-xs shrink-0 rounded-xl shadow-lg shadow-emerald-100"
+                  >
+                    {isAddingAmenity ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save Global"}
+                  </Button>
+                </div>
+                <p className="text-[10px] text-slate-400 mt-2 ml-1 italic flex items-center gap-1">
+                  <ShieldCheck className="w-3 h-3" />
+                  Custom amenities are saved to your agency's library for future use.
+                </p>
+              </div>
             </div>
           </Section>
         </div>
@@ -608,7 +767,7 @@ export function PropertyForm({ initialData, mode = "add" }: PropertyFormProps) {
                           isCover ? "border-emerald-500 ring-2 ring-emerald-500/20 shadow-md" : "border-slate-200"
                         )}>
                           <Image src={url} alt={`Property ${i + 1}`} fill className="object-cover" loading="lazy" />
-                          
+
                           {isCover && (
                             <div className="absolute top-2 left-2 bg-emerald-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-lg z-10 animate-in zoom-in-50 duration-300">
                               COVER
@@ -627,9 +786,9 @@ export function PropertyForm({ initialData, mode = "add" }: PropertyFormProps) {
                             >
                               <Check className="w-4 h-4" />
                             </button>
-                            <button 
-                              type="button" 
-                              onClick={() => removeImage(url)} 
+                            <button
+                              type="button"
+                              onClick={() => removeImage(url)}
                               className="bg-white rounded-full p-2 text-slate-600 hover:text-red-500 transition-colors shadow-xl"
                             >
                               <X className="w-4 h-4" />
@@ -651,7 +810,7 @@ export function PropertyForm({ initialData, mode = "add" }: PropertyFormProps) {
           </div>
         </div>
       </div>
-      
+
       {imageToCrop && (
         <ImageCropperDialog
           imageSrc={imageToCrop}

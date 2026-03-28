@@ -155,7 +155,7 @@ export function PropertyFilters({
         </div>
 
         <Select value={currentFilters.listing_type} onValueChange={(v) => handleFilterChange("listing_type", v || "all")}>
-          <SelectTrigger className={cn("w-auto min-w-[110px] h-9 border-none text-[11px] font-bold rounded-lg focus:ring-emerald-500 disabled:opacity-50 transition-all", 
+          <SelectTrigger className={cn("w-auto min-w-[110px] h-9 border-none text-[11px] font-bold rounded-lg focus:ring-emerald-500 disabled:opacity-50 transition-all",
             currentFilters.listing_type !== 'all' ? "bg-emerald-100 text-emerald-700" : "bg-emerald-50 text-emerald-600")} disabled={isPending}>
             <SelectValue placeholder="Sale/Rent" />
           </SelectTrigger>
@@ -167,14 +167,14 @@ export function PropertyFilters({
         </Select>
 
         <Select value={currentFilters.approval_type} onValueChange={(v) => handleFilterChange("approval_type", v || "all")}>
-          <SelectTrigger className={cn("w-auto min-w-[110px] h-9 border-none text-[11px] font-bold rounded-lg focus:ring-emerald-500 disabled:opacity-50 transition-all", 
+          <SelectTrigger className={cn("w-auto min-w-[110px] h-9 border-none text-[11px] font-bold rounded-lg focus:ring-emerald-500 disabled:opacity-50 transition-all",
             currentFilters.approval_type !== 'all' ? "bg-blue-100 text-blue-700" : "bg-slate-50 text-slate-600")} disabled={isPending}>
             <SelectValue placeholder="Approval Authority" />
           </SelectTrigger>
           <SelectContent className="bg-white font-bold">
             <SelectItem value="all">All Approvals</SelectItem>
             <SelectItem value="JDA">JDA Approved</SelectItem>
-            <SelectItem value="HBA">HBA Approved</SelectItem>
+            <SelectItem value="HB">HB Approved</SelectItem>
             <SelectItem value="Society">Society</SelectItem>
             <SelectItem value="90B">90B</SelectItem>
             <SelectItem value="Other">Other</SelectItem>

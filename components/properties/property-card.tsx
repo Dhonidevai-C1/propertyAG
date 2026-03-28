@@ -1,14 +1,14 @@
 'use client'
 
 import React, { useTransition } from "react"
-import { 
-  Building2, 
-  MapPin, 
-  BedDouble, 
-  Bath, 
-  Maximize2, 
-  Trash2, 
-  Eye, 
+import {
+  Building2,
+  MapPin,
+  BedDouble,
+  Bath,
+  Maximize2,
+  Trash2,
+  Eye,
   Pencil,
   Loader2,
   Star,
@@ -79,8 +79,8 @@ export function PropertyCard({ property, viewMode }: PropertyCardProps) {
       <div className="bg-white rounded-xl border border-slate-100 p-3 flex gap-4 items-center group hover:bg-slate-50 transition-colors">
         <div className="w-24 h-24 rounded-lg bg-slate-100 flex items-center justify-center shrink-0 overflow-hidden relative">
           {coverImage ? (
-            <Image 
-              src={coverImage} 
+            <Image
+              src={coverImage}
               alt={property.title}
               fill
               className="object-cover"
@@ -97,7 +97,7 @@ export function PropertyCard({ property, viewMode }: PropertyCardProps) {
             </div>
           )}
         </div>
-        
+
         <div className="flex-1 min-w-0 py-1">
           <div className="flex justify-between items-start mb-1">
             <div className="flex items-center gap-2">
@@ -113,12 +113,12 @@ export function PropertyCard({ property, viewMode }: PropertyCardProps) {
               <p className="text-[10px] text-slate-400 capitalize font-medium">{property.listing_type} · {property.approval_type || 'General'}</p>
             </div>
           </div>
-          
+
           <div className="flex items-center text-slate-500 text-xs mb-3">
             <MapPin className="w-3 h-3 mr-1" />
             {property.locality}, {property.city}
           </div>
-          
+
           <div className="flex items-center gap-4 text-slate-400 text-xs">
             <div className="flex items-center gap-1">
               <BedDouble className="w-3.5 h-3.5" />
@@ -149,11 +149,11 @@ export function PropertyCard({ property, viewMode }: PropertyCardProps) {
   }
 
   return (
-    <div className="flex flex-col group cursor-pointer bg-white rounded-xl border border-slate-100 overflow-hidden hover:shadow-md transition-all relative">
+    <div className="flex flex-col group bg-white rounded-xl border border-slate-100 overflow-hidden hover:shadow-md transition-all relative">
       <div className="aspect-video bg-slate-100 relative flex items-center justify-center overflow-hidden">
         {coverImage ? (
-          <Image 
-            src={coverImage} 
+          <Image
+            src={coverImage}
             alt={property.title}
             fill
             className="object-cover group-hover:scale-105 transition-transform duration-500"
@@ -213,7 +213,7 @@ export function PropertyCard({ property, viewMode }: PropertyCardProps) {
         <Separator className="bg-slate-50" />
 
         <div className="flex items-center gap-2 pt-1">
-          <Link href={`/properties/${property.id}`} className={cn(buttonVariants({ variant: "outline", size: "sm" }), "flex-1 text-xs h-8 border-slate-200 text-slate-600 hover:bg-slate-50 rounded-lg")}>
+          <Link href={`/properties/${property.id}`} className={cn(buttonVariants({ variant: "outline", size: "sm" }), "flex-1 text-xs h-8 border-slate-200  text-slate-600 hover:bg-slate-50 rounded-lg")}>
             View Details
           </Link>
           <Link href={`/properties/${property.id}/edit`} className={cn(buttonVariants({ variant: "ghost", size: "icon" }), "h-8 w-8 text-slate-400 hover:text-blue-600 transition-colors")}>
@@ -229,12 +229,12 @@ export function PropertyCard({ property, viewMode }: PropertyCardProps) {
 function DeleteDialog({ propertyTitle, onDelete, isPending }: { propertyTitle: string, onDelete: () => void, isPending: boolean }) {
   return (
     <AlertDialog>
-      <AlertDialogTrigger 
+      <AlertDialogTrigger
         render={
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="h-8 w-8 text-slate-400 hover:text-red-500 transition-colors"
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 text-slate-400 cursor-pointer hover:text-red-500 transition-colors"
             disabled={isPending}
           >
             {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
@@ -249,13 +249,13 @@ function DeleteDialog({ propertyTitle, onDelete, isPending }: { propertyTitle: s
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel 
+          <AlertDialogCancel
             render={<Button variant="outline" className="border-slate-200 rounded-lg px-6 h-10" />}
           >
             Cancel
           </AlertDialogCancel>
-          <AlertDialogAction 
-            onClick={onDelete} 
+          <AlertDialogAction
+            onClick={onDelete}
             className="bg-red-500 text-white hover:bg-red-600 border-none rounded-lg px-6 h-10"
           >
             Move to trash

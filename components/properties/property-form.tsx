@@ -258,20 +258,28 @@ export function PropertyForm({ initialData, mode = "add" }: PropertyFormProps) {
   }
 
   const handleCropComplete = async (base64: string) => {
-    console.log("🚀 [UPLOAD] Calling Server Action for secure upload...")
+    console.log("🚀 [UPLOAD] Using FormData for Next.js-native upload...")
     setUploadingImage(true)
     
     try {
-      // 1. Call Server Action directly
-      const result = await uploadImageAction(base64)
+      // 1. Convert base64 to File/Blob
+      const res = await fetch(base64)
+      const blob = await res.blob()
+      
+      const file = new File([blob], "upload.jpg", { type: blob.type })
+      const formData = new FormData()
+      formData.append('file', file)
+
+      // 2. Call Server Action directly with FormData
+      const result = await uploadImageAction(formData)
 
       if (result.error || !result.url) {
         throw new Error(result.error || "Server upload failed")
       }
 
-      console.log("✅ [UPLOAD] Success via Server! URL:", result.url)
+      console.log("✅ [UPLOAD] Success! URL:", result.url)
 
-      // 2. Update form state
+      // 3. Update form state
       const newUrls = [...imageUrls, result.url]
       setValue("image_urls", newUrls, { shouldDirty: true })
 

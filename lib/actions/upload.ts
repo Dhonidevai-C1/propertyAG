@@ -1,50 +1,53 @@
 'use server'
 
-import { createClient } from "@supabase/supabase-js"
+import { createClient } from '@/lib/supabase/server'
 
 /**
- * Server Action to handle image uploads to Supabase Storage.
- * Uses SERVICE_ROLE_KEY to bypass any browser-side authentication or connectivity issues.
+ * Upload image using the authenticated user's own session.
+ * No SERVICE_ROLE_KEY needed - the user's RLS policy already allows this.
+ * RLS Policy: "images_upload" => bucket_id = 'property-images' AND auth.role() = 'authenticated'
  */
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
-
-export async function uploadImageAction(base64Data: string) {
+export async function uploadImageAction(formData: FormData) {
   try {
-    // 1. Parse base64
-    const matches = base64Data.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/)
-    if (!matches || matches.length !== 3) {
-      throw new Error('Invalid base64 string')
+    // Use the user's own authenticated server session
+    const supabase = await createClient()
+
+    // Verify authentication first
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    if (authError || !user) {
+      return { url: null, error: 'Not authenticated. Please log in again.' }
     }
 
-    const type = matches[1]
-    const buffer = Buffer.from(matches[2], 'base64')
-    const fileExt = type.split('/')[1] || 'jpg'
-    const fileName = `${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`
+    const file = formData.get('file') as File
+    if (!file || file.size === 0) {
+      return { url: null, error: 'No file provided' }
+    }
 
-    // 2. Upload to Storage via Admin Client (stateless & super fast)
-    const { data, error } = await supabaseAdmin.storage
+    const arrayBuffer = await file.arrayBuffer()
+    const buffer = Buffer.from(arrayBuffer)
+    const ext = file.type.includes('png') ? 'png' : 'jpg'
+    const fileName = `${user.id.slice(0, 8)}-${Date.now()}.${ext}`
+
+    const { error: uploadError } = await supabase.storage
       .from('property-images')
       .upload(fileName, buffer, {
-        contentType: type,
+        contentType: file.type,
         upsert: true
       })
 
-    if (error) {
-       console.error("Storage upload error:", error)
-       throw new Error(error.message)
+    if (uploadError) {
+      console.error('[Upload] Storage error:', uploadError.message, uploadError)
+      return { url: null, error: `Storage error: ${uploadError.message}` }
     }
 
-    // 3. Get Public URL
-    const { data: { publicUrl } } = supabaseAdmin.storage
+    const { data: { publicUrl } } = supabase.storage
       .from('property-images')
       .getPublicUrl(fileName)
 
+    console.log('[Upload] Success:', publicUrl)
     return { url: publicUrl, error: null }
-  } catch (error: any) {
-    console.error('Server-side upload failure:', error)
-    return { url: null, error: error.message || 'Failed to upload image' }
+  } catch (err: any) {
+    console.error('[Upload] Unexpected error:', err)
+    return { url: null, error: err.message || 'Upload failed unexpectedly' }
   }
 }

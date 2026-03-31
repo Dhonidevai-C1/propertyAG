@@ -7,7 +7,7 @@
  * 5. Dashboard: AuthProvider (lib/context/auth-context.tsx) provides client-side user/profile state.
  */
 
-import { updateSession } from '@/lib/supabase/middleware'
+import { updateSession } from '@/lib/supabase/proxy'
 import { NextResponse, type NextRequest } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 

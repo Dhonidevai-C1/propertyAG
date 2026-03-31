@@ -124,7 +124,7 @@ export function PropertyCard({ property, viewMode }: PropertyCardProps) {
           <div className="flex items-center text-slate-500 text-xs mb-3">
             <MapPin className="w-3 h-3 mr-1" />
             {property.locality}, {property.city}
-            {(property.group && (property.property_type === 'plot' || property.property_type === 'farmhouse')) && (
+            {(property.group && (property.property_type === 'plot' || property.property_type === 'farmhouse' || property.property_type === 'farmer_land')) && (
               <span className="ml-2 text-orange-600 font-bold border-l border-slate-200 pl-2">
                 {property.group}
               </span>

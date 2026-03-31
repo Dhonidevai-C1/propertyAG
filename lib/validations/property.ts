@@ -1,7 +1,7 @@
 import * as z from "zod"
 
 export const propertyStatusValues = ["available", "reserved", "sold", "rented"] as const
-export const propertyTypeValues = ["apartment", "villa", "independent_house", "plot", "commercial", "farmhouse", "penthouse"] as const
+export const propertyTypeValues = ["apartment", "villa", "independent_house", "plot", "commercial", "farmhouse", "penthouse", "farmer_land"] as const
 export const furnishingValues = ["unfurnished", "semi_furnished", "fully_furnished"] as const
 export const listingTypeValues = ["sale", "rent"] as const
 

@@ -59,7 +59,7 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
     { label: "Listing type", value: property.listing_type },
     { label: "Status", value: property.status },
     { label: "Approval Authority", value: property.approval_type || "General" },
-    property.group && (property.property_type === 'plot' || property.property_type === 'farmhouse') 
+    property.group && (property.property_type === 'plot' || property.property_type === 'farmhouse' || property.property_type === 'farmer_land') 
       ? { label: "Plot Group", value: property.group } : null,
     (property.bhk && property.bhk.length > 0) ? { label: "BHK", value: `${property.bhk.sort((a,b)=>a-b).join(", ")} BHK` } : null,
     property.bedrooms && property.bedrooms > 0 ? { label: "Bedrooms", value: String(property.bedrooms) } : null,
@@ -67,7 +67,7 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
     { label: "Total area", value: property.area_sqft ? `${Number(property.area_sqft).toLocaleString()} ${(property.area_unit || 'sqft').replace('sq', 'sq. ')}` : "—" },
   ].filter(Boolean) as { label: string; value: string }[]
 
-  const isLand = property.property_type === 'plot' || property.property_type === 'farmhouse'
+  const isLand = property.property_type === 'plot' || property.property_type === 'farmhouse' || property.property_type === 'farmer_land'
   
   const rightDetails = [
     !isLand ? { label: "Furnishing", value: (property.furnishing || "Unfurnished").replace(/_/g, " ") } : null,

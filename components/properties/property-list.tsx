@@ -245,7 +245,8 @@ export function PropertyList({ initialProperties }: PropertyListProps) {
                       typeFilter === "independent_house" ? "Ind. House" :
                         typeFilter === "commercial" ? "Commercial" :
                           typeFilter === "plot" ? "Plot" :
-                            typeFilter === "farmhouse" ? "Farmhouse" : "Penthouse"}
+                            typeFilter === "farmhouse" ? "Farmhouse" : 
+                            typeFilter === "farmer_land" ? "Farmer Land" : "Penthouse"}
               </SelectValue>
             </SelectTrigger>
             <SelectContent className="bg-white">
@@ -256,6 +257,7 @@ export function PropertyList({ initialProperties }: PropertyListProps) {
               <SelectItem value="commercial" className="font-medium">Commercial</SelectItem>
               <SelectItem value="plot" className="font-medium">Plot</SelectItem>
               <SelectItem value="farmhouse" className="font-medium">Farmhouse</SelectItem>
+              <SelectItem value="farmer_land" className="font-medium">Farmer Land</SelectItem>
               <SelectItem value="penthouse" className="font-medium">Penthouse</SelectItem>
             </SelectContent>
           </Select>

@@ -60,7 +60,7 @@ export interface Database {
 }
 
 export type UserRole = 'admin' | 'agent' | 'viewer'
-export type PropertyType = 'apartment' | 'villa' | 'independent_house' | 'plot' | 'commercial' | 'farmhouse' | 'penthouse'
+export type PropertyType = 'apartment' | 'villa' | 'independent_house' | 'plot' | 'commercial' | 'farmhouse' | 'penthouse' | 'farmer_land'
 export type PropertyStatus = 'available' | 'reserved' | 'sold' | 'rented'
 export type ClientStatus = 'active' | 'matched' | 'closed'
 export type MatchStatus = 'new' | 'reviewed' | 'contacted' | 'dismissed'

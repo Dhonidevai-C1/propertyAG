@@ -219,7 +219,7 @@ export function PropertyForm({ initialData, mode = "add" }: PropertyFormProps) {
       })
 
       // If land, set furnishing to null
-      if (propertyTypeValue === "plot" || propertyTypeValue === "farmhouse") {
+      if (propertyTypeValue === "plot" || propertyTypeValue === "farmhouse" || propertyTypeValue === "farmer_land") {
         cleanedData.furnishing = null
       } else if (cleanedData.furnishing === ("null" as any)) {
         cleanedData.furnishing = null
@@ -423,6 +423,7 @@ export function PropertyForm({ initialData, mode = "add" }: PropertyFormProps) {
                       <SelectItem value="plot">Plot</SelectItem>
                       <SelectItem value="commercial">Commercial</SelectItem>
                       <SelectItem value="farmhouse">Farmhouse</SelectItem>
+                      <SelectItem value="farmer_land">Farmer Land</SelectItem>
                       <SelectItem value="penthouse">Penthouse</SelectItem>
                     </SelectContent>
                   </Select>
@@ -530,7 +531,7 @@ export function PropertyForm({ initialData, mode = "add" }: PropertyFormProps) {
                   <Label htmlFor="balconies">Balconies</Label>
                   <Input id="balconies" type="number" {...register("balconies", { valueAsNumber: true })} />
                 </div>
-                {!(propertyTypeValue === "plot" || propertyTypeValue === "farmhouse") && (
+                {!(propertyTypeValue === "plot" || propertyTypeValue === "farmhouse" || propertyTypeValue === "farmer_land") && (
                   <div className="grid gap-2">
                     <Label htmlFor="furnishing">Furnishing</Label>
                     <Select onValueChange={(v) => setValue("furnishing", v as any, { shouldDirty: true })} value={furnishingValue || "null"}>

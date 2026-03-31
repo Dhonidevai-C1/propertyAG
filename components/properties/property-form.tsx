@@ -21,9 +21,8 @@ import {
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import Image from "next/image"
-import { createClient } from "@/lib/supabase/client"
-
 import { ImageCropperDialog } from "@/components/properties/image-cropper"
+import { uploadImageAction } from "@/lib/actions/upload"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -183,11 +182,13 @@ export function PropertyForm({ initialData, mode = "add" }: PropertyFormProps) {
   // Auto-generate slug from title if empty
   const titleValue = watch("title")
   useEffect(() => {
-    if (mode === "add" && titleValue && !watch("slug")) {
+    if (mode === "add" && titleValue) {
       const generatedSlug = titleValue
         .toLowerCase()
-        .replace(/[^a-z0-9]+/g, "-")
+        .trim()
+        .replace(/[^a-z0-9]+/g, "-") // name-name
         .replace(/^-+|-+$/g, "")
+      
       setValue("slug", generatedSlug)
     }
   }, [titleValue, setValue, mode])
@@ -195,8 +196,15 @@ export function PropertyForm({ initialData, mode = "add" }: PropertyFormProps) {
   const onSubmit = async (data: PropertyFormValues) => {
     setIsSubmitting(true)
     try {
-      // ── Clean Data: Convert 0 or empty strings to null ──
+      // ── Clean Data ──
       const cleanedData = { ...data }
+      
+      // Ensure Slug is unique-ish by adding a short code if needed
+      // (Simplified: in a real app you'd check DB, but here we append a short ID)
+      if (mode === "add") {
+        const shortId = Math.random().toString(36).substring(7)
+        cleanedData.slug = `${cleanedData.slug}-${shortId}`
+      }
       
       const fieldsToNullify = [
         'bedrooms', 'bathrooms', 'balconies', 
@@ -250,80 +258,30 @@ export function PropertyForm({ initialData, mode = "add" }: PropertyFormProps) {
   }
 
   const handleCropComplete = async (base64: string) => {
-    console.log("🚀 [UPLOAD] Starting stateless Direct-Fetch upload...")
+    console.log("🚀 [UPLOAD] Calling Server Action for secure upload...")
     setUploadingImage(true)
     
     try {
-      const supabase = createClient()
-      
-      // 1. Get raw credentials for the fetch
-      const { data: { session } } = await supabase.auth.getSession()
-      const token = session?.access_token
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-      const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      // 1. Call Server Action directly
+      const result = await uploadImageAction(base64)
 
-      if (!token) throw new Error("Auth session missing. Please refresh and log in.")
-
-      // 2. Convert base64 to Blob
-      const res = await fetch(base64)
-      const blob = await res.blob()
-
-      // 3. Prepare file path
-      const fileExt = blob.type.split('/')[1] || 'jpg'
-      const fileName = `${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`
-      const filePath = fileName 
-      
-      const uploadUrl = `${supabaseUrl}/storage/v1/object/property-images/${filePath}`
-      console.log("📤 [UPLOAD] Fetching directly to:", uploadUrl)
-
-      // 4. Direct Stateless Fetch with Timeout
-      const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 35000)
-
-      try {
-        const uploadResponse = await fetch(uploadUrl, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'apikey': supabaseAnonKey,
-            'Content-Type': blob.type,
-            'x-upsert': 'true'
-          },
-          body: blob,
-          signal: controller.signal
-        })
-
-        clearTimeout(timeoutId)
-
-        if (!uploadResponse.ok) {
-          const errorData = await uploadResponse.json()
-          throw new Error(errorData.message || "Native fetch upload failed")
-        }
-
-        console.log("✅ [UPLOAD] Success! Data verified by server.")
-      } catch (err: any) {
-        if (err.name === 'AbortError') throw new Error("Upload timed out after 35 seconds.")
-        throw err
+      if (result.error || !result.url) {
+        throw new Error(result.error || "Server upload failed")
       }
 
-      // 5. Get Public URL (Library is fine for this stateless call)
-      const { data: { publicUrl } } = supabase.storage
-        .from('property-images')
-        .getPublicUrl(filePath)
+      console.log("✅ [UPLOAD] Success via Server! URL:", result.url)
 
-      if (!publicUrl) throw new Error("Could not retrieve public URL.")
-
-      // 6. Update form state
-      const newUrls = [...imageUrls, publicUrl]
+      // 2. Update form state
+      const newUrls = [...imageUrls, result.url]
       setValue("image_urls", newUrls, { shouldDirty: true })
 
       if (!coverImageUrl || coverImageUrl.startsWith('data:image')) {
-        setValue("cover_image_url", publicUrl, { shouldDirty: true })
+        setValue("cover_image_url", result.url, { shouldDirty: true })
       }
 
       toast.success("Image uploaded successfully!")
     } catch (error: any) {
-      console.error("⛔ [UPLOAD] Critical Failure:", error)
+      console.error("⛔ [UPLOAD] Server Action Failure:", error)
       toast.error(error.message || "Something went wrong during upload")
     } finally {
       setUploadingImage(false)

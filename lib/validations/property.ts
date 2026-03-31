@@ -15,7 +15,7 @@ export const PropertyFormSchema = z.object({
   price_negotiable: z.boolean().optional(),
   locality: z.string().min(1, "Locality is required"),
   city: z.string().min(1, "City is required"),
-  pincode: z.string().min(6, "Pincode must be at least 6 digits"),
+  pincode: z.string().optional().nullable(),
   address: z.string().optional().nullable(),
   bhk: z.array(z.number()).default([]),
   bedrooms: z.number().min(0).optional().nullable(),

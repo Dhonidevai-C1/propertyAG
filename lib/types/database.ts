@@ -109,7 +109,7 @@ export interface Property {
   city: string | null
   locality: string | null
   pincode: string | null
-  bhk: number | null
+  bhk: number[]
   bedrooms: number
   bathrooms: number
   area_sqft: number | null
@@ -126,6 +126,7 @@ export interface Property {
   seller_name: string | null
   seller_phone: string | null
   approval_type: string | null
+  group: string | null
   slug: string | null
   listing_type: 'sale' | 'rent'
   is_featured: boolean

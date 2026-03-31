@@ -17,7 +17,7 @@ export const PropertyFormSchema = z.object({
   city: z.string().min(1, "City is required"),
   pincode: z.string().min(6, "Pincode must be at least 6 digits"),
   address: z.string().optional().nullable(),
-  bhk: z.number().min(0).optional().nullable(),
+  bhk: z.array(z.number()).default([]),
   bedrooms: z.number().min(0).optional().nullable(),
   bathrooms: z.number().min(0).optional().nullable(),
   area_sqft: z.number().optional().nullable(),
@@ -35,6 +35,7 @@ export const PropertyFormSchema = z.object({
   seller_name: z.string().optional().nullable(),
   seller_phone: z.string().optional().nullable(),
   approval_type: z.string().optional().nullable(),
+  group: z.string().optional().nullable(),
   slug: z.string().min(1, "Slug is required"),
   is_featured: z.boolean().default(false),
   is_new: z.boolean().default(true),
@@ -51,7 +52,7 @@ export type PropertyFilters = {
   status?: string
   listing_type?: string
   approval_type?: string
-  bedrooms?: number
+  bhk?: string | number[]
   price_min?: number
   price_max?: number
 }

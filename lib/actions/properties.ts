@@ -176,7 +176,9 @@ export async function getProperties(filters: PropertyFilters) {
       const isNum = !isNaN(Number(term))
       let orQuery = `title.ilike.%${term}%,locality.ilike.%${term}%,city.ilike.%${term}%,address.ilike.%${term}%,property_type.ilike.%${term}%`
       if (isNum) {
-        orQuery += `,bhk.eq.${term},bedrooms.eq.${term}`
+        // Use overlaps operator for array search: bhk.cs.{val} for 'contains' or bhk.ov.{val} for overlap
+        // In PostgREST, array contains is .cs.{val}
+        orQuery += `,bhk.cs.{${term}},bedrooms.eq.${term}`
       }
       query = query.or(orQuery)
     })
@@ -198,8 +200,13 @@ export async function getProperties(filters: PropertyFilters) {
     query = query.eq('approval_type', filters.approval_type)
   }
 
-  if (filters.bedrooms) {
-    query = query.gte('bedrooms', filters.bedrooms)
+  if (filters.bhk && filters.bhk !== 'all') {
+    const bhkStr = String(filters.bhk)
+    const bhkValues = bhkStr.split(',').map((v: string) => parseInt(v.trim())).filter((v: number) => !isNaN(v))
+    if (bhkValues.length > 0) {
+      // Filter bhk array to see if it overlaps with these values
+      query = query.filter('bhk', 'ov', `{${bhkValues.join(',')}}`)
+    }
   }
 
   if (filters.price_min) {

@@ -52,7 +52,9 @@ import {
   getAgencyAmenities, 
   addAgencyAmenity, 
   getAgencyApprovalTypes, 
-  addAgencyApprovalType 
+  addAgencyApprovalType,
+  getAgencyPlotGroups,
+  addAgencyPlotGroup
 } from "@/lib/actions/options"
 
 interface PropertyFormProps {
@@ -68,6 +70,8 @@ const DEFAULT_AMENITIES = [
 
 const DEFAULT_APPROVALS = ["JDA", "HB", "Society", "90B"]
 
+const DEFAULT_PLOT_GROUPS = ["JDA Scheme Plots", "Gated Society Plots", "Other JDA Patta Plots", "Society Patta Plots"]
+
 const FACING_OPTIONS = ["North", "South", "East", "West", "North-East", "North-West", "South-East", "South-West"]
 
 export function PropertyForm({ initialData, mode = "add" }: PropertyFormProps) {
@@ -79,27 +83,34 @@ export function PropertyForm({ initialData, mode = "add" }: PropertyFormProps) {
   
   const [dbAmenities, setDbAmenities] = useState<string[]>([])
   const [dbApprovalTypes, setDbApprovalTypes] = useState<string[]>([])
+  const [dbPlotGroups, setDbPlotGroups] = useState<string[]>([])
   const [customAmenity, setCustomAmenity] = useState("")
   const [isAddingAmenity, setIsAddingAmenity] = useState(false)
   const [customApproval, setCustomApproval] = useState("")
   const [isAddingApproval, setIsAddingApproval] = useState(false)
   const [isOtherApproval, setIsOtherApproval] = useState(false)
+  const [customPlotGroup, setCustomPlotGroup] = useState("")
+  const [isAddingPlotGroup, setIsAddingPlotGroup] = useState(false)
+  const [isOtherPlotGroup, setIsOtherPlotGroup] = useState(false)
 
   // Fetch global options
   useEffect(() => {
     const fetchOptions = async () => {
-      const [amenities, approvals] = await Promise.all([
+      const [amenities, approvals, plotGroups] = await Promise.all([
         getAgencyAmenities(),
-        getAgencyApprovalTypes()
+        getAgencyApprovalTypes(),
+        getAgencyPlotGroups()
       ])
       setDbAmenities(amenities)
       setDbApprovalTypes(approvals)
+      setDbPlotGroups(plotGroups)
     }
     fetchOptions()
   }, [])
 
   const amenitiesOptions = Array.from(new Set([...DEFAULT_AMENITIES, ...dbAmenities]))
   const approvalOptions = Array.from(new Set([...DEFAULT_APPROVALS, ...dbApprovalTypes]))
+  const plotGroupOptions = Array.from(new Set([...DEFAULT_PLOT_GROUPS, ...dbPlotGroups]))
 
   // Map initialData ensuring nulls from DB are handled correctly for the form
   const defaultValues: PropertyFormValues = {
@@ -113,7 +124,7 @@ export function PropertyForm({ initialData, mode = "add" }: PropertyFormProps) {
     locality: initialData?.locality || "",
     city: initialData?.city || "",
     address: initialData?.address || "",
-    bhk: initialData?.bhk || 0,
+    bhk: initialData?.bhk || [],
     bedrooms: initialData?.bedrooms || 0,
     bathrooms: initialData?.bathrooms || 0,
     area_sqft: initialData?.area_sqft || 0,
@@ -132,6 +143,7 @@ export function PropertyForm({ initialData, mode = "add" }: PropertyFormProps) {
     seller_name: initialData?.seller_name || "",
     seller_phone: initialData?.seller_phone || "",
     approval_type: initialData?.approval_type || "",
+    group: (initialData as any)?.group || "",
     slug: initialData?.slug || "",
     is_featured: initialData?.is_featured ?? false,
     is_new: initialData?.is_new ?? true,
@@ -165,6 +177,8 @@ export function PropertyForm({ initialData, mode = "add" }: PropertyFormProps) {
   const isFeatured = watch("is_featured")
   const isNew = watch("is_new")
   const selectedAmenities = watch("amenities") || []
+  const bhkValues = watch("bhk") || []
+  const groupValue = (watch as any)("group")
 
   // Auto-generate slug from title if empty
   const titleValue = watch("title")
@@ -322,6 +336,29 @@ export function PropertyForm({ initialData, mode = "add" }: PropertyFormProps) {
     setIsAddingApproval(false)
   }
 
+  const handleAddCustomPlotGroup = async () => {
+    if (!customPlotGroup.trim()) return
+    setIsAddingPlotGroup(true)
+    const res = await addAgencyPlotGroup(customPlotGroup.trim())
+    if (res.error) {
+      toast.error(res.error)
+    } else {
+      setDbPlotGroups(prev => [...prev, customPlotGroup.trim()])
+      setValue("group" as any, customPlotGroup.trim(), { shouldDirty: true })
+      setCustomPlotGroup("")
+      setIsOtherPlotGroup(false)
+      toast.success("Added to global plot groups")
+    }
+    setIsAddingPlotGroup(false)
+  }
+
+  const toggleBhk = (val: number) => {
+    const next = bhkValues.includes(val)
+      ? bhkValues.filter(b => b !== val)
+      : [...bhkValues, val].sort((a, b) => a - b)
+    setValue("bhk", next, { shouldDirty: true })
+  }
+
   const handleDiscard = () => {
     if (isDirty) {
       setIsDiscardDialogOpen(true)
@@ -454,9 +491,28 @@ export function PropertyForm({ initialData, mode = "add" }: PropertyFormProps) {
               </div>
 
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="bhk">BHK</Label>
-                  <Input id="bhk" type="number" {...register("bhk", { valueAsNumber: true })} />
+                <div className="grid gap-2 md:col-span-2">
+                  <Label className="flex items-center gap-2">
+                    BHK Options
+                    <span className="text-[10px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded uppercase font-bold tracking-wider">Multi-Select</span>
+                  </Label>
+                  <div className="flex flex-wrap gap-2">
+                    {[1, 2, 3, 4, 5, 6].map((num) => (
+                      <button
+                        key={num}
+                        type="button"
+                        onClick={() => toggleBhk(num)}
+                        className={cn(
+                          "h-10 px-4 rounded-xl border text-sm font-bold transition-all",
+                          bhkValues.includes(num)
+                            ? "bg-emerald-500 border-emerald-500 text-white shadow-md shadow-emerald-100"
+                            : "bg-white border-slate-200 text-slate-600 hover:border-emerald-200 hover:bg-emerald-50/30"
+                        )}
+                      >
+                        {num} BHK
+                      </button>
+                    ))}
+                  </div>
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="bedrooms">Bedrooms</Label>
@@ -514,7 +570,7 @@ export function PropertyForm({ initialData, mode = "add" }: PropertyFormProps) {
                         placeholder="Enter custom authority"
                         value={customApproval}
                         onChange={(e) => setCustomApproval(e.target.value)}
-                        className="bg-emerald-50 border-emerald-100"
+                        className="bg-emerald-50 border-emerald-100 placeholder:text-slate-300"
                       />
                       <Button 
                         type="button" 
@@ -558,6 +614,62 @@ export function PropertyForm({ initialData, mode = "add" }: PropertyFormProps) {
                     </Select>
                   )}
                 </div>
+
+                {propertyTypeValue === "plot" && (
+                  <div className="grid gap-2">
+                    <Label htmlFor="group">Plot Group (Category)</Label>
+                    {isOtherPlotGroup ? (
+                      <div className="flex gap-2 animate-in slide-in-from-right-2 duration-300">
+                        <Input
+                          placeholder="Name of society/scheme"
+                          value={customPlotGroup}
+                          onChange={(e) => setCustomPlotGroup(e.target.value)}
+                          className="bg-orange-50 border-orange-100 placeholder:text-slate-300"
+                        />
+                        <Button 
+                          type="button" 
+                          size="sm" 
+                          onClick={handleAddCustomPlotGroup}
+                          disabled={isAddingPlotGroup}
+                          className="bg-orange-500 hover:bg-orange-600 h-10 px-3 shrink-0"
+                        >
+                          {isAddingPlotGroup ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save"}
+                        </Button>
+                        <Button 
+                          type="button" 
+                          variant="ghost" 
+                          size="icon" 
+                          onClick={() => setIsOtherPlotGroup(false)}
+                          className="h-10 w-10 shrink-0 text-slate-400"
+                        >
+                          <X className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <Select 
+                        onValueChange={(v) => {
+                          if (v === "other") {
+                            setIsOtherPlotGroup(true)
+                          } else {
+                            setValue("group" as any, v, { shouldDirty: true })
+                          }
+                        }} 
+                        value={groupValue}
+                      >
+                        <SelectTrigger className="bg-orange-50 border-none font-bold text-orange-700">
+                          <SelectValue placeholder="Select Group" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-white font-bold">
+                          {plotGroupOptions.map(opt => (
+                            <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                          ))}
+                          <SelectItem value="other" className="text-orange-600 font-black">+ Add Custom Group</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    )}
+                  </div>
+                )}
+
                 <div className="grid gap-2">
                   <Label htmlFor="slug" className="flex items-center gap-1">
                     Property Slug (URL) <span className="text-red-500">*</span>

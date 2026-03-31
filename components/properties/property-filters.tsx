@@ -36,7 +36,7 @@ export function PropertyFilters({
     status: searchParams.get('status') || "all",
     listing_type: searchParams.get('listing_type') || "all",
     approval_type: searchParams.get('approval_type') || "all",
-    bedrooms: searchParams.get('bedrooms') || "all",
+    bedrooms: searchParams.get('bhk') || searchParams.get('bedrooms') || "all",
     price_max: searchParams.get('price_max') || "all",
   }), [searchParams])
 
@@ -210,7 +210,7 @@ export function PropertyFilters({
           </SelectContent>
         </Select>
 
-        <Select value={currentFilters.bedrooms} onValueChange={(v) => handleFilterChange("bedrooms", v || "all")}>
+        <Select value={String(currentFilters.bedrooms)} onValueChange={(v) => handleFilterChange("bhk", v || "all")}>
           <SelectTrigger className="w-auto min-w-[100px] h-9 bg-white border-slate-200 text-slate-600 text-[11px] font-medium rounded-lg focus:ring-emerald-500 disabled:opacity-50" disabled={isPending}>
             <SelectValue placeholder="BHK" />
           </SelectTrigger>

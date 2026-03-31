@@ -61,9 +61,16 @@ export function PropertyList({ initialProperties }: PropertyListProps) {
       if (approvalFilter !== "any" && p.approval_type !== approvalFilter) return false
 
       if (bedroomsFilter !== "any") {
-        const bhk = Number(bedroomsFilter)
-        const checkBhk = p.bhk ?? p.bedrooms
-        if (bhk === 5 ? checkBhk < 5 : checkBhk !== bhk) return false
+        const filterBhk = Number(bedroomsFilter)
+        const propertyBhks = p.bhk || []
+        
+        if (filterBhk === 5) {
+          // 5+ BHK: check if any value in the array is >= 5
+          if (!propertyBhks.some(val => val >= 5)) return false
+        } else {
+          // Specific BHK: check if the array contains the filtered value
+          if (!propertyBhks.includes(filterBhk)) return false
+        }
       }
 
       if (priceFilter !== "any") {
@@ -98,7 +105,7 @@ export function PropertyList({ initialProperties }: PropertyListProps) {
       'Approval Type': p.approval_type || 'N/A',
       'Seller Name': p.seller_name || 'N/A',
       'Seller Phone': p.seller_phone || 'N/A',
-      'BHK': p.bhk || p.bedrooms,
+      'BHK': Array.isArray(p.bhk) ? p.bhk.sort((a,b) => a-b).join(', ') : (p.bhk || p.bedrooms),
       'Bedrooms': p.bedrooms,
       'Bathrooms': p.bathrooms,
       'Area': p.area_sqft || 0,

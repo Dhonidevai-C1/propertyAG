@@ -250,55 +250,70 @@ export function PropertyForm({ initialData, mode = "add" }: PropertyFormProps) {
   }
 
   const handleCropComplete = async (base64: string) => {
-    console.log("🚀 [UPLOAD] Starting direct upload process...")
+    console.log("🚀 [UPLOAD] Starting stateless Direct-Fetch upload...")
     setUploadingImage(true)
     
     try {
       const supabase = createClient()
+      
+      // 1. Get raw credentials for the fetch
+      const { data: { session } } = await supabase.auth.getSession()
+      const token = session?.access_token
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+      const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 
-      // 1. Convert base64 to Blob
+      if (!token) throw new Error("Auth session missing. Please refresh and log in.")
+
+      // 2. Convert base64 to Blob
       const res = await fetch(base64)
       const blob = await res.blob()
 
-      // 2. Prepare file name & path
+      // 3. Prepare file path
       const fileExt = blob.type.split('/')[1] || 'jpg'
       const fileName = `${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`
       const filePath = fileName 
       
-      console.log("📤 [UPLOAD] Sending to bucket...")
+      const uploadUrl = `${supabaseUrl}/storage/v1/object/property-images/${filePath}`
+      console.log("📤 [UPLOAD] Fetching directly to:", uploadUrl)
 
-      // 3. Direct Upload with Safety Timeout (30 seconds)
-      const uploadPromise = supabase.storage
-        .from('property-images')
-        .upload(filePath, blob, {
-          cacheControl: '300', // Shorter cache for faster initial view
-          upsert: true
+      // 4. Direct Stateless Fetch with Timeout
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 35000)
+
+      try {
+        const uploadResponse = await fetch(uploadUrl, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'apikey': supabaseAnonKey,
+            'Content-Type': blob.type,
+            'x-upsert': 'true'
+          },
+          body: blob,
+          signal: controller.signal
         })
 
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error("The upload is taking too long. Please try again with a smaller image or a faster connection.")), 30000)
-      )
+        clearTimeout(timeoutId)
 
-      const { data: uploadData, error: uploadError } = await Promise.race([
-        uploadPromise,
-        timeoutPromise
-      ]) as any
+        if (!uploadResponse.ok) {
+          const errorData = await uploadResponse.json()
+          throw new Error(errorData.message || "Native fetch upload failed")
+        }
 
-      if (uploadError) {
-        console.error("❌ [UPLOAD] Supabase Storage Error:", uploadError)
-        throw new Error(`Upload Failed: ${uploadError.message}`)
+        console.log("✅ [UPLOAD] Success! Data verified by server.")
+      } catch (err: any) {
+        if (err.name === 'AbortError') throw new Error("Upload timed out after 35 seconds.")
+        throw err
       }
 
-      console.log("✅ [UPLOAD] Success! Fetching Public URL...")
-
-      // 4. Get Public URL
+      // 5. Get Public URL (Library is fine for this stateless call)
       const { data: { publicUrl } } = supabase.storage
         .from('property-images')
         .getPublicUrl(filePath)
 
       if (!publicUrl) throw new Error("Could not retrieve public URL.")
 
-      // 5. Update form state
+      // 6. Update form state
       const newUrls = [...imageUrls, publicUrl]
       setValue("image_urls", newUrls, { shouldDirty: true })
 
@@ -308,7 +323,7 @@ export function PropertyForm({ initialData, mode = "add" }: PropertyFormProps) {
 
       toast.success("Image uploaded successfully!")
     } catch (error: any) {
-      console.error("⛔ [UPLOAD] Critical Error:", error)
+      console.error("⛔ [UPLOAD] Critical Failure:", error)
       toast.error(error.message || "Something went wrong during upload")
     } finally {
       setUploadingImage(false)

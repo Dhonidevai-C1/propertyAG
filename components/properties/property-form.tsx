@@ -250,60 +250,55 @@ export function PropertyForm({ initialData, mode = "add" }: PropertyFormProps) {
   }
 
   const handleCropComplete = async (base64: string) => {
-    console.log("Upload started: processing base64 data...")
+    console.log("🚀 [UPLOAD] Starting direct upload process...")
     setUploadingImage(true)
+    
     try {
-      // 1. Validate Base64
-      if (!base64.startsWith('data:image')) {
-        throw new Error("Invalid image data format.")
-      }
+      const supabase = createClient()
 
-      // 2. Convert base64 to Blob
-      console.log("Converting base64 to blob...")
+      // 1. Convert base64 to Blob
       const res = await fetch(base64)
       const blob = await res.blob()
 
-      // 3. Prepare file name & path
+      // 2. Prepare file name & path
       const fileExt = blob.type.split('/')[1] || 'jpg'
       const fileName = `${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`
-      // Path must be relative to the bucket, NOT include the bucket name again
-      const filePath = `property-images/${fileName}` 
-      console.log("Target Path in Bucket:", filePath)
-
-      // 4. Upload to Supabase Storage
-      const supabase = createClient()
-      console.log("Connecting to Supabase Storage...")
+      const filePath = fileName 
       
-      const { data: uploadData, error: uploadError } = await supabase.storage
+      console.log("📤 [UPLOAD] Sending to bucket...")
+
+      // 3. Direct Upload with Safety Timeout (30 seconds)
+      const uploadPromise = supabase.storage
         .from('property-images')
         .upload(filePath, blob, {
-          cacheControl: '3600',
-          upsert: true // Changed to true to prevent "already exists" errors
+          cacheControl: '300', // Shorter cache for faster initial view
+          upsert: true
         })
 
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error("The upload is taking too long. Please try again with a smaller image or a faster connection.")), 30000)
+      )
+
+      const { data: uploadData, error: uploadError } = await Promise.race([
+        uploadPromise,
+        timeoutPromise
+      ]) as any
+
       if (uploadError) {
-        console.error("Supabase Storage Error Details:", {
-          message: uploadError.message,
-          name: uploadError.name,
-          status: (uploadError as any).status
-        })
+        console.error("❌ [UPLOAD] Supabase Storage Error:", uploadError)
         throw new Error(`Upload Failed: ${uploadError.message}`)
       }
 
-      console.log("Upload successful, fetching public URL...")
+      console.log("✅ [UPLOAD] Success! Fetching Public URL...")
 
-      // 5. Get Public URL
+      // 4. Get Public URL
       const { data: { publicUrl } } = supabase.storage
         .from('property-images')
         .getPublicUrl(filePath)
 
-      if (!publicUrl) {
-        throw new Error("Could not retrieve public URL for uploaded image.")
-      }
+      if (!publicUrl) throw new Error("Could not retrieve public URL.")
 
-      console.log("Final Public URL:", publicUrl)
-
-      // 6. Update form state (IMMEDIATELY replace base64 with URL)
+      // 5. Update form state
       const newUrls = [...imageUrls, publicUrl]
       setValue("image_urls", newUrls, { shouldDirty: true })
 
@@ -311,10 +306,10 @@ export function PropertyForm({ initialData, mode = "add" }: PropertyFormProps) {
         setValue("cover_image_url", publicUrl, { shouldDirty: true })
       }
 
-      toast.success("Image uploaded to cloud storage")
+      toast.success("Image uploaded successfully!")
     } catch (error: any) {
-      console.error("Critical Upload Error:", error)
-      toast.error(error.message || "Failed to process image")
+      console.error("⛔ [UPLOAD] Critical Error:", error)
+      toast.error(error.message || "Something went wrong during upload")
     } finally {
       setUploadingImage(false)
       setImageToCrop(null)

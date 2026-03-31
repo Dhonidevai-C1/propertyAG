@@ -36,7 +36,23 @@ export const PropertyFormSchema = z.object({
   seller_phone: z.string().optional().nullable(),
   approval_type: z.string().optional().nullable(),
   group: z.string().optional().nullable(),
-  slug: z.string().min(1, "Slug is required"),
+  // Slug: auto-generated from title. Only lowercase letters, numbers, hyphens.
+  // No spaces, no leading/trailing hyphens. Server validates uniqueness.
+  slug: z.string()
+    .optional()
+    .nullable()
+    .transform(val => {
+      if (!val) return val
+      return val
+        .toLowerCase()
+        .trim()
+        .replace(/[^a-z0-9-]/g, '-')
+        .replace(/-+/g, '-')
+        .replace(/^-+|-+$/g, '')
+    })
+    .refine(val => !val || /^[a-z0-9]+(-[a-z0-9]+)*$/.test(val), {
+      message: 'Slug must be lowercase letters, numbers and hyphens only (e.g. luxury-flat-jaipur)'
+    }),
   is_featured: z.boolean().default(false),
   is_new: z.boolean().default(true),
   amenities: z.array(z.string()).default([]),

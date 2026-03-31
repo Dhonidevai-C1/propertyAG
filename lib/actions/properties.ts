@@ -12,14 +12,71 @@ export type PropertyWithCreator = Property & {
   }
 }
 
+/**
+ * Converts any string to a valid URL slug:
+ * - Lowercases everything
+ * - Replaces spaces/special chars with hyphens
+ * - Strips leading/trailing hyphens
+ * - Collapses multiple hyphens into one
+ */
+export function toSlug(input: string | null | undefined): string {
+  if (!input) return 'property'
+  return input
+    .toString()
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9\s-]/g, '')   // Remove special chars
+    .replace(/[\s_]+/g, '-')          // Spaces and underscores → hyphen
+    .replace(/-+/g, '-')              // Collapse multiple hyphens
+    .replace(/^-+|-+$/g, '')          // Strip leading/trailing hyphens
+    || 'property'                      // Final fallback if result is empty
+}
+
+/**
+ * Generates a unique slug for this agency.
+ * If 'luxury-flat' exists, returns 'luxury-flat-2', then 'luxury-flat-3', etc.
+ */
+async function generateUniqueSlug(title: string | null | undefined, agencyId: string, excludeId?: string): Promise<string> {
+  const supabase = await createClient()
+  const base = toSlug(title)
+
+  let candidate = base
+  let counter = 2
+
+  while (true) {
+    let query = supabase
+      .from('properties')
+      .select('id')
+      .eq('slug', candidate)
+      .eq('agency_id', agencyId)
+      .eq('is_deleted', false)
+
+    if (excludeId) query = query.neq('id', excludeId)
+
+    const { data } = await query
+
+    if (!data || data.length === 0) return candidate
+
+    candidate = `${base}-${counter}`
+    counter++
+  }
+}
+
 export async function createProperty(formData: PropertyFormValues) {
   const profile = await requireProfile()
   const supabase = await createClient()
+
+  // Always generate a clean, unique slug from the title
+  const uniqueSlug = await generateUniqueSlug(
+    formData.slug ?? formData.title,
+    profile.agency_id
+  )
 
   const { data, error } = await supabase
     .from('properties')
     .insert({
       ...formData,
+      slug: uniqueSlug,
       agency_id: profile.agency_id,
       created_by: profile.id,
     })

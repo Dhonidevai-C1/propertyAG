@@ -182,14 +182,16 @@ export function PropertyForm({ initialData, mode = "add" }: PropertyFormProps) {
   // Auto-generate slug from title if empty
   const titleValue = watch("title")
   useEffect(() => {
+    // Live-generate slug from title (same logic as server's toSlug)
     if (mode === "add" && titleValue) {
       const generatedSlug = titleValue
         .toLowerCase()
         .trim()
-        .replace(/[^a-z0-9]+/g, "-") // name-name
-        .replace(/^-+|-+$/g, "")
-      
-      setValue("slug", generatedSlug)
+        .replace(/[^a-z0-9\s-]/g, '')  // remove special chars
+        .replace(/[\s_]+/g, '-')         // spaces to hyphens
+        .replace(/-+/g, '-')             // collapse hyphens
+        .replace(/^-+|-+$/g, '')         // trim hyphens
+      setValue("slug", generatedSlug || undefined)
     }
   }, [titleValue, setValue, mode])
 
@@ -199,13 +201,8 @@ export function PropertyForm({ initialData, mode = "add" }: PropertyFormProps) {
       // ── Clean Data ──
       const cleanedData = { ...data }
       
-      // Ensure Slug is unique-ish by adding a short code if needed
-      // (Simplified: in a real app you'd check DB, but here we append a short ID)
-      if (mode === "add") {
-        const shortId = Math.random().toString(36).substring(7)
-        cleanedData.slug = `${cleanedData.slug}-${shortId}`
-      }
-      
+      // Server handles slug uniqueness — no need to add a suffix here
+
       const fieldsToNullify = [
         'bedrooms', 'bathrooms', 'balconies', 
         'maintenance_charge', 'area_sqft',

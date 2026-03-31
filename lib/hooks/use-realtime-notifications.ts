@@ -10,6 +10,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Notification } from '@/lib/types/database'
+import { type RealtimePostgresInsertPayload } from '@supabase/supabase-js'
 import { toast } from 'sonner'
 import {
   markNotificationRead,
@@ -38,8 +39,8 @@ export function useRealtimeNotifications(
           table: 'notifications',
           filter: `user_id=eq.${userId}`,
         },
-        (payload) => {
-          const newNotif = payload.new as Notification
+        (payload: RealtimePostgresInsertPayload<Notification>) => {
+          const newNotif = payload.new
           setNotifications(prev => [newNotif, ...prev])
           setUnreadCount(prev => prev + 1)
           toast(newNotif.title, {

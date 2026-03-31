@@ -5,6 +5,7 @@ import { requireProfile } from '@/lib/auth/get-session'
 import { PropertyFormValues, PropertyFilters } from '@/lib/validations/property'
 import { Property, PropertyStatus } from '@/lib/types/database'
 import { revalidatePath } from 'next/cache'
+import { toSlug } from '@/lib/utils/slug'
 
 export type PropertyWithCreator = Property & {
   profiles: {
@@ -12,30 +13,6 @@ export type PropertyWithCreator = Property & {
   }
 }
 
-/**
- * Converts any string to a valid URL slug:
- * - Lowercases everything
- * - Replaces spaces/special chars with hyphens
- * - Strips leading/trailing hyphens
- * - Collapses multiple hyphens into one
- */
-export function toSlug(input: string | null | undefined): string {
-  if (!input) return 'property'
-  return input
-    .toString()
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9\s-]/g, '')   // Remove special chars
-    .replace(/[\s_]+/g, '-')          // Spaces and underscores → hyphen
-    .replace(/-+/g, '-')              // Collapse multiple hyphens
-    .replace(/^-+|-+$/g, '')          // Strip leading/trailing hyphens
-    || 'property'                      // Final fallback if result is empty
-}
-
-/**
- * Generates a unique slug for this agency.
- * If 'luxury-flat' exists, returns 'luxury-flat-2', then 'luxury-flat-3', etc.
- */
 async function generateUniqueSlug(title: string | null | undefined, agencyId: string, excludeId?: string): Promise<string> {
   const supabase = await createClient()
   const base = toSlug(title)
@@ -65,6 +42,10 @@ async function generateUniqueSlug(title: string | null | undefined, agencyId: st
 export async function createProperty(formData: PropertyFormValues) {
   const profile = await requireProfile()
   const supabase = await createClient()
+
+  if (!profile.agency_id) {
+    throw new Error("User must belong to an agency to create properties")
+  }
 
   // Always generate a clean, unique slug from the title
   const uniqueSlug = await generateUniqueSlug(
@@ -105,6 +86,10 @@ export async function updateProperty(id: string, formData: Partial<PropertyFormV
   const profile = await requireProfile()
   const supabase = await createClient()
 
+  if (!profile.agency_id) {
+    throw new Error("User must belong to an agency to update properties")
+  }
+
   const { data, error } = await supabase
     .from('properties')
     .update(formData)
@@ -130,9 +115,6 @@ export async function updateProperty(id: string, formData: Partial<PropertyFormV
   revalidatePath(`/properties/${id}`)
   return { data: data as Property }
 }
-
-import { createClient as createSupabaseClient } from '@supabase/supabase-js'
-
 export async function deleteProperty(id: string) {
   const profile = await requireProfile()
   const supabase = await createClient()
@@ -150,13 +132,7 @@ export async function deleteProperty(id: string) {
     return { error: "Unauthorized to delete this property" }
   }
 
-  // Use Admin Client to bypass RLS for soft-delete
-  const supabaseAdmin = createSupabaseClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  )
-
-  // Delete associated images from storage
+  // Delete associated images from storage (User's session allows this via RLS)
   if (property.image_urls?.length || property.cover_image_url) {
     const urlsToDelete = new Set<string>()
     if (property.cover_image_url) urlsToDelete.add(property.cover_image_url)
@@ -171,11 +147,15 @@ export async function deleteProperty(id: string) {
       .filter(Boolean) as string[]
 
     if (pathsToDelete.length > 0) {
-      await supabaseAdmin.storage.from('property-images').remove(pathsToDelete)
+      await supabase.storage.from('property-images').remove(pathsToDelete)
     }
   }
 
-  const { error } = await supabaseAdmin
+  if (!profile.agency_id) {
+    throw new Error("User must belong to an agency to delete properties")
+  }
+
+  const { error } = await supabase
     .from('properties')
     .update({ is_deleted: true })
     .match({ id, agency_id: profile.agency_id })
@@ -183,7 +163,7 @@ export async function deleteProperty(id: string) {
   if (error) return { error: error.message }
   
   // Record activity
-  await supabaseAdmin
+  await supabase
     .from('activities')
     .insert({
       agency_id: profile.agency_id,

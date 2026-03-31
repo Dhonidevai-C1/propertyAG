@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import { CheckCircle2, Eye, EyeOff, Loader2 } from "lucide-react"
+import { type AuthChangeEvent, type Session } from "@supabase/supabase-js"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -40,7 +41,7 @@ export default function AcceptInvitePage() {
   // and fires a SIGNED_IN / TOKEN_REFRESHED event — we listen for that here.
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      async (event: AuthChangeEvent, session: Session | null) => {
         if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session?.user) {
           const user = session.user
           setSessionUser({
@@ -57,7 +58,7 @@ export default function AcceptInvitePage() {
     )
 
     // Also try getUser() in case the session was already established
-    supabase.auth.getUser().then(({ data }) => {
+    supabase.auth.getUser().then(({ data }: { data: { user: any } }) => {
       if (data.user && step === 'loading') {
         setSessionUser({
           email: data.user.email!,

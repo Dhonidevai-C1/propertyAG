@@ -61,7 +61,7 @@ export function PropertyCard({ property, viewMode }: PropertyCardProps) {
   }
 
   const formatBhk = (bhk: number[] | null | undefined) => {
-    if (!bhk || !Array.isArray(bhk) || bhk.length === 0) return "N/A"
+    if (!bhk || !Array.isArray(bhk) || bhk.length === 0) return null
     const sorted = [...bhk].sort((a, b) => a - b)
     if (sorted.length === 1) return `${sorted[0]} BHK`
     return `${sorted.join(", ")} BHK`
@@ -124,18 +124,26 @@ export function PropertyCard({ property, viewMode }: PropertyCardProps) {
           <div className="flex items-center text-slate-500 text-xs mb-3">
             <MapPin className="w-3 h-3 mr-1" />
             {property.locality}, {property.city}
-            {property.group && <span className="ml-2 text-orange-600 font-bold">({property.group})</span>}
+            {(property.group && (property.property_type === 'plot' || property.property_type === 'farmhouse')) && (
+              <span className="ml-2 text-orange-600 font-bold border-l border-slate-200 pl-2">
+                {property.group}
+              </span>
+            )}
           </div>
 
           <div className="flex items-center gap-4 text-slate-400 text-xs">
-            <div className="flex items-center gap-1 font-bold text-slate-700">
-              <BedDouble className="w-3.5 h-3.5 text-emerald-500" />
-              <span>{formatBhk(property.bhk)}</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <Bath className="w-3.5 h-3.5" />
-              <span>{property.bathrooms || 0}</span>
-            </div>
+            {formatBhk(property.bhk) && (
+              <div className="flex items-center gap-1 font-bold text-slate-700">
+                <BedDouble className="w-3.5 h-3.5 text-emerald-500" />
+                <span>{formatBhk(property.bhk)}</span>
+              </div>
+            )}
+            {property.bathrooms && property.bathrooms > 0 && (
+              <div className="flex items-center gap-1">
+                <Bath className="w-3.5 h-3.5" />
+                <span>{property.bathrooms}</span>
+              </div>
+            )}
             <div className="flex items-center gap-1 font-medium">
               <Maximize2 className="w-3.5 h-3.5" />
               <span className="capitalize">{property.area_sqft} {(property.area_unit || 'sqft').replace('sq', 'sq. ')}</span>
@@ -208,10 +216,12 @@ export function PropertyCard({ property, viewMode }: PropertyCardProps) {
         </div>
 
         <div className="flex items-center gap-4 text-slate-400 text-sm">
-          <div className="flex items-center gap-1.5">
-            <BedDouble className="w-4 h-4 text-emerald-500" />
-            <span className="text-slate-900 font-bold">{formatBhk(property.bhk)}</span>
-          </div>
+          {formatBhk(property.bhk) && (
+            <div className="flex items-center gap-1.5">
+              <BedDouble className="w-4 h-4 text-emerald-500" />
+              <span className="text-slate-900 font-bold">{formatBhk(property.bhk)}</span>
+            </div>
+          )}
           <div className="flex items-center gap-1.5">
             <Maximize2 className="w-3.5 h-3.5 text-slate-400" />
             <span className="text-slate-600 text-[13px] capitalize">{property.area_sqft} {(property.area_unit || 'sqft').replace('sq', 'sq. ')}</span>

@@ -195,9 +195,34 @@ export function PropertyForm({ initialData, mode = "add" }: PropertyFormProps) {
   const onSubmit = async (data: PropertyFormValues) => {
     setIsSubmitting(true)
     try {
+      // ── Clean Data: Convert 0 or empty strings to null ──
+      const cleanedData = { ...data }
+      
+      const fieldsToNullify = [
+        'bedrooms', 'bathrooms', 'balconies', 
+        'maintenance_charge', 'area_sqft',
+        'floor_number', 'total_floors', 
+        'parking', 'facing', 'road_info',
+        'seller_name', 'seller_phone', 'approval_type'
+      ] as const
+
+      fieldsToNullify.forEach(field => {
+        const val = (cleanedData as any)[field]
+        if (val === 0 || val === "" || val === "0" || val === undefined) {
+          (cleanedData as any)[field] = null
+        }
+      })
+
+      // If land, set furnishing to null
+      if (propertyTypeValue === "plot" || propertyTypeValue === "farmhouse") {
+        cleanedData.furnishing = null
+      } else if (cleanedData.furnishing === ("null" as any)) {
+        cleanedData.furnishing = null
+      }
+
       const result = mode === "edit" && initialData?.id
-        ? await updateProperty(initialData.id, data)
-        : await createProperty(data)
+        ? await updateProperty(initialData.id, cleanedData)
+        : await createProperty(cleanedData)
 
       if (result.error) {
         toast.error(result.error)
@@ -526,17 +551,20 @@ export function PropertyForm({ initialData, mode = "add" }: PropertyFormProps) {
                   <Label htmlFor="balconies">Balconies</Label>
                   <Input id="balconies" type="number" {...register("balconies", { valueAsNumber: true })} />
                 </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="furnishing">Furnishing</Label>
-                  <Select onValueChange={(v) => setValue("furnishing", v as any, { shouldDirty: true })} value={furnishingValue}>
-                    <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
-                    <SelectContent className="bg-white">
-                      <SelectItem value="unfurnished">Unfurnished</SelectItem>
-                      <SelectItem value="semi_furnished">Semi Furnished</SelectItem>
-                      <SelectItem value="fully_furnished">Fully Furnished</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+                {!(propertyTypeValue === "plot" || propertyTypeValue === "farmhouse") && (
+                  <div className="grid gap-2">
+                    <Label htmlFor="furnishing">Furnishing</Label>
+                    <Select onValueChange={(v) => setValue("furnishing", v as any, { shouldDirty: true })} value={furnishingValue || "null"}>
+                      <SelectTrigger className={cn(!furnishingValue && "text-slate-400 font-medium")}><SelectValue placeholder="Select" /></SelectTrigger>
+                      <SelectContent className="bg-white">
+                        <SelectItem value="null" className="text-slate-400 italic">None / NA</SelectItem>
+                        <SelectItem value="unfurnished">Unfurnished</SelectItem>
+                        <SelectItem value="semi_furnished">Semi Furnished</SelectItem>
+                        <SelectItem value="fully_furnished">Fully Furnished</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t border-slate-50">

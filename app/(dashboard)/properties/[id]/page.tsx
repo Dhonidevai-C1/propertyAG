@@ -59,14 +59,18 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
     { label: "Listing type", value: property.listing_type },
     { label: "Status", value: property.status },
     { label: "Approval Authority", value: property.approval_type || "General" },
-    { label: "BHK", value: `${property.bhk ?? property.bedrooms} BHK` },
-    { label: "Bedrooms", value: String(property.bedrooms) },
-    { label: "Bathrooms", value: String(property.bathrooms) },
+    property.group && (property.property_type === 'plot' || property.property_type === 'farmhouse') 
+      ? { label: "Plot Group", value: property.group } : null,
+    (property.bhk && property.bhk.length > 0) ? { label: "BHK", value: `${property.bhk.sort((a,b)=>a-b).join(", ")} BHK` } : null,
+    property.bedrooms && property.bedrooms > 0 ? { label: "Bedrooms", value: String(property.bedrooms) } : null,
+    property.bathrooms && property.bathrooms > 0 ? { label: "Bathrooms", value: String(property.bathrooms) } : null,
     { label: "Total area", value: property.area_sqft ? `${Number(property.area_sqft).toLocaleString()} ${(property.area_unit || 'sqft').replace('sq', 'sq. ')}` : "—" },
-  ]
+  ].filter(Boolean) as { label: string; value: string }[]
 
+  const isLand = property.property_type === 'plot' || property.property_type === 'farmhouse'
+  
   const rightDetails = [
-    { label: "Furnishing", value: (property.furnishing || "Unfurnished").replace(/_/g, " ") },
+    !isLand ? { label: "Furnishing", value: (property.furnishing || "Unfurnished").replace(/_/g, " ") } : null,
     property.facing ? { label: "Facing", value: property.facing } : null,
     property.parking ? { label: "Parking", value: property.parking } : null,
     floorValue ? { label: "Floor", value: floorValue } : null,
@@ -151,6 +155,7 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
               <div className="flex items-center gap-2 mb-1">
                 <span className="text-[10px] bg-slate-100 text-slate-500 font-black px-2 py-0.5 rounded-full uppercase tracking-widest">{property.listing_type}</span>
                 {property.approval_type && <span className="text-[10px] bg-emerald-50 text-emerald-600 font-bold px-2 py-0.5 rounded-full uppercase">✓ {property.approval_type}</span>}
+                {property.group && (isLand) && <span className="text-[10px] bg-orange-50 text-orange-600 font-bold px-2 py-0.5 rounded-full uppercase">📍 {property.group}</span>}
               </div>
               <div className="flex items-baseline gap-3 flex-wrap">
                 <p className="text-3xl font-bold text-slate-900 tracking-tight">{formatCurrency(property.price)}</p>
@@ -191,15 +196,21 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
             <Separator className="bg-slate-50 print:bg-slate-200" />
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
-              <StatTile icon={<BedDouble className="w-4 h-4" />} label="BHK" value={`${property.bhk ?? property.bedrooms} BHK`} />
-              <StatTile icon={<Bath className="w-4 h-4" />} label="Bathrooms" value={String(property.bathrooms)} />
+              {property.bhk && property.bhk.length > 0 && (
+                <StatTile icon={<BedDouble className="w-4 h-4" />} label="BHK" value={`${property.bhk.sort((a,b)=>a-b).join(", ")} BHK`} />
+              )}
+              {property.bathrooms && property.bathrooms > 0 ? (
+                <StatTile icon={<Bath className="w-4 h-4" />} label="Bathrooms" value={String(property.bathrooms)} />
+              ) : null}
               {property.balconies !== null && property.balconies > 0 && (
                 <StatTile icon={<Zap className="w-4 h-4" />} label="Balconies" value={String(property.balconies)} />
               )}
               <StatTile icon={<Maximize2 className="w-4 h-4" />} label="Area" value={property.area_sqft ? `${Number(property.area_sqft).toLocaleString()} ${(property.area_unit || 'sqft').replace('sq', 'sq. ')}` : "—"} />
-              <StatTile icon={<Armchair className="w-4 h-4" />} label="Furnishing" value={(property.furnishing || "Unfurnished").replace(/_/g, " ")} capitalize />
+              {!isLand && (
+                <StatTile icon={<Armchair className="w-4 h-4" />} label="Furnishing" value={(property.furnishing || "Unfurnished").replace(/_/g, " ")} capitalize />
+              )}
               {property.facing && <StatTile icon={<Compass className="w-4 h-4" />} label="Facing" value={property.facing} />}
-              {property.parking && <StatTile icon={<CarFront className="w-4 h-4" />} label="Parking" value={property.parking} />}
+              {(property.parking && property.parking !== 'null' && property.parking !== '') && <StatTile icon={<CarFront className="w-4 h-4" />} label="Parking" value={property.parking} />}
               {floorValue && <StatTile icon={<Layers className="w-4 h-4" />} label="Floor" value={floorValue} />}
               {property.maintenance_charge && Number(property.maintenance_charge) > 0 && (
                 <StatTile icon={<IndianRupee className="w-4 h-4" />} label="Maintenance" value={`₹${Number(property.maintenance_charge).toLocaleString()}/mo`} />

@@ -266,22 +266,28 @@ export function PropertyForm({ initialData, mode = "add" }: PropertyFormProps) {
       // 3. Prepare file name & path
       const fileExt = blob.type.split('/')[1] || 'jpg'
       const fileName = `${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`
-      const filePath = `property-images/${fileName}`
-      console.log("Uploading to path:", filePath)
+      // Path must be relative to the bucket, NOT include the bucket name again
+      const filePath = `property-images/${fileName}` 
+      console.log("Target Path in Bucket:", filePath)
 
       // 4. Upload to Supabase Storage
       const supabase = createClient()
       console.log("Connecting to Supabase Storage...")
+      
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('property-images')
         .upload(filePath, blob, {
           cacheControl: '3600',
-          upsert: false
+          upsert: true // Changed to true to prevent "already exists" errors
         })
 
       if (uploadError) {
-        console.error("Supabase Upload Error Object:", uploadError)
-        throw new Error(`Storage upload failed: ${uploadError.message}`)
+        console.error("Supabase Storage Error Details:", {
+          message: uploadError.message,
+          name: uploadError.name,
+          status: (uploadError as any).status
+        })
+        throw new Error(`Upload Failed: ${uploadError.message}`)
       }
 
       console.log("Upload successful, fetching public URL...")

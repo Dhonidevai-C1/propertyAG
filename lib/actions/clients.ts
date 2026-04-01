@@ -229,3 +229,27 @@ export async function getTeamMembers() {
   if (error) return []
   return data as Profile[]
 }
+
+export async function getTodaysFollowUps() {
+  const profile = await requireProfile()
+  const supabase = await createSupabaseClient()
+  
+  // Format YYYY-MM-DD
+  const todayDate = new Date().toLocaleDateString('en-CA')
+
+  const { data, error } = await supabase
+    .from('clients')
+    .select('*')
+    .eq('agency_id', profile.agency_id)
+    .eq('is_deleted', false)
+    .neq('status', 'closed')
+    .not('follow_up_date', 'is', null)
+    .lte('follow_up_date', todayDate)
+    .order('follow_up_date', { ascending: true })
+
+  if (error) {
+    console.error("Error fetching followups:", error)
+    return []
+  }
+  return data as Client[]
+}

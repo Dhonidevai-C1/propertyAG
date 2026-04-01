@@ -19,6 +19,17 @@ export interface MatchScoreResult {
  * Total: 100 pts. Qualifies if score >= 60.
  */
 export function scoreMatch(client: Client, property: Property): MatchScoreResult {
+  // If looking for rent but property is for sale, or vice-versa, immediate qualification failure (0 score).
+  const isRentMismatch = client.looking_for === "rent" && property.listing_type === "sale"
+  const isBuyMismatch = client.looking_for === "buy" && property.listing_type === "rent"
+  
+  if (isRentMismatch || isBuyMismatch) {
+    return {
+      score: 0,
+      breakdown: { budget: 0, location: 0, property_type: 0, bedrooms: 0, area: 0 },
+      qualifies: false
+    }
+  }
   // ── Budget (40 pts) ─────────────────────────────────────
   let budget = 0
   if (client.budget_min != null && client.budget_max != null) {
@@ -49,11 +60,19 @@ export function scoreMatch(client: Client, property: Property): MatchScoreResult
   }
 
   // ── Property Type (20 pts) ───────────────────────────────
-  let property_type = 0
-  if (!client.property_types || client.property_types.length === 0) {
-    property_type = 20
-  } else if (client.property_types.includes(property.property_type)) {
-    property_type = 20
+  let property_type = 20
+  if (client.property_types && client.property_types.length > 0) {
+    if (!client.property_types.includes(property.property_type)) {
+      property_type = 0
+    } else if (
+      property.property_type === "commercial" &&
+      client.preferred_commercial_type &&
+      property.commercial_type &&
+      client.preferred_commercial_type !== property.commercial_type
+    ) {
+      // If they explicitly wanted a specific commercial type and it doesn't match, penalyze heavily
+      property_type = 0
+    }
   }
 
   // ── Bedrooms (10 pts) ────────────────────────────────────
@@ -66,10 +85,12 @@ export function scoreMatch(client: Client, property: Property): MatchScoreResult
     area = 10
   } else {
     // Normalize both to sq ft for comparison
-    const normalizeToSqft = (val: number, unit: string = 'sqft') => {
-      if (unit === 'sqyard') return val * 9
-      if (unit === 'sqm') return val * 10.7639
-      return val
+    const normalizeToSqft = (val: any, unit: string = 'sqft') => {
+      const numVal = Number(val)
+      if (isNaN(numVal)) return 0
+      if (unit === 'sqyard') return numVal * 9
+      if (unit === 'sqm') return numVal * 10.7639
+      return numVal
     }
 
     const clientMinSqft = normalizeToSqft(client.min_area_sqft, client.min_area_unit)

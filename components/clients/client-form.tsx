@@ -108,6 +108,8 @@ export function ClientForm({ initialData, mode = "add" }: ClientFormProps) {
       min_bedrooms: initialData?.min_bedrooms || 0,
       min_area_sqft: initialData?.min_area_sqft,
       min_area_unit: initialData?.min_area_unit || "sqft",
+      min_dimensions: initialData?.min_dimensions || "",
+      preferred_commercial_type: initialData?.preferred_commercial_type || undefined,
       furnishing_preference: initialData?.furnishing_preference || "Any",
       possession_timeline: initialData?.possession_timeline || "Flexible",
       source: initialData?.source || "Walk-in",
@@ -135,6 +137,7 @@ export function ClientForm({ initialData, mode = "add" }: ClientFormProps) {
   const furnishing = watch("furnishing_preference")
   const minAreaUnit = watch("min_area_unit")
   const timeline = watch("possession_timeline")
+  const preferredCommercialType = watch("preferred_commercial_type")
   const source = watch("source")
   const assignedTo = watch("assigned_to")
 
@@ -334,6 +337,22 @@ export function ClientForm({ initialData, mode = "add" }: ClientFormProps) {
             </div>
           </FieldGroup>
 
+          {propertyTypes.includes("commercial") && (
+            <FieldGroup label="Commercial Type Preference">
+              <Select onValueChange={(v) => setValue("preferred_commercial_type", v === "any" ? undefined : v as any, { shouldDirty: true })} value={preferredCommercialType || "any"}>
+                <SelectTrigger className="px-5 w-full h-11 rounded-xl bg-white border-slate-200">
+                  <SelectValue placeholder="Shop / Space / Land" />
+                </SelectTrigger>
+                <SelectContent className="bg-white">
+                  <SelectItem value="any">Any Commercial Type</SelectItem>
+                  <SelectItem value="shop">Shop</SelectItem>
+                  <SelectItem value="space">Space</SelectItem>
+                  <SelectItem value="land">Commercial Land</SelectItem>
+                </SelectContent>
+              </Select>
+            </FieldGroup>
+          )}
+
           {/* Preferred BHK */}
           <FieldGroup label="Preferred BHK">
             <div className="flex gap-2 flex-wrap">
@@ -469,6 +488,14 @@ export function ClientForm({ initialData, mode = "add" }: ClientFormProps) {
                   </SelectContent>
                 </Select>
               </div>
+            </FieldGroup>
+
+            <FieldGroup label="Min dimensions">
+              <Input
+                placeholder="e.g. 20x40"
+                {...register("min_dimensions")}
+                className="h-11 rounded-xl"
+              />
             </FieldGroup>
 
             {/* Furnishing */}

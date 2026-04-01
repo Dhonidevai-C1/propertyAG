@@ -36,6 +36,7 @@ import { PropertyDetailActions } from "@/components/properties/property-detail-a
 import { PrintButton } from "@/components/properties/print-button"
 import { formatCurrency } from "@/lib/utils"
 import { getMatchesForProperty } from "@/lib/actions/matches"
+import { SingleMatchButton } from "@/components/matches/match-button"
 
 export default async function PropertyDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -56,24 +57,26 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
 
   const leftDetails = [
     { label: "Property type", value: property.property_type.replace(/_/g, " ") },
+    property.commercial_type ? { label: "Commercial Type", value: property.commercial_type } : null,
     { label: "Listing type", value: property.listing_type },
     { label: "Status", value: property.status },
     { label: "Approval Authority", value: property.approval_type || "General" },
-    property.group && (property.property_type === 'plot' || property.property_type === 'farmhouse' || property.property_type === 'farmer_land') 
+    property.group && (property.property_type === 'plot' || property.property_type === 'farmhouse' || property.property_type === 'farmer_land')
       ? { label: "Plot Group", value: property.group } : null,
-    (property.bhk && property.bhk.length > 0) ? { label: "BHK", value: `${property.bhk.sort((a,b)=>a-b).join(", ")} BHK` } : null,
+    (property.bhk && property.bhk.length > 0) ? { label: "BHK", value: `${property.bhk.sort((a, b) => a - b).join(", ")} BHK` } : null,
     property.bedrooms && property.bedrooms > 0 ? { label: "Bedrooms", value: String(property.bedrooms) } : null,
     property.bathrooms && property.bathrooms > 0 ? { label: "Bathrooms", value: String(property.bathrooms) } : null,
     { label: "Total area", value: property.area_sqft ? `${Number(property.area_sqft).toLocaleString()} ${(property.area_unit || 'sqft').replace('sq', 'sq. ')}` : "—" },
   ].filter(Boolean) as { label: string; value: string }[]
 
   const isLand = property.property_type === 'plot' || property.property_type === 'farmhouse' || property.property_type === 'farmer_land'
-  
+
   const rightDetails = [
-    !isLand ? { label: "Furnishing", value: (property.furnishing || "Unfurnished").replace(/_/g, " ") } : null,
+    !isLand ? { label: "Furnishing", value: (property.furnishing || "none").replace(/_/g, " ") } : null,
     property.facing ? { label: "Facing", value: property.facing } : null,
     property.parking ? { label: "Parking", value: property.parking } : null,
     floorValue ? { label: "Floor", value: floorValue } : null,
+    property.dimensions ? { label: "Dimensions", value: property.dimensions } : null,
     property.road_info ? { label: "Road Information", value: property.road_info } : null,
     property.maintenance_charge && Number(property.maintenance_charge) > 0
       ? { label: "Maintenance", value: `₹${Number(property.maintenance_charge).toLocaleString()}/mo` }
@@ -128,6 +131,7 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <SingleMatchButton propertyId={property.id} label="Find Buyers" />
           <Link href={`/properties/${property.id}/edit`} className={cn(buttonVariants({ variant: "outline" }), "border-slate-200 text-slate-600 h-10 px-4")}>
             <PencilLine className="w-4 h-4 mr-2" />
             Edit property
@@ -176,9 +180,9 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
                   </div>
                 )}
                 {property.google_maps_url && (
-                  <a 
-                    href={property.google_maps_url} 
-                    target="_blank" 
+                  <a
+                    href={property.google_maps_url}
+                    target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center gap-1.5 text-emerald-600 font-bold hover:underline"
                   >
@@ -197,7 +201,7 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
               {property.bhk && property.bhk.length > 0 && (
-                <StatTile icon={<BedDouble className="w-4 h-4" />} label="BHK" value={`${property.bhk.sort((a,b)=>a-b).join(", ")} BHK`} />
+                <StatTile icon={<BedDouble className="w-4 h-4" />} label="BHK" value={`${property.bhk.sort((a, b) => a - b).join(", ")} BHK`} />
               )}
               {property.bathrooms && property.bathrooms > 0 ? (
                 <StatTile icon={<Bath className="w-4 h-4" />} label="Bathrooms" value={String(property.bathrooms)} />
@@ -207,7 +211,7 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
               )}
               <StatTile icon={<Maximize2 className="w-4 h-4" />} label="Area" value={property.area_sqft ? `${Number(property.area_sqft).toLocaleString()} ${(property.area_unit || 'sqft').replace('sq', 'sq. ')}` : "—"} />
               {!isLand && (
-                <StatTile icon={<Armchair className="w-4 h-4" />} label="Furnishing" value={(property.furnishing || "Unfurnished").replace(/_/g, " ")} capitalize />
+                <StatTile icon={<Armchair className="w-4 h-4" />} label="Furnishing" value={(property.furnishing || "None").replace(/_/g, " ")} capitalize />
               )}
               {property.facing && <StatTile icon={<Compass className="w-4 h-4" />} label="Facing" value={property.facing} />}
               {(property.parking && property.parking !== 'null' && property.parking !== '') && <StatTile icon={<CarFront className="w-4 h-4" />} label="Parking" value={property.parking} />}
@@ -343,8 +347,8 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
                       <Badge className={cn(
                         "border-none text-[10px] font-bold",
                         m.score >= 90 ? "bg-emerald-50 text-emerald-600" :
-                        m.score >= 75 ? "bg-amber-50 text-amber-600" :
-                        "bg-slate-50 text-slate-500"
+                          m.score >= 75 ? "bg-amber-50 text-amber-600" :
+                            "bg-slate-50 text-slate-500"
                       )}>
                         {m.score}% match
                       </Badge>
@@ -361,7 +365,7 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
               <div className="text-center py-6 text-slate-400">
                 <Sparkles className="w-8 h-8 mx-auto mb-2 text-slate-200" />
                 <p className="text-sm font-medium">No matches yet</p>
-                <p className="text-xs mt-1">Run the match engine to find clients</p>
+                <p className="text-xs mt-1">Run the match engine to find leads</p>
               </div>
             )}
           </Card>

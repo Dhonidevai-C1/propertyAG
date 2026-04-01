@@ -3,11 +3,11 @@
 import React from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { 
-  LayoutDashboard, 
-  Building2, 
-  Users, 
-  Sparkles, 
+import {
+  LayoutDashboard,
+  Building2,
+  Users,
+  Sparkles,
   Menu
 } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -15,7 +15,7 @@ import { cn } from "@/lib/utils"
 const mobileNavItems = [
   { label: "Dashboard", icon: LayoutDashboard, href: "/dashboard" },
   { label: "Properties", icon: Building2, href: "/properties" },
-  { label: "Clients", icon: Users, href: "/clients" },
+  { label: "Leads", icon: Users, href: "/clients" },
   { label: "Matches", icon: Sparkles, href: "/matches" },
 ]
 
@@ -31,7 +31,7 @@ export function MobileNav({ onOpenMenu }: MobileNavProps) {
       {mobileNavItems.map((item) => {
         const isActive = pathname === item.href
         const Icon = item.icon
-        
+
         return (
           <Link
             key={item.label}
@@ -46,7 +46,7 @@ export function MobileNav({ onOpenMenu }: MobileNavProps) {
           </Link>
         )
       })}
-      
+
       <button
         onClick={onOpenMenu}
         className="flex flex-col items-center justify-center flex-1 gap-1 text-slate-400 hover:text-emerald-500 transition-colors h-full"

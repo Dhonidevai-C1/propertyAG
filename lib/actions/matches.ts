@@ -226,3 +226,36 @@ export async function markAllNotificationsRead() {
   revalidatePath('/notifications')
   return { data: { success: true } }
 }
+
+export async function ensureDailyFollowUpNotification(count: number) {
+  if (count === 0) return
+  
+  const profile = await requireProfile()
+  const supabase = await createClient()
+  
+  // Format YYYY-MM-DD
+  const todayDate = new Date().toLocaleDateString('en-CA')
+  
+  // Check if we already inserted a follow-up notification today for this user
+  const { data } = await supabase
+    .from('notifications')
+    .select('id')
+    .eq('user_id', profile.id)
+    .eq('type', 'system')
+    .like('title', '%Follow-ups due%')
+    .gte('created_at', `${todayDate}T00:00:00`)
+    .limit(1)
+    
+  if (!data || data.length === 0) {
+    try {
+      await supabase.from('notifications').insert({
+        agency_id: profile.agency_id,
+        user_id: profile.id,
+        type: 'system',
+        title: 'Follow-ups due today',
+        message: `You have ${count} client profile(s) needing contact today. Check your dashboard widget.`,
+        is_read: false
+      })
+    } catch (e) {}
+  }
+}

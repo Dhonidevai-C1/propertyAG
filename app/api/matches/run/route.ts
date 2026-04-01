@@ -13,17 +13,23 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json().catch(() => ({}))
-    const { clientId } = body
+    const { clientId, propertyId } = body
 
     const supabase = await createClient()
 
-    // ── Fetch properties for this agency ──────────────────────
-    const { data: properties, error: propError } = await supabase
+    // ── Fetch properties ───────────────────────────
+    let propertyQuery = supabase
       .from('properties')
       .select('*')
       .eq('agency_id', profile.agency_id)
       .eq('is_deleted', false)
       .eq('status', 'available')
+
+    if (propertyId) {
+      propertyQuery = propertyQuery.eq('id', propertyId)
+    }
+
+    const { data: properties, error: propError } = await propertyQuery
 
     if (propError) {
       return NextResponse.json({ error: propError.message }, { status: 500 })
@@ -66,7 +72,7 @@ export async function POST(request: NextRequest) {
       for (const property of properties as Property[]) {
         const result = scoreMatch(client, property)
         // Only store matches with score > 0
-        if (result.score > 0) {
+        if (result.score > 40) {
           matchRows.push({
             agency_id: profile.agency_id,
             client_id: client.id,

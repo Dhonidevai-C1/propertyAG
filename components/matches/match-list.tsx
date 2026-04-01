@@ -43,7 +43,7 @@ export function MatchList({ initialMatches, initialFilters }: MatchListProps) {
   const [isRunning, setIsRunning] = useState(false)
 
   const [search, setSearch] = useState(initialFilters.search ?? "")
-  const [minScore, setMinScore] = useState(initialFilters.minScore ?? 60)
+  const [minScore, setMinScore] = useState(initialFilters.minScore ?? 40)
   const [statusFilter, setStatusFilter] = useState(initialFilters.status ?? "All")
   const [sortBy, setSortBy] = useState(initialFilters.sortBy ?? "Highest match")
 
@@ -144,12 +144,12 @@ export function MatchList({ initialMatches, initialFilters }: MatchListProps) {
               Search
             </label>
             <div className="relative group">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-emerald-500 transition-colors" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-700 group-focus-within:text-emerald-500 transition-colors" />
               <Input
                 placeholder="Client or property name…"
                 value={search}
                 onChange={e => setSearch(e.target.value)}
-                className="pl-10 h-11 rounded-xl bg-slate-50 border-transparent focus:bg-white focus:border-emerald-200 transition-all font-medium"
+                className="pl-10 h-11 rounded-xl bg-slate-50 text-slate-700 border-transparent focus:bg-white focus:border-emerald-200 transition-all font-medium"
               />
               {search && (
                 <button
@@ -174,7 +174,7 @@ export function MatchList({ initialMatches, initialFilters }: MatchListProps) {
             </div>
             <input
               type="range"
-              min="0"
+              min="40"
               max="100"
               value={minScore}
               onChange={e => setMinScore(parseInt(e.target.value))}

@@ -71,7 +71,7 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
           className="inline-flex items-center text-sm text-slate-500 hover:text-emerald-600 transition-colors group w-fit"
         >
           <ChevronLeft className="w-4 h-4 mr-1 group-hover:-translate-x-0.5 transition-transform" />
-          Back to clients
+          Back to Leads
         </Link>
 
         <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">

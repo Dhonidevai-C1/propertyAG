@@ -3,9 +3,9 @@
 import React, { useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { 
-  UserCog, 
-  Settings, 
+import {
+  UserCog,
+  Settings,
   LogOut,
   ChevronRight,
   Bell,
@@ -16,10 +16,10 @@ import {
 } from "lucide-react"
 import { Sidebar } from "@/components/layout/sidebar"
 import { MobileNav } from "@/components/layout/mobile-nav"
-import { 
-  Sheet, 
-  SheetContent, 
-  SheetHeader, 
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
   SheetTitle,
   SheetDescription
 } from "@/components/ui/sheet"
@@ -32,7 +32,7 @@ import { NotificationProvider } from "@/components/notifications/notification-pr
 const allNavItems = [
   { label: "Dashboard", icon: LayoutDashboard, href: "/dashboard" },
   { label: "Properties", icon: Building2, href: "/properties" },
-  { label: "Clients", icon: Users, href: "/clients" },
+  { label: "Leads", icon: Users, href: "/clients" },
   { label: "Smart Matches", icon: Sparkles, href: "/matches" },
   { label: "Notifications", icon: Bell, href: "/notifications" },
   { label: "Team", icon: UserCog, href: "/team" },

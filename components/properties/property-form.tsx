@@ -47,10 +47,10 @@ import {
 import { cn } from "@/lib/utils"
 import { PropertyFormSchema, PropertyFormValues } from "@/lib/validations/property"
 import { createProperty, updateProperty } from "@/lib/actions/properties"
-import { 
-  getAgencyAmenities, 
-  addAgencyAmenity, 
-  getAgencyApprovalTypes, 
+import {
+  getAgencyAmenities,
+  addAgencyAmenity,
+  getAgencyApprovalTypes,
   addAgencyApprovalType,
   getAgencyPlotGroups,
   addAgencyPlotGroup
@@ -79,7 +79,7 @@ export function PropertyForm({ initialData, mode = "add" }: PropertyFormProps) {
   const [uploadingImage, setUploadingImage] = useState(false)
   const [isDiscardDialogOpen, setIsDiscardDialogOpen] = useState(false)
   const [imageToCrop, setImageToCrop] = useState<string | null>(null)
-  
+
   const [dbAmenities, setDbAmenities] = useState<string[]>([])
   const [dbApprovalTypes, setDbApprovalTypes] = useState<string[]>([])
   const [dbPlotGroups, setDbPlotGroups] = useState<string[]>([])
@@ -129,7 +129,7 @@ export function PropertyForm({ initialData, mode = "add" }: PropertyFormProps) {
     area_sqft: initialData?.area_sqft || 0,
     area_unit: initialData?.area_unit || "sqft",
     road_info: initialData?.road_info || "",
-    furnishing: initialData?.furnishing || "unfurnished",
+    furnishing: initialData?.furnishing || null,
     pincode: initialData?.pincode || "",
     floor_number: initialData?.floor_number || "",
     total_floors: initialData?.total_floors || "",
@@ -200,13 +200,13 @@ export function PropertyForm({ initialData, mode = "add" }: PropertyFormProps) {
     try {
       // ── Clean Data ──
       const cleanedData = { ...data }
-      
+
       // Server handles slug uniqueness — no need to add a suffix here
 
       const fieldsToNullify = [
-        'bedrooms', 'bathrooms', 'balconies', 
+        'bedrooms', 'bathrooms', 'balconies',
         'maintenance_charge', 'area_sqft',
-        'floor_number', 'total_floors', 
+        'floor_number', 'total_floors',
         'parking', 'facing', 'road_info',
         'seller_name', 'seller_phone', 'approval_type'
       ] as const
@@ -257,12 +257,12 @@ export function PropertyForm({ initialData, mode = "add" }: PropertyFormProps) {
   const handleCropComplete = async (base64: string) => {
     console.log("🚀 [UPLOAD] Using FormData for Next.js-native upload...")
     setUploadingImage(true)
-    
+
     try {
       // 1. Convert base64 to File/Blob
       const res = await fetch(base64)
       const blob = await res.blob()
-      
+
       const file = new File([blob], "upload.jpg", { type: blob.type })
       const formData = new FormData()
       formData.append('file', file)
@@ -429,6 +429,23 @@ export function PropertyForm({ initialData, mode = "add" }: PropertyFormProps) {
                   </Select>
                   {errors.property_type && <p className="text-xs text-red-500 font-bold">{errors.property_type.message}</p>}
                 </div>
+                {propertyTypeValue === "commercial" && (
+                  <div className="grid gap-2 animate-in fade-in zoom-in-95 duration-200">
+                    <Label htmlFor="commercial_type" className="flex items-center gap-1">
+                      Commercial Type <span className="text-red-500">*</span>
+                    </Label>
+                    <Select onValueChange={(v) => setValue("commercial_type", v as any, { shouldDirty: true })} value={watch("commercial_type") || ""}>
+                      <SelectTrigger className="bg-white">
+                        <SelectValue placeholder="Shop / Space / Land" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-white">
+                        <SelectItem value="shop">Shop</SelectItem>
+                        <SelectItem value="space">Space</SelectItem>
+                        <SelectItem value="land">Commercial Land</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
                 <div className="grid gap-2">
                   <Label htmlFor="status" className="flex items-center gap-1">
                     Status <span className="text-red-500">*</span>
@@ -489,9 +506,15 @@ export function PropertyForm({ initialData, mode = "add" }: PropertyFormProps) {
                     </Select>
                   </div>
                 </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="road_info">Road Information</Label>
-                  <Input id="road_info" placeholder="e.g. 40ft wide road" {...register("road_info")} />
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="grid gap-2">
+                    <Label htmlFor="dimensions">Dimensions (Size)</Label>
+                    <Input id="dimensions" placeholder="e.g. 20x40" {...register("dimensions")} />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="road_info">Road Info</Label>
+                    <Input id="road_info" placeholder="e.g. 40ft wide" {...register("road_info")} />
+                  </div>
                 </div>
               </div>
 
@@ -580,19 +603,19 @@ export function PropertyForm({ initialData, mode = "add" }: PropertyFormProps) {
                         onChange={(e) => setCustomApproval(e.target.value)}
                         className="bg-emerald-50 border-emerald-100 placeholder:text-slate-300"
                       />
-                      <Button 
-                        type="button" 
-                        size="sm" 
+                      <Button
+                        type="button"
+                        size="sm"
                         onClick={handleAddCustomApproval}
                         disabled={isAddingApproval}
                         className="bg-emerald-500 hover:bg-emerald-600 h-10 px-3 shrink-0"
                       >
                         {isAddingApproval ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save"}
                       </Button>
-                      <Button 
-                        type="button" 
-                        variant="ghost" 
-                        size="icon" 
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
                         onClick={() => setIsOtherApproval(false)}
                         className="h-10 w-10 shrink-0 text-slate-400"
                       >
@@ -600,14 +623,14 @@ export function PropertyForm({ initialData, mode = "add" }: PropertyFormProps) {
                       </Button>
                     </div>
                   ) : (
-                    <Select 
+                    <Select
                       onValueChange={(v) => {
                         if (v === "other") {
                           setIsOtherApproval(true)
                         } else {
                           setValue("approval_type", v, { shouldDirty: true })
                         }
-                      }} 
+                      }}
                       value={approvalTypeValue}
                     >
                       <SelectTrigger className="bg-blue-50 border-none font-bold text-blue-700">
@@ -634,19 +657,19 @@ export function PropertyForm({ initialData, mode = "add" }: PropertyFormProps) {
                           onChange={(e) => setCustomPlotGroup(e.target.value)}
                           className="bg-orange-50 border-orange-100 placeholder:text-slate-300"
                         />
-                        <Button 
-                          type="button" 
-                          size="sm" 
+                        <Button
+                          type="button"
+                          size="sm"
                           onClick={handleAddCustomPlotGroup}
                           disabled={isAddingPlotGroup}
                           className="bg-orange-500 hover:bg-orange-600 h-10 px-3 shrink-0"
                         >
                           {isAddingPlotGroup ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save"}
                         </Button>
-                        <Button 
-                          type="button" 
-                          variant="ghost" 
-                          size="icon" 
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
                           onClick={() => setIsOtherPlotGroup(false)}
                           className="h-10 w-10 shrink-0 text-slate-400"
                         >
@@ -654,14 +677,14 @@ export function PropertyForm({ initialData, mode = "add" }: PropertyFormProps) {
                         </Button>
                       </div>
                     ) : (
-                      <Select 
+                      <Select
                         onValueChange={(v) => {
                           if (v === "other") {
                             setIsOtherPlotGroup(true)
                           } else {
                             setValue("group" as any, v, { shouldDirty: true })
                           }
-                        }} 
+                        }}
                         value={groupValue}
                       >
                         <SelectTrigger className="bg-orange-50 border-none font-bold text-orange-700">
@@ -762,7 +785,7 @@ export function PropertyForm({ initialData, mode = "add" }: PropertyFormProps) {
                   </button>
                 ))}
               </div>
-              
+
               <div className="pt-4 border-t border-slate-50">
                 <div className="flex gap-2">
                   <div className="relative flex-1">
@@ -780,9 +803,9 @@ export function PropertyForm({ initialData, mode = "add" }: PropertyFormProps) {
                       }}
                     />
                   </div>
-                  <Button 
-                    type="button" 
-                    onClick={handleAddCustomAmenity} 
+                  <Button
+                    type="button"
+                    onClick={handleAddCustomAmenity}
                     disabled={isAddingAmenity || !customAmenity.trim()}
                     className="bg-emerald-500 hover:bg-emerald-600 h-10 px-4 font-bold text-xs shrink-0 rounded-xl shadow-lg shadow-emerald-100"
                   >
@@ -859,13 +882,18 @@ export function PropertyForm({ initialData, mode = "add" }: PropertyFormProps) {
 
             <Section title="Property Images">
               <div className="space-y-4">
-                <div className="relative border-2 border-dashed border-slate-200 rounded-xl p-8 bg-slate-50 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-slate-100 transition-colors">
+                <div className={cn(
+                  "relative border-2 border-dashed rounded-xl p-8 flex flex-col items-center justify-center text-center transition-colors",
+                  imageUrls.length >= 3
+                    ? "border-slate-100 bg-slate-50 cursor-not-allowed opacity-60"
+                    : "border-slate-200 bg-slate-50 cursor-pointer hover:bg-slate-100"
+                )}>
                   <input
                     type="file"
                     accept="image/*"
-                    className="absolute inset-0 opacity-0 cursor-pointer"
+                    className={cn("absolute inset-0 opacity-0", imageUrls.length >= 3 ? "cursor-not-allowed" : "cursor-pointer")}
                     onChange={handleImageSelect}
-                    disabled={uploadingImage}
+                    disabled={uploadingImage || imageUrls.length >= 3}
                   />
                   {uploadingImage ? (
                     <Loader2 className="w-8 h-8 text-emerald-500 animate-spin mb-2" />
@@ -873,7 +901,7 @@ export function PropertyForm({ initialData, mode = "add" }: PropertyFormProps) {
                     <ImagePlus className="w-8 h-8 text-slate-400 mb-2" />
                   )}
                   <p className="text-xs text-slate-500 font-medium">
-                    {uploadingImage ? "Uploading..." : "Click to upload images"}
+                    {uploadingImage ? "Uploading..." : imageUrls.length >= 3 ? "Maximum 3 images reached" : "Click to upload images (Max 3)"}
                   </p>
                 </div>
 

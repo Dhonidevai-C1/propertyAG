@@ -30,7 +30,7 @@ import {
 const navItems = [
   { label: "Dashboard", icon: LayoutDashboard, href: "/dashboard" },
   { label: "Properties", icon: Building2, href: "/properties" },
-  { label: "Clients", icon: Users, href: "/clients" },
+  { label: "Leads", icon: Users, href: "/clients" },
   { label: "Smart Matches", icon: Sparkles, href: "/matches" },
   { label: "Notifications", icon: Bell, href: "/notifications" },
 ]

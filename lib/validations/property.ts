@@ -22,6 +22,8 @@ export const PropertyFormSchema = z.object({
   bathrooms: z.number().min(0).optional().nullable(),
   area_sqft: z.number().optional().nullable(),
   area_unit: z.enum(["sqft", "sqyard", "sqm", "gaj"]).optional().nullable(),
+  dimensions: z.string().optional().nullable(),
+  commercial_type: z.enum(["shop", "space", "land"]).optional().nullable(),
   road_info: z.string().optional().nullable(),
   furnishing: z.enum(furnishingValues).optional().nullable(),
   floor_number: z.string().optional().nullable(),
@@ -30,7 +32,7 @@ export const PropertyFormSchema = z.object({
   parking: z.string().optional().nullable(),
   maintenance_charge: z.number().min(0).optional().nullable(),
   cover_image_url: z.string().optional().nullable(),
-  image_urls: z.array(z.string()).optional().default([]),
+  image_urls: z.array(z.string()).max(3, "Maximum 3 images allowed").optional().default([]),
   // New fields
   seller_name: z.string().optional().nullable(),
   seller_phone: z.string().optional().nullable(),

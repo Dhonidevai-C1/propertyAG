@@ -114,6 +114,8 @@ export interface Property {
   bathrooms: number
   area_sqft: number | null
   area_unit: 'sqft' | 'sqyard' | 'sqm' | 'gaj'
+  dimensions: string | null
+  commercial_type: 'shop' | 'space' | 'land' | null
   road_info: string | null
   floor_number: string | null
   total_floors: string | null
@@ -160,6 +162,8 @@ export interface Client {
   min_bedrooms: number
   min_area_sqft: number | null
   min_area_unit: 'sqft' | 'sqyard' | 'sqm' | 'gaj'
+  min_dimensions: string | null
+  preferred_commercial_type: 'shop' | 'space' | 'land' | null
   furnishing_preference: string | null
   possession_timeline: string | null
   is_deleted: boolean

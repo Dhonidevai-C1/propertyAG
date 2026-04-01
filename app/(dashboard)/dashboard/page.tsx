@@ -23,6 +23,9 @@ import { getProperties } from "@/lib/actions/properties"
 import { requireProfile } from "@/lib/auth/get-session"
 import { Notification } from "@/lib/types/database"
 import { formatRelativeTime, formatPrice } from "@/lib/utils/format"
+import { getTodaysFollowUps } from "@/lib/actions/clients"
+import { ensureDailyFollowUpNotification } from "@/lib/actions/matches"
+import { FollowUpWidget } from "@/components/dashboard/follow-up-widget"
 
 function activityIcon(type: string) {
   const map: Record<string, typeof Building2> = {
@@ -86,22 +89,24 @@ const quickActions = [
     href: "/matches",
     cls: "bg-white hover:bg-slate-50 text-slate-700 border border-slate-200",
   },
-  {
-    label: "Team",
-    icon: Users,
-    href: "/team",
-    cls: "bg-white hover:bg-slate-50 text-slate-700 border border-slate-200",
-  },
 ]
 
 export default async function DashboardPage() {
-  const [profile, stats, notifications, recentActivities, recentProperties] = await Promise.all([
+  const [profile, stats, notifications, recentActivities, recentProperties, followUpsRes] = await Promise.all([
     requireProfile(),
     getDashboardStats(),
     getRecentNotifications(4),
-    getRecentActivities(5),
+    getRecentActivities(6),
     getProperties({ limit: 3 } as any),
+    getTodaysFollowUps()
   ])
+
+  const followUps = followUpsRes && Array.isArray(followUpsRes) ? followUpsRes : (followUpsRes as any)?.data || []
+
+  if (followUps.length > 0) {
+    // Run asynchronously without blocking the render
+    ensureDailyFollowUpNotification(followUps.length).catch(console.error)
+  }
 
   const statCards = [
     {
@@ -128,14 +133,14 @@ export default async function DashboardPage() {
       color: "text-amber-600",
       bg: "bg-amber-50",
     },
-    // {
-    //   label: "Follow-ups due",
-    //   value: stats.pendingFollowups,
-    //   icon: Clock,
-    //   sub: "need attention",
-    //   color: stats.pendingFollowups > 0 ? "text-red-500" : "text-emerald-600",
-    //   bg: stats.pendingFollowups > 0 ? "bg-red-50" : "bg-emerald-50",
-    // },
+    {
+      label: "Follow-ups due",
+      value: followUps.length,
+      icon: Clock,
+      sub: "need attention",
+      color: followUps.length > 0 ? "text-red-500" : "text-emerald-600",
+      bg: followUps.length > 0 ? "bg-red-50" : "bg-emerald-50",
+    },
   ]
 
   const hour = new Date().getHours()
@@ -155,19 +160,20 @@ export default async function DashboardPage() {
       </div>
 
       {/* Stats Row */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
         {statCards.map(stat => (
-          <Card key={stat.label} className="border-slate-100 shadow-sm rounded-2xl">
-            <CardContent className="p-5">
+          <Card key={stat.label} className="border-slate-100/60 bg-white/60 backdrop-blur-xl shadow-sm hover:shadow-md transition-all rounded-3xl overflow-hidden relative group">
+            <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-transparent via-slate-200 to-transparent group-hover:via-emerald-400 opacity-0 group-hover:opacity-100 transition-all duration-500"></div>
+            <CardContent className="p-6">
               <div className="flex items-center justify-between mb-4">
-                <div className={cn("p-2.5 rounded-xl", stat.bg)}>
+                <div className={cn("p-3 rounded-2xl", stat.bg)}>
                   <stat.icon className={cn("w-5 h-5", stat.color)} />
                 </div>
-                <TrendingUp className="w-3.5 h-3.5 text-emerald-400" />
+                <TrendingUp className="w-4 h-4 text-emerald-400 group-hover:scale-110 transition-transform" />
               </div>
-              <p className="text-3xl font-black text-slate-900 tracking-tight">{stat.value}</p>
-              <p className="text-sm font-semibold text-slate-700 mt-1">{stat.label}</p>
-              <p className="text-xs text-slate-400 mt-0.5">{stat.sub}</p>
+              <p className="text-4xl font-black text-slate-900 tracking-tight">{stat.value}</p>
+              <p className="text-sm font-semibold text-slate-700 mt-2">{stat.label}</p>
+              <p className="text-xs text-slate-400 mt-1">{stat.sub}</p>
             </CardContent>
           </Card>
         ))}
@@ -182,9 +188,9 @@ export default async function DashboardPage() {
               View all →
             </Link>
           </div>
-          <Card className="border-slate-100 shadow-sm rounded-2xl overflow-hidden">
+          <Card className="border-slate-100/60 bg-white/60 backdrop-blur-xl shadow-sm rounded-3xl overflow-hidden">
             {recentActivities.length > 0 ? (
-              <div className="divide-y divide-slate-50">
+              <div className="divide-y divide-slate-100/50">
                 {recentActivities.map(activity => {
                   const Icon = activityIcon(activity.action_type)
                   const href =
@@ -200,60 +206,69 @@ export default async function DashboardPage() {
                         activity.action_type === 'delete' ? 'removed' : 'found match for'
 
                   const content = (
-                    <div className="p-4 flex items-center gap-3 hover:bg-slate-50 transition-colors group">
-                      <div className={cn("w-9 h-9 rounded-full flex items-center justify-center shrink-0", activityColor(activity.action_type))}>
+                    <div className="p-5 flex items-center gap-4 hover:bg-slate-50/80 transition-all duration-300 group">
+                      <div className={cn("w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 shadow-sm", activityColor(activity.action_type))}>
                         <Icon className="w-4 h-4" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm text-slate-700">
-                          <span className="font-bold text-slate-900">{activity.profiles?.full_name}</span>
-                          {" "}{actionText}{" "}
-                          <span className="font-medium text-slate-600">
+                        <p className="text-sm text-slate-700 leading-relaxed">
+                          <span className="font-bold text-slate-900 drop-shadow-sm">{activity.profiles?.full_name}</span>
+                          {" "}<span className="text-slate-500">{actionText}</span>{" "}
+                          <span className="font-bold text-slate-800">
                             {activity.metadata?.title || activity.entity_type}
                           </span>
                         </p>
-                        <p className="text-xs text-slate-400 mt-0.5">{formatRelativeTime(activity.created_at)}</p>
+                        <p className="text-xs text-slate-400 mt-1 font-medium flex items-center gap-1">
+                          <Clock className="w-3 h-3" />
+                          {formatRelativeTime(activity.created_at)}
+                        </p>
                       </div>
-                      {href && <ArrowRight className="w-4 h-4 text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />}
+                      {href && <ArrowRight className="w-4 h-4 text-emerald-400 opacity-0 -translate-x-2 group-hover:translate-x-0 group-hover:opacity-100 transition-all duration-300 shrink-0" />}
                     </div>
                   )
 
                   if (!href) return <div key={activity.id}>{content}</div>
 
                   return (
-                    <Link key={activity.id} href={href}>
+                    <Link key={activity.id} href={href} className="block">
                       {content}
                     </Link>
                   )
                 })}
               </div>
             ) : (
-              <div className="p-12 text-center">
-                <Clock className="w-8 h-8 text-slate-200 mx-auto mb-3" />
-                <p className="text-slate-400 text-sm font-medium">No activity yet</p>
-                <p className="text-slate-300 text-xs mt-1">Activity from your team will appear here</p>
+              <div className="p-16 text-center">
+                <Clock className="w-10 h-10 text-slate-200 mx-auto mb-4" />
+                <p className="text-slate-500 text-sm font-bold">No activity yet</p>
+                <p className="text-slate-400 text-xs mt-1">Activity from your team will appear here</p>
               </div>
             )}
           </Card>
         </div>
 
-        {/* Quick Actions */}
-        <div className="space-y-4">
-          <h2 className="text-base font-bold text-slate-900">Quick actions</h2>
-          <div className="flex flex-col gap-3">
-            {quickActions.map(action => (
-              <Link
-                key={action.label}
-                href={action.href}
-                className={cn(
-                  "flex items-center gap-3 h-14 px-4 rounded-xl text-sm font-bold transition-all active:scale-[0.98] shadow-sm",
-                  action.cls
-                )}
-              >
-                <action.icon className="w-5 h-5 shrink-0" />
-                {action.label}
-              </Link>
-            ))}
+        {/* Right Column: Follow Ups & Quick Actions */}
+        <div className="space-y-8">
+          <div className="h-[300px]">
+            <FollowUpWidget followUps={followUps} />
+          </div>
+
+          <div className="space-y-4">
+            <h2 className="text-base font-bold text-slate-900">Quick actions</h2>
+            <div className="flex flex-col gap-3">
+              {quickActions.map(action => (
+                <Link
+                  key={action.label}
+                  href={action.href}
+                  className={cn(
+                    "flex items-center gap-3 h-14 px-4 rounded-xl text-sm font-bold transition-all active:scale-[0.98] shadow-sm",
+                    action.cls
+                  )}
+                >
+                  <action.icon className="w-5 h-5 shrink-0" />
+                  {action.label}
+                </Link>
+              ))}
+            </div>
           </div>
         </div>
       </div>

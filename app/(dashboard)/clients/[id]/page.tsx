@@ -28,9 +28,10 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { getClient } from "@/lib/actions/clients"
 import { getMatchesForClient } from "@/lib/actions/matches"
 import { notFound } from "next/navigation"
-import { formatRelativeTime, formatBudgetRange, formatPrice } from "@/lib/utils/format"
+import { formatRelativeTime, formatBudgetRange } from "@/lib/utils/format"
 import { ClientActionsDropdown } from "@/components/clients/client-actions-dropdown"
 import { ClientRunMatchButton } from "@/components/clients/client-run-match-button"
+import { ShownPropertiesSection } from "@/components/clients/shown-properties-section"
 
 export default async function ClientDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -143,6 +144,9 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
                   <span className="font-bold text-slate-900">{client.assignee?.full_name || "Unassigned"}</span>
                 </div>
               </InfoRow>
+              <InfoRow icon={<Tag className="w-4 h-4 text-emerald-500" />} label="Contact Type">
+                <span className="font-bold capitalize text-emerald-600">{client.contact_type || "Client"}</span>
+              </InfoRow>
               <InfoRow icon={<CalendarIcon className="w-4 h-4 text-slate-400" />} label="Added">
                 <span className="font-semibold text-slate-700">{formatRelativeTime(client.created_at)}</span>
               </InfoRow>
@@ -240,7 +244,12 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
                 </span>
               </ReqCard>
             </div>
+
+
           </SectionCard>
+
+          {/* Shown Properties History */}
+          <ShownPropertiesSection clientId={client.id} />
 
         </div>
 
@@ -280,6 +289,24 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
                 </Link>
               </div>
             )}
+          </SectionCard>
+          {/* Quick Actions */}
+          <SectionCard title="Quick actions" noPadding>
+            <div className="flex flex-col p-2">
+              <Link href={`/clients/${id}/edit`} className="w-full">
+                <button className="w-full flex items-center gap-3 h-11 px-4 text-slate-600 font-bold text-sm rounded-xl hover:bg-slate-50 transition-colors">
+                  <Pencil className="w-4 h-4" />
+                  Edit requirements
+                </button>
+              </Link>
+              <ClientRunMatchButton clientId={id} />
+              <Link href={`tel:${client.phone}`} className="w-full">
+                <button className="w-full flex items-center gap-3 h-11 px-4 text-emerald-600 font-bold text-sm rounded-xl hover:bg-emerald-50 transition-colors">
+                  <Phone className="w-4 h-4" />
+                  Call client
+                </button>
+              </Link>
+            </div>
           </SectionCard>
 
           {/* Matched Properties */}
@@ -337,24 +364,8 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
             )}
           </SectionCard>
 
-          {/* Quick Actions */}
-          <SectionCard title="Quick actions" noPadding>
-            <div className="flex flex-col p-2">
-              <Link href={`/clients/${id}/edit`} className="w-full">
-                <button className="w-full flex items-center gap-3 h-11 px-4 text-slate-600 font-bold text-sm rounded-xl hover:bg-slate-50 transition-colors">
-                  <Pencil className="w-4 h-4" />
-                  Edit requirements
-                </button>
-              </Link>
-              <ClientRunMatchButton clientId={id} />
-              <Link href={`tel:${client.phone}`} className="w-full">
-                <button className="w-full flex items-center gap-3 h-11 px-4 text-emerald-600 font-bold text-sm rounded-xl hover:bg-emerald-50 transition-colors">
-                  <Phone className="w-4 h-4" />
-                  Call client
-                </button>
-              </Link>
-            </div>
-          </SectionCard>
+
+
         </div>
       </div>
     </div>

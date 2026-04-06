@@ -1,12 +1,12 @@
 'use client'
 
 import React from "react"
-import { 
-  MoreVertical, 
-  Copy, 
-  Sparkles, 
-  Eye, 
-  Pencil, 
+import {
+  MoreVertical,
+  Copy,
+  Sparkles,
+  Eye,
+  Pencil,
   Trash2,
   Phone,
   Mail
@@ -30,7 +30,7 @@ import Link from "next/link"
 import { ClientWithAssignee } from "@/lib/actions/clients"
 import { formatBudgetRange, formatRelativeTime, formatInitials } from "@/lib/utils/format"
 
-export type ClientStatus = "active" | "matched" | "closed"
+
 
 interface ClientRowProps {
   client: ClientWithAssignee
@@ -55,11 +55,7 @@ export function ClientRow({ client, isSelected, onSelect, onDelete }: ClientRowP
     return colors[firstLetter] || "bg-slate-100 text-slate-700"
   }
 
-  const statusColors: Record<ClientStatus, string> = {
-    active: "bg-green-100 text-green-700",
-    matched: "bg-amber-100 text-amber-700",
-    closed: "bg-slate-100 text-slate-500",
-  }
+
 
   const copyToClipboard = (text: string, type: string) => {
     navigator.clipboard.writeText(text)
@@ -69,13 +65,13 @@ export function ClientRow({ client, isSelected, onSelect, onDelete }: ClientRowP
   return (
     <TableRow className="group hover:bg-slate-50/50 transition-colors">
       <TableCell className="w-12">
-        <Checkbox 
+        <Checkbox
           checked={isSelected}
           onCheckedChange={(checked) => onSelect(client.id, !!checked)}
           className="border-slate-300 data-[state=checked]:bg-emerald-500 data-[state=checked]:border-none"
         />
       </TableCell>
-      
+
       <TableCell>
         <div className="flex items-center gap-3">
           <Avatar className={cn("h-9 w-9 border-none font-bold", getAvatarColor(client.full_name))}>
@@ -87,12 +83,12 @@ export function ClientRow({ client, isSelected, onSelect, onDelete }: ClientRowP
           </div>
         </div>
       </TableCell>
-      
+
       <TableCell>
         <div className="flex flex-col space-y-0.5 group/contact max-w-[200px]">
           <div className="flex items-center gap-1.5 text-sm text-slate-600">
             <span>{client.phone}</span>
-            <button 
+            <button
               onClick={() => copyToClipboard(client.phone, "Phone number")}
               className="opacity-0 group-hover/contact:opacity-100 transition-opacity p-1 hover:bg-slate-100 rounded"
             >
@@ -102,24 +98,33 @@ export function ClientRow({ client, isSelected, onSelect, onDelete }: ClientRowP
           <span className="text-xs text-slate-500 truncate">{client.email || 'No email provided'}</span>
         </div>
       </TableCell>
-      
+
       <TableCell>
         <span className="text-sm font-medium text-slate-700">{formatBudgetRange(client.budget_min, client.budget_max)}</span>
       </TableCell>
-      
+
+      <TableCell>
+        <div className={cn(
+          "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-[11px] font-bold uppercase tracking-wider shrink-0",
+          client.looking_for === "buy" ? "bg-emerald-50 text-emerald-700" : "bg-blue-50 text-blue-700"
+        )}>
+          {client.looking_for === "buy" ? "🏠 Buying" : "🔑 Renting"}
+        </div>
+      </TableCell>
+
       <TableCell>
         <div className="flex flex-wrap gap-1.5 max-w-[250px]">
           {client.property_types && client.property_types.map((req: string, i: number) => (
-            <span 
-              key={i} 
+            <span
+              key={i}
               className="px-2 py-0.5 bg-slate-100 text-slate-600 text-[10px] sm:text-xs font-medium rounded-full whitespace-nowrap capitalize"
             >
               {req.replace('_', ' ')}
             </span>
           ))}
           {client.preferred_locations && client.preferred_locations.slice(0, 2).map((loc: string, i: number) => (
-            <span 
-              key={`loc-${i}`} 
+            <span
+              key={`loc-${i}`}
               className="px-2 py-0.5 bg-slate-100 text-slate-600 text-[10px] sm:text-xs font-medium rounded-full whitespace-nowrap capitalize"
             >
               {loc}
@@ -127,28 +132,17 @@ export function ClientRow({ client, isSelected, onSelect, onDelete }: ClientRowP
           ))}
         </div>
       </TableCell>
-      
-      <TableCell>
-        <Badge className={cn("border-none px-2.5 py-0.5 text-[11px] font-semibold rounded-full capitalize", statusColors[client.status as ClientStatus] || statusColors.active)}>
-          {client.status}
-        </Badge>
-      </TableCell>
-      
-      <TableCell>
-        <div className="flex items-center gap-1.5 text-amber-600 font-medium">
-          <Sparkles className="w-4 h-4" />
-          <span className="text-sm">matches</span>
-        </div>
-      </TableCell>
-      
+
+
+
       <TableCell className="text-right">
         <div className="flex items-center justify-end gap-1">
           <Link href={`/clients/${client.id}`}>
-            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-emerald-600">
+            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 cursor-pointer hover:text-emerald-600">
               <Eye className="w-4 h-4" />
             </Button>
           </Link>
-          
+
           <DropdownMenu>
             <DropdownMenuTrigger render={
               <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400">
@@ -161,7 +155,7 @@ export function ClientRow({ client, isSelected, onSelect, onDelete }: ClientRowP
                 Edit
               </DropdownMenuItem>
               <DropdownMenuSeparator className="bg-slate-100" />
-              <DropdownMenuItem 
+              <DropdownMenuItem
                 className="text-red-500 cursor-pointer focus:text-red-500"
                 onClick={() => onDelete(client.id)}
               >

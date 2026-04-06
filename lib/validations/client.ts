@@ -14,13 +14,14 @@ export const ClientFormSchema = z.object({
   budget_max: z.number().nullable().optional(),
   min_bedrooms: z.number().min(0).max(10),
   min_area_sqft: z.number().nullable().optional(),
-  min_area_unit: z.enum(["sqft", "sqyard", "sqm"]),
+  min_area_unit: z.enum(["sqft", "sqyard", "sqm", "gaj", "bigha"]),
   min_dimensions: z.string().optional().nullable(),
   preferred_commercial_type: z.enum(["shop", "space", "land"]).optional().nullable(),
   furnishing_preference: z.string().optional(),
   possession_timeline: z.string().optional(),
   priority: z.enum(["low", "medium", "high"]).optional(),
   follow_up_date: z.date().optional(),
+  contact_type: z.enum(["client", "broker"]).optional().nullable(),
   assigned_to: z.string().optional(),
 }).refine(data => {
   if (data.budget_min && data.budget_max) {

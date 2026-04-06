@@ -59,6 +59,7 @@ export function ClientList({ initialClients }: ClientListProps) {
   const [budgetFilter, setBudgetFilter] = useState<string>("any")
   const [typeFilter, setTypeFilter] = useState<string>("any")
   const [statusFilter, setStatusFilter] = useState<string>("all")
+  const [lookingForFilter, setLookingForFilter] = useState<string>("any")
 
   // ── Pure client-side filtering — no server round-trips ──
   const filteredClients = useMemo(() => {
@@ -98,17 +99,23 @@ export function ClientList({ initialClients }: ClientListProps) {
         if (client.status !== statusFilter) return false
       }
 
+      // Looking For filter
+      if (lookingForFilter !== "any") {
+        if (client.looking_for !== lookingForFilter) return false
+      }
+
       return true
     })
   }, [initialClients, searchValue, budgetFilter, typeFilter, statusFilter])
 
-  const hasActiveFilters = searchValue || budgetFilter !== "any" || typeFilter !== "any" || statusFilter !== "all"
+  const hasActiveFilters = searchValue || budgetFilter !== "any" || typeFilter !== "any" || statusFilter !== "all" || lookingForFilter !== "any"
 
   const resetFilters = () => {
     setSearchValue("")
     setBudgetFilter("any")
     setTypeFilter("any")
     setStatusFilter("all")
+    setLookingForFilter("any")
   }
 
   const handleSelectAll = (checked: boolean) => {
@@ -148,6 +155,7 @@ export function ClientList({ initialClients }: ClientListProps) {
       'Full Name': c.full_name,
       'Phone': c.phone,
       'Email': c.email || 'N/A',
+      'Contact Type': c.contact_type || 'client',
       'Status': c.status,
       'Priority': c.priority,
       'Looking For': c.looking_for || 'Any',
@@ -206,7 +214,7 @@ export function ClientList({ initialClients }: ClientListProps) {
               variant="outline"
               size="sm"
               onClick={handleExport}
-              className="h-11 px-4 rounded-xl border-2 border-slate-200 text-slate-600 font-bold hover:bg-slate-50 transition-all gap-2"
+              className="h-11 px-4 rounded-xl cursor-pointer border-2 border-slate-200 text-slate-600 font-bold hover:bg-slate-50 transition-all gap-2"
             >
               <Download className="w-4 h-4" />
               <span>Export</span>
@@ -245,7 +253,7 @@ export function ClientList({ initialClients }: ClientListProps) {
               <SelectValue>
                 {budgetFilter === "any" ? "Budget" :
                   budgetFilter === "3000000" ? "Under ₹30L" :
-                  budgetFilter === "6000000" ? "Up to ₹60L" : "Up to ₹1Cr"}
+                    budgetFilter === "6000000" ? "Up to ₹60L" : "Up to ₹1Cr"}
               </SelectValue>
             </SelectTrigger>
             <SelectContent className="bg-white">
@@ -267,9 +275,9 @@ export function ClientList({ initialClients }: ClientListProps) {
               <SelectValue>
                 {typeFilter === "any" ? "Property Type" :
                   typeFilter === "apartment" ? "Apartment" :
-                  typeFilter === "villa" ? "Villa" :
-                  typeFilter === "independent_house" ? "Ind. House" :
-                  typeFilter === "plot" ? "Plot" : "Commercial"}
+                    typeFilter === "villa" ? "Villa" :
+                      typeFilter === "independent_house" ? "Ind. House" :
+                        typeFilter === "plot" ? "Plot" : "Commercial"}
               </SelectValue>
             </SelectTrigger>
             <SelectContent className="bg-white">
@@ -302,6 +310,26 @@ export function ClientList({ initialClients }: ClientListProps) {
               <SelectItem value="closed" className="font-medium">Closed</SelectItem>
             </SelectContent>
           </Select>
+
+          {/* Looking For filter */}
+          {/* <Select onValueChange={(v) => setLookingForFilter(v ?? "any")} value={lookingForFilter}>
+            <SelectTrigger className={cn(
+              "h-9 px-3 text-sm font-semibold bg-white border-2 rounded-xl transition-all gap-2",
+              lookingForFilter !== "any"
+                ? "border-blue-400 text-blue-700 bg-blue-50"
+                : "border-slate-200 text-slate-700 hover:border-slate-300"
+            )}>
+              <SelectValue>
+                {lookingForFilter === "any" ? "Requirement" :
+                  lookingForFilter === "buy" ? "Buying" : "Renting"}
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent className="bg-white">
+              <SelectItem value="any" className="font-medium">Any Requirement</SelectItem>
+              <SelectItem value="buy" className="font-medium">🏠 Buying</SelectItem>
+              <SelectItem value="rent" className="font-medium">🔑 Renting</SelectItem>
+            </SelectContent>
+          </Select> */}
 
           {hasActiveFilters && (
             <button
@@ -337,9 +365,8 @@ export function ClientList({ initialClients }: ClientListProps) {
                     <TableHead className="h-10 text-[10px] text-slate-400 uppercase font-bold tracking-wider">Client</TableHead>
                     <TableHead className="h-10 text-[10px] text-slate-400 uppercase font-bold tracking-wider">Contact</TableHead>
                     <TableHead className="h-10 text-[10px] text-slate-400 uppercase font-bold tracking-wider">Budget</TableHead>
+                    <TableHead className="h-10 text-[10px] text-slate-400 uppercase font-bold tracking-wider">Type</TableHead>
                     <TableHead className="h-10 text-[10px] text-slate-400 uppercase font-bold tracking-wider">Requirements</TableHead>
-                    <TableHead className="h-10 text-[10px] text-slate-400 uppercase font-bold tracking-wider">Status</TableHead>
-                    <TableHead className="h-10 text-[10px] text-slate-400 uppercase font-bold tracking-wider">Matches</TableHead>
                     <TableHead className="h-10 text-right pr-6 text-[10px] text-slate-400 uppercase font-bold tracking-wider">Actions</TableHead>
                   </TableRow>
                 </TableHeader>

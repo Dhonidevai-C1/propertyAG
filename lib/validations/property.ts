@@ -21,7 +21,7 @@ export const PropertyFormSchema = z.object({
   bedrooms: z.number().min(0).optional().nullable(),
   bathrooms: z.number().min(0).optional().nullable(),
   area_sqft: z.number().optional().nullable(),
-  area_unit: z.enum(["sqft", "sqyard", "sqm", "gaj"]).optional().nullable(),
+  area_unit: z.enum(["sqft", "sqyard", "sqm", "gaj", "bigha"]).optional().nullable(),
   dimensions: z.string().optional().nullable(),
   commercial_type: z.enum(["shop", "space", "land"]).optional().nullable(),
   road_info: z.string().optional().nullable(),
@@ -38,6 +38,7 @@ export const PropertyFormSchema = z.object({
   seller_phone: z.string().optional().nullable(),
   approval_type: z.string().optional().nullable(),
   group: z.string().optional().nullable(),
+  contact_type: z.enum(["client", "broker"]).optional().nullable(),
   // Slug: auto-generated from title. Only lowercase letters, numbers, hyphens.
   // No spaces, no leading/trailing hyphens. Server validates uniqueness.
   slug: z.string()

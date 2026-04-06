@@ -103,6 +103,8 @@ export function PropertyList({ initialProperties }: PropertyListProps) {
       'Price (₹)': p.price,
       'Price Negotiable': p.price_negotiable ? 'Yes' : 'No',
       'Approval Type': p.approval_type || 'N/A',
+      'Plot Group': p.group || 'N/A',
+      'Contact Type': p.contact_type || 'client',
       'Seller Name': p.seller_name || 'N/A',
       'Seller Phone': p.seller_phone || 'N/A',
       'BHK': Array.isArray(p.bhk) ? p.bhk.sort((a,b) => a-b).join(', ') : (p.bhk || p.bedrooms),

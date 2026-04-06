@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
-import { Inter, Playfair_Display } from "next/font/google";
+import { Poppins, Playfair_Display } from "next/font/google";
 import { Providers } from "@/components/providers";
 import NextTopLoader from 'nextjs-toploader';
 import "./globals.css";
 
-const inter = Inter({
-  variable: "--font-inter",
+const poppins = Poppins({
+  variable: "--font-poppins",
   subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700", "800"],
 });
 
 const playfair = Playfair_Display({
@@ -27,7 +28,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${inter.variable} ${playfair.variable} font-sans bg-slate-950 antialiased text-slate-200`}
+        className={`${poppins.variable} ${playfair.variable} font-sans antialiased`}
         suppressHydrationWarning
       >
         <NextTopLoader

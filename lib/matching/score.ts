@@ -90,6 +90,8 @@ export function scoreMatch(client: Client, property: Property): MatchScoreResult
       if (isNaN(numVal)) return 0
       if (unit === 'sqyard') return numVal * 9
       if (unit === 'sqm') return numVal * 10.7639
+      if (unit === 'gaj') return numVal * 9
+      if (unit === 'bigha') return numVal * 27225
       return numVal
     }
 

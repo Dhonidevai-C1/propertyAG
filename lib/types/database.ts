@@ -113,7 +113,7 @@ export interface Property {
   bedrooms: number
   bathrooms: number
   area_sqft: number | null
-  area_unit: 'sqft' | 'sqyard' | 'sqm' | 'gaj'
+  area_unit: 'sqft' | 'sqyard' | 'sqm' | 'gaj' | 'bigha'
   dimensions: string | null
   commercial_type: 'shop' | 'space' | 'land' | null
   road_info: string | null
@@ -129,6 +129,7 @@ export interface Property {
   seller_phone: string | null
   approval_type: string | null
   group: string | null
+  contact_type: 'client' | 'broker' | null
   slug: string | null
   listing_type: 'sale' | 'rent'
   is_featured: boolean
@@ -161,11 +162,12 @@ export interface Client {
   budget_max: number | null
   min_bedrooms: number
   min_area_sqft: number | null
-  min_area_unit: 'sqft' | 'sqyard' | 'sqm' | 'gaj'
+  min_area_unit: 'sqft' | 'sqyard' | 'sqm' | 'gaj' | 'bigha'
   min_dimensions: string | null
   preferred_commercial_type: 'shop' | 'space' | 'land' | null
   furnishing_preference: string | null
   possession_timeline: string | null
+  contact_type: 'client' | 'broker' | null
   is_deleted: boolean
   created_at: string
   updated_at: string

@@ -35,8 +35,8 @@ export default async function ClientsPage(props: ClientsPageProps) {
           <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Clients</h1>
           <p className="text-sm text-slate-500 font-medium">Your buyer and renter database</p>
         </div>
-        <Link 
-          href="/clients/new" 
+        <Link
+          href="/clients/new"
           className={cn(
             buttonVariants({ variant: "default" }),
             "bg-emerald-500 hover:bg-emerald-600 text-white border-none rounded-xl h-11 px-6 flex items-center gap-2 font-semibold"

@@ -61,6 +61,7 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
     { label: "Listing type", value: property.listing_type },
     { label: "Status", value: property.status },
     { label: "Approval Authority", value: property.approval_type || "General" },
+    { label: "Source", value: property.contact_type === "broker" ? "Broker" : "Direct Client" },
     property.group && (property.property_type === 'plot' || property.property_type === 'farmhouse' || property.property_type === 'farmer_land')
       ? { label: "Plot Group", value: property.group } : null,
     (property.bhk && property.bhk.length > 0) ? { label: "BHK", value: `${property.bhk.sort((a, b) => a - b).join(", ")} BHK` } : null,
@@ -82,8 +83,8 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
       ? { label: "Maintenance", value: `₹${Number(property.maintenance_charge).toLocaleString()}/mo` }
       : null,
     { label: "Price negotiable", value: property.price_negotiable ? "Yes" : "No" },
-    { label: "Listed on", value: new Date(property.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) },
-  ].filter(Boolean) as { label: string; value: string }[]
+    { label: "Listed on", value: new Date(property.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }), printHidden: true },
+  ].filter(d => d && !d.printHidden) as { label: string; value: string }[]
 
   return (
     <div className="max-w-7xl mx-auto space-y-6 pb-20 print:space-y-4 print:pb-0">
@@ -275,7 +276,7 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
         <div className="lg:col-span-4 space-y-6 print:hidden">
           {/* Seller Details */}
           {(property.seller_name || property.seller_phone) && (
-            <Card className="p-6 border-slate-100 shadow-sm rounded-2xl bg-slate-900 text-white space-y-4">
+            <Card className="p-6 border-slate-100 shadow-sm rounded-2xl bg-slate-900 text-white space-y-4 print:hidden">
               <h3 className="text-sm font-black uppercase tracking-widest text-emerald-400">Seller Contact</h3>
               <div className="space-y-4">
                 {property.seller_name && (
@@ -371,6 +372,20 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
           </Card>
         </div>
       </div>
+      <style dangerouslySetInnerHTML={{ __html: `
+        @media print {
+          @page { margin: 15mm 10mm 15mm 10mm; }
+          body { 
+            print-color-adjust: exact; 
+            -webkit-print-color-adjust: exact;
+            background: white !important;
+          }
+          /* Hide default browser headers and footers */
+          header, footer, table thead, table tfoot { display: none !important; }
+          /* General print cleanups */
+          .print\\:hidden { display: none !important; }
+        }
+      `}} />
     </div>
   )
 }

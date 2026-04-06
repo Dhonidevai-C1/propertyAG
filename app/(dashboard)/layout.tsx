@@ -47,14 +47,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   return (
     <AuthProvider>
       <NotificationProvider>
-        <div className="flex bg-white h-screen overflow-hidden print:h-auto print:overflow-visible">
+        <div className="flex bg-white h-screen overflow-hidden print:h-auto print:overflow-visible text-stone-800">
           {/* Desktop Sidebar */}
           <div className="print:hidden z-20">
             <Sidebar isCollapsed={isCollapsed} setIsCollapsed={setIsCollapsed} />
           </div>
 
-          {/* Main Content */}
-          <main className="flex-1 min-w-0 bg-slate-50 overflow-y-auto print:bg-white">
+          {/* Main Content - Updated with Warm Professional Background */}
+          <main className="flex-1 min-w-0 bg-[#FDFCFB] overflow-y-auto print:bg-white">
             <div className="p-4 md:p-6 pb-24 lg:pb-6 max-w-7xl mx-auto w-full print:p-0">
               {children}
             </div>
@@ -68,12 +68,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
         {/* Mobile Menu Sheet */}
         <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
-          <SheetContent side="bottom" className="rounded-t-3xl h-auto max-h-[80vh] px-0 pb-10">
+          <SheetContent side="bottom" className="rounded-t-3xl h-auto max-h-[80vh] px-0 pb-10 bg-[#FDFCFB]">
             <SheetHeader className="px-6 pb-4 flex flex-row items-center gap-3">
               <img src="/logoprop.png" alt="Logo" className="w-10 h-10 object-contain" />
               <div className="flex flex-col text-left">
-                <SheetTitle className="text-lg font-bold">PropDesk</SheetTitle>
-                <SheetDescription className="text-xs">Manage your properties with ease</SheetDescription>
+                <SheetTitle className="text-lg font-bold text-stone-900">PropDesk</SheetTitle>
+                <SheetDescription className="text-xs text-stone-500">Manage your properties with ease</SheetDescription>
               </div>
             </SheetHeader>
             <div className="px-2 space-y-1">
@@ -89,28 +89,31 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     className={cn(
                       "flex items-center gap-4 px-4 py-3.5 rounded-xl transition-all",
                       isActive
-                        ? "bg-emerald-500/10 text-emerald-600 font-semibold"
-                        : "text-slate-600 hover:bg-slate-50 active:scale-[0.98]"
+                        // Warm premium accent (Amber/Copper) instead of Emerald
+                        ? "bg-amber-600/10 text-amber-700 font-semibold"
+                        // Warmer hover states using Stone instead of Slate
+                        : "text-stone-600 hover:bg-stone-100 active:scale-[0.98]"
                     )}
                   >
                     <div className={cn(
                       "w-10 h-10 rounded-lg flex items-center justify-center shrink-0",
-                      isActive ? "bg-emerald-500 text-white" : "bg-slate-100 text-slate-500"
+                      // Matching the icon colors to the new warm theme
+                      isActive ? "bg-amber-600 text-white" : "bg-stone-100 text-stone-500"
                     )}>
                       <Icon className="w-5 h-5" />
                     </div>
                     <span className="flex-1 text-base">{item.label}</span>
-                    <ChevronRight className="w-4 h-4 text-slate-300" />
+                    <ChevronRight className="w-4 h-4 text-stone-300" />
                   </Link>
                 )
               })}
 
               <div className="px-4 py-2">
-                <Separator className="bg-slate-100" />
+                <Separator className="bg-stone-200" />
               </div>
 
               <div className="px-4">
-                <LogoutButton className="w-full flex items-center gap-4 px-4 py-3.5 text-red-500 hover:bg-red-50 rounded-xl h-auto font-medium">
+                <LogoutButton className="w-full flex items-center gap-4 px-4 py-3.5 text-red-600 hover:bg-red-50 rounded-xl h-auto font-medium transition-colors">
                   <div className="w-10 h-10 rounded-lg bg-red-50 flex items-center justify-center shrink-0">
                     <LogOut className="w-5 h-5" />
                   </div>

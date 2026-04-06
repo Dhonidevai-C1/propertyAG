@@ -211,7 +211,7 @@ export async function getProperties(filters: PropertyFilters) {
     
     terms.forEach(term => {
       const isNum = !isNaN(Number(term))
-      let orQuery = `title.ilike.%${term}%,locality.ilike.%${term}%,city.ilike.%${term}%,address.ilike.%${term}%,property_type.ilike.%${term}%`
+      let orQuery = `title.ilike.%${term}%,locality.ilike.%${term}%,city.ilike.%${term}%,address.ilike.%${term}%,property_type.ilike.%${term}%,description.ilike.%${term}%`
       if (isNum) {
         // Use overlaps operator for array search: bhk.cs.{val} for 'contains' or bhk.ov.{val} for overlap
         // In PostgREST, array contains is .cs.{val}

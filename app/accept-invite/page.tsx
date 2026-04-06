@@ -72,10 +72,10 @@ export default function AcceptInvitePage() {
       }
     })
 
-    // Fallback: if no auth event fires in 6 seconds, show error
+    // Fallback: if no auth event fires in 20 seconds, show error
     const timeout = setTimeout(() => {
       setStep(prev => prev === 'loading' ? 'error' : prev)
-    }, 6000)
+    }, 20000)
 
     return () => {
       subscription.unsubscribe()
@@ -110,8 +110,9 @@ export default function AcceptInvitePage() {
 
   if (step === "loading") {
     return (
-      <div className="min-h-screen bg-linear-to-br from-slate-50 to-emerald-50/30 flex items-center justify-center">
-        <Loader2 className="w-8 h-8 text-emerald-500 animate-spin" />
+      <div className="flex flex-col items-center gap-4">
+        <Loader2 className="w-10 h-10 text-emerald-500 animate-spin" />
+        <p className="text-slate-500 font-medium animate-pulse">Verifying your invite…</p>
       </div>
     )
   }
@@ -127,12 +128,21 @@ export default function AcceptInvitePage() {
           <p className="text-sm text-slate-500 leading-relaxed">
             This invite link is invalid or has already been used. Please ask your admin to send a new invite.
           </p>
-          <Button
-            onClick={() => router.push("/login")}
-            className="w-full h-12 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold mt-4"
-          >
-            Go to login
-          </Button>
+          <div className="grid grid-cols-2 gap-3 mt-4">
+            <Button
+              variant="outline"
+              onClick={() => window.location.reload()}
+              className="h-12 rounded-xl border-slate-200 text-slate-600 font-bold"
+            >
+              Retry
+            </Button>
+            <Button
+              onClick={() => router.push("/login")}
+              className="h-12 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold"
+            >
+              Login
+            </Button>
+          </div>
         </div>
       </div>
     )
@@ -161,7 +171,7 @@ export default function AcceptInvitePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-emerald-50/20 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-linear-to-br from-slate-50 via-white to-emerald-50/20 flex items-center justify-center p-4">
       <div className="w-full max-w-md space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
         {/* Logo */}
         <div className="flex justify-center">

@@ -115,6 +115,7 @@ export function ClientForm({ initialData, mode = "add" }: ClientFormProps) {
       source: initialData?.source || "Walk-in",
       assigned_to: initialData?.assigned_to || "",
       notes: initialData?.notes || "",
+      contact_type: (initialData as any)?.contact_type || "client",
     },
   })
 
@@ -140,6 +141,7 @@ export function ClientForm({ initialData, mode = "add" }: ClientFormProps) {
   const preferredCommercialType = watch("preferred_commercial_type")
   const source = watch("source")
   const assignedTo = watch("assigned_to")
+  const contactType = watch("contact_type" as any)
 
   const onSubmit = async (data: ClientFormValues) => {
     setIsSubmitting(true)
@@ -254,7 +256,7 @@ export function ClientForm({ initialData, mode = "add" }: ClientFormProps) {
 
           <FieldGroup label="Lead Source">
             <Select onValueChange={(v) => setValue("source", v ?? undefined)} value={source}>
-              <SelectTrigger className="p-5 w-full rounded-xl bg-white border-slate-200">
+              <SelectTrigger className="px-5 w-full h-11 rounded-xl bg-white border-slate-200">
                 <SelectValue placeholder="Select source" />
               </SelectTrigger>
               <SelectContent className="bg-white">
@@ -264,6 +266,17 @@ export function ClientForm({ initialData, mode = "add" }: ClientFormProps) {
                 <SelectItem value="property_portal">Property portal</SelectItem>
                 <SelectItem value="cold_call">Cold call</SelectItem>
                 <SelectItem value="other">Other</SelectItem>
+              </SelectContent>
+            </Select>
+          </FieldGroup>
+          <FieldGroup label="Contact Type">
+            <Select onValueChange={(v) => setValue("contact_type" as any, v as any, { shouldDirty: true })} value={contactType || "client"}>
+              <SelectTrigger className="px-5 w-full h-11 rounded-xl bg-white border-slate-200">
+                <SelectValue placeholder="Select type" />
+              </SelectTrigger>
+              <SelectContent className="bg-white">
+                <SelectItem value="client">Client (Direct)</SelectItem>
+                <SelectItem value="broker">Broker</SelectItem>
               </SelectContent>
             </Select>
           </FieldGroup>
@@ -485,6 +498,8 @@ export function ClientForm({ initialData, mode = "add" }: ClientFormProps) {
                     <SelectItem value="sqft">sq. ft</SelectItem>
                     <SelectItem value="sqyard">sq. yard</SelectItem>
                     <SelectItem value="sqm">sq. meter</SelectItem>
+                    <SelectItem value="gaj">gaj</SelectItem>
+                    <SelectItem value="bigha">bigha</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

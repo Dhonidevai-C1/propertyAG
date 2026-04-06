@@ -162,8 +162,8 @@ export default async function DashboardPage() {
       {/* Stats Row */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
         {statCards.map(stat => (
-          <Card key={stat.label} className="border-slate-100/60 bg-white/60 backdrop-blur-xl shadow-sm hover:shadow-md transition-all rounded-3xl overflow-hidden relative group">
-            <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-transparent via-slate-200 to-transparent group-hover:via-emerald-400 opacity-0 group-hover:opacity-100 transition-all duration-500"></div>
+          <Card key={stat.label} className="border-slate-100/60 bg-green-50 backdrop-blur-xl shadow-sm hover:shadow-md transition-all rounded-3xl overflow-hidden relative group">
+            <div className="absolute inset-x-0 top-0 h-1 bg-linear-to-r from-transparent via-slate-200 to-transparent group-hover:via-emerald-400 opacity-0 group-hover:opacity-100 transition-all duration-500"></div>
             <CardContent className="p-6">
               <div className="flex items-center justify-between mb-4">
                 <div className={cn("p-3 rounded-2xl", stat.bg)}>
@@ -190,7 +190,7 @@ export default async function DashboardPage() {
           </div>
           <Card className="border-slate-100/60 bg-white/60 backdrop-blur-xl shadow-sm rounded-3xl overflow-hidden">
             {recentActivities.length > 0 ? (
-              <div className="divide-y divide-slate-100/50">
+              <div className="divide-y divide-slate-100">
                 {recentActivities.map(activity => {
                   const Icon = activityIcon(activity.action_type)
                   const href =
@@ -206,7 +206,7 @@ export default async function DashboardPage() {
                         activity.action_type === 'delete' ? 'removed' : 'found match for'
 
                   const content = (
-                    <div className="p-5 flex items-center gap-4 hover:bg-slate-50/80 transition-all duration-300 group">
+                    <div className="p-5 flex items-center gap-4 hover:bg-slate-50 transition-all duration-300 group">
                       <div className={cn("w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 shadow-sm", activityColor(activity.action_type))}>
                         <Icon className="w-4 h-4" />
                       </div>

@@ -49,6 +49,7 @@ export function PropertyList({ initialProperties }: PropertyListProps) {
           p.seller_name,
           p.seller_phone,
           p.approval_type,
+          p.group,
           String(p.bhk || ""),
           String(p.price || ""),
         ].filter(Boolean).join(" ").toLowerCase()
@@ -63,7 +64,7 @@ export function PropertyList({ initialProperties }: PropertyListProps) {
       if (bedroomsFilter !== "any") {
         const filterBhk = Number(bedroomsFilter)
         const propertyBhks = p.bhk || []
-        
+
         if (filterBhk === 5) {
           // 5+ BHK: check if any value in the array is >= 5
           if (!propertyBhks.some(val => val >= 5)) return false
@@ -107,7 +108,7 @@ export function PropertyList({ initialProperties }: PropertyListProps) {
       'Contact Type': p.contact_type || 'client',
       'Seller Name': p.seller_name || 'N/A',
       'Seller Phone': p.seller_phone || 'N/A',
-      'BHK': Array.isArray(p.bhk) ? p.bhk.sort((a,b) => a-b).join(', ') : (p.bhk || p.bedrooms),
+      'BHK': Array.isArray(p.bhk) ? p.bhk.sort((a, b) => a - b).join(', ') : (p.bhk || p.bedrooms),
       'Bedrooms': p.bedrooms,
       'Bathrooms': p.bathrooms,
       'Area': p.area_sqft || 0,
@@ -136,7 +137,7 @@ export function PropertyList({ initialProperties }: PropertyListProps) {
   return (
     <div className="space-y-4">
       {/* ── Filter Bar ───────────────────────────────────── */}
-      <div className="bg-white rounded-[2rem] border border-slate-100 p-6 shadow-sm space-y-5">
+      <div className="bg-white rounded-[2rem] border border-slate-300 p-6 shadow-lg space-y-5">
         {/* Search + view toggle */}
         <div className="flex flex-col md:flex-row gap-4">
           <div className="relative flex-1 group">
@@ -200,7 +201,7 @@ export function PropertyList({ initialProperties }: PropertyListProps) {
           <Select onValueChange={v => setListingTypeFilter(v ?? "any")} value={listingTypeFilter}>
             <SelectTrigger className={cn(
               "h-10 px-4 text-xs font-bold rounded-xl transition-all border-none",
-              listingTypeFilter !== "any" ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+              listingTypeFilter !== "any" ? "bg-emerald-100 text-emerald-700" : "bg-emerald-100 text-emerald-700 hover:bg-slate-200"
             )}>
               <SelectValue>
                 {listingTypeFilter === "any" ? "Sale/Rent" :
@@ -218,7 +219,7 @@ export function PropertyList({ initialProperties }: PropertyListProps) {
           <Select onValueChange={v => setApprovalFilter(v ?? "any")} value={approvalFilter}>
             <SelectTrigger className={cn(
               "h-10 px-4 text-xs font-bold rounded-xl transition-all border-none",
-              approvalFilter !== "any" ? "bg-blue-100 text-blue-700 font-black" : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+              approvalFilter !== "any" ? "bg-blue-100 text-blue-700 font-black" : "bg-emerald-100 text-emerald-700 hover:bg-slate-200"
             )}>
               <SelectValue>
                 {approvalFilter === "any" ? "Approval Type" :
@@ -238,7 +239,7 @@ export function PropertyList({ initialProperties }: PropertyListProps) {
           <Select onValueChange={v => setTypeFilter(v ?? "any")} value={typeFilter}>
             <SelectTrigger className={cn(
               "h-10 px-4 text-xs font-bold rounded-xl transition-all border-none",
-              typeFilter !== "any" ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+              typeFilter !== "any" ? "bg-emerald-100 text-emerald-700" : "bg-emerald-100 text-emerald-700 hover:bg-slate-200"
             )}>
               <SelectValue>
                 {typeFilter === "any" ? "Property Type" :
@@ -247,19 +248,19 @@ export function PropertyList({ initialProperties }: PropertyListProps) {
                       typeFilter === "independent_house" ? "Ind. House" :
                         typeFilter === "commercial" ? "Commercial" :
                           typeFilter === "plot" ? "Plot" :
-                            typeFilter === "farmhouse" ? "Farmhouse" : 
-                            typeFilter === "farmer_land" ? "Farmer Land" : "Penthouse"}
+                            typeFilter === "farmhouse" ? "Farmhouse" :
+                              typeFilter === "farmer_land" ? "Agriculture Land" : "Farmer Land"}
               </SelectValue>
             </SelectTrigger>
-            <SelectContent className="bg-white">
+            <SelectContent className="bg-white ">
               <SelectItem value="any" className="font-medium">All Types</SelectItem>
               <SelectItem value="apartment" className="font-medium">Apartment</SelectItem>
               <SelectItem value="villa" className="font-medium">Villa</SelectItem>
-              <SelectItem value="independent_house" className="font-medium">Independent House</SelectItem>
+              <SelectItem value="independent_house" className="font-medium ">Independent House</SelectItem>
               <SelectItem value="commercial" className="font-medium">Commercial</SelectItem>
               <SelectItem value="plot" className="font-medium">Plot</SelectItem>
               <SelectItem value="farmhouse" className="font-medium">Farmhouse</SelectItem>
-              <SelectItem value="farmer_land" className="font-medium">Farmer Land</SelectItem>
+              <SelectItem value="farmer_land" className="font-medium">Agriculture Land</SelectItem>
               <SelectItem value="penthouse" className="font-medium">Penthouse</SelectItem>
             </SelectContent>
           </Select>
@@ -267,7 +268,7 @@ export function PropertyList({ initialProperties }: PropertyListProps) {
           <Select onValueChange={v => setStatusFilter(v ?? "any")} value={statusFilter}>
             <SelectTrigger className={cn(
               "h-10 px-4 text-xs font-bold rounded-xl transition-all border-none",
-              statusFilter !== "any" ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+              statusFilter !== "any" ? "bg-emerald-100 text-emerald-700" : "bg-emerald-100 text-emerald-700 hover:bg-slate-200"
             )}>
               <SelectValue>
                 {statusFilter === "any" ? "Status" :
@@ -286,7 +287,7 @@ export function PropertyList({ initialProperties }: PropertyListProps) {
           <Select onValueChange={v => setBedroomsFilter(v ?? "any")} value={bedroomsFilter}>
             <SelectTrigger className={cn(
               "h-10 px-4 text-xs font-bold rounded-xl transition-all border-none",
-              bedroomsFilter !== "any" ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+              bedroomsFilter !== "any" ? "bg-emerald-100 text-emerald-700" : "bg-emerald-100 text-emerald-700  hover:bg-slate-200"
             )}>
               <SelectValue>
                 {bedroomsFilter === "any" ? "BHK" :

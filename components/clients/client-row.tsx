@@ -64,13 +64,41 @@ export function ClientRow({ client, isSelected, onSelect, onDelete }: ClientRowP
 
   return (
     <TableRow className="group hover:bg-slate-50/50 transition-colors">
-      <TableCell className="w-12">
-        <Checkbox
-          checked={isSelected}
-          onCheckedChange={(checked) => onSelect(client.id, !!checked)}
-          className="border-slate-300 data-[state=checked]:bg-emerald-500 data-[state=checked]:border-none"
-        />
+
+      <TableCell className="text-right">
+        <div className="flex items-center justify-end gap-1">
+          <Link href={`/clients/${client.id}`}>
+            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 cursor-pointer hover:text-emerald-600">
+              <Eye className="w-4 h-4" />
+            </Button>
+          </Link>
+
+          <DropdownMenu>
+            <DropdownMenuTrigger render={
+              <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400">
+                <MoreVertical className="w-4 h-4" />
+              </Button>
+            } />
+            <DropdownMenuContent align="end" className="bg-white min-w-[120px]">
+              <DropdownMenuItem className="cursor-pointer">
+                <Pencil className="w-4 h-4 mr-2" />
+                Edit
+              </DropdownMenuItem>
+              <DropdownMenuSeparator className="bg-slate-100" />
+              <DropdownMenuItem
+                className="text-red-500 cursor-pointer focus:text-red-500"
+                onClick={() => onDelete(client.id)}
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </TableCell>
+
+
+
 
       <TableCell>
         <div className="flex items-center gap-3">
@@ -133,39 +161,15 @@ export function ClientRow({ client, isSelected, onSelect, onDelete }: ClientRowP
         </div>
       </TableCell>
 
-
-
-      <TableCell className="text-right">
-        <div className="flex items-center justify-end gap-1">
-          <Link href={`/clients/${client.id}`}>
-            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 cursor-pointer hover:text-emerald-600">
-              <Eye className="w-4 h-4" />
-            </Button>
-          </Link>
-
-          <DropdownMenu>
-            <DropdownMenuTrigger render={
-              <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400">
-                <MoreVertical className="w-4 h-4" />
-              </Button>
-            } />
-            <DropdownMenuContent align="end" className="bg-white min-w-[120px]">
-              <DropdownMenuItem className="cursor-pointer">
-                <Pencil className="w-4 h-4 mr-2" />
-                Edit
-              </DropdownMenuItem>
-              <DropdownMenuSeparator className="bg-slate-100" />
-              <DropdownMenuItem
-                className="text-red-500 cursor-pointer focus:text-red-500"
-                onClick={() => onDelete(client.id)}
-              >
-                <Trash2 className="w-4 h-4 mr-2" />
-                Delete
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
+      <TableCell className="w-12">
+        <Checkbox
+          checked={isSelected}
+          onCheckedChange={(checked) => onSelect(client.id, !!checked)}
+          className="border-slate-300 data-[state=checked]:bg-emerald-500 data-[state=checked]:border-none"
+        />
       </TableCell>
+
+
     </TableRow>
   )
 }

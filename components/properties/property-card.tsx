@@ -79,11 +79,13 @@ export function PropertyCard({ property, viewMode }: PropertyCardProps) {
     })
   }
 
+  // console.log(property);
+
   const coverImage = property.cover_image_url || null
 
   if (viewMode === "list") {
     return (
-      <div className="bg-white rounded-xl border border-slate-100 p-3 flex gap-4 items-center group hover:bg-slate-50 transition-colors">
+      <div className="bg-white rounded-xl border border-slate-300 p-3 flex gap-4 items-center group hover:bg-slate-50 transition-colors">
         <div className="w-24 h-24 rounded-lg bg-slate-100 flex items-center justify-center shrink-0 overflow-hidden relative">
           {coverImage ? (
             <Image
@@ -165,7 +167,7 @@ export function PropertyCard({ property, viewMode }: PropertyCardProps) {
   }
 
   return (
-    <div className="flex flex-col group bg-white rounded-xl border border-slate-100 overflow-hidden hover:shadow-md transition-all relative">
+    <div className="flex flex-col group bg-white rounded-xl border border-slate-400 overflow-hidden hover:shadow-md transition-all relative">
       <div className="aspect-video bg-slate-100 relative flex items-center justify-center overflow-hidden">
         {coverImage ? (
           <Image
@@ -195,20 +197,22 @@ export function PropertyCard({ property, viewMode }: PropertyCardProps) {
         )}
       </div>
 
-      <div className="p-4 space-y-3">
+      <div className="p-4 space-y-2">
         <div className="space-y-1">
           <div className="flex justify-between items-end">
             <p className="text-xl font-bold text-slate-900">{formatPrice(property.price)}</p>
             <span className="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">{property.listing_type}</span>
           </div>
-          <h3 className="text-sm font-semibold text-slate-700 truncate group-hover:text-emerald-600 transition-colors">
+          <h3 className="text-sm font-semibold font-sans text-slate-700 truncate group-hover:text-emerald-600 transition-colors">
             {property.title}
           </h3>
-          <div className="flex items-center text-slate-500 text-sm">
+          <div className="flex items-center  text-slate-500 text-sm">
             <MapPin className="w-3.5 h-3.5 mr-1" />
-            {property.locality}, {property.city}
+            <div className="line-clamp-1">
+              {property.locality}
+            </div>
             {(property.approval_type || property.group) && (
-              <span className="ml-2 text-[10px] font-bold text-slate-400 capitalize bg-slate-50 px-1.5 py-0.5 rounded flex items-center gap-1 w-fit">
+              <span className="ml-2 text-[10px] font-bold text-slate-400 capitalize bg-slate-50 px-1.5 py-0.5 rounded flex  items-center gap-1 w-fit">
                 ✓ {property.group || property.approval_type}
               </span>
             )}
@@ -223,18 +227,18 @@ export function PropertyCard({ property, viewMode }: PropertyCardProps) {
             </div>
           )}
           <div className="flex items-center gap-1.5">
-            <Maximize2 className="w-3.5 h-3.5 text-slate-400" />
-            <span className="text-slate-600 text-[13px] capitalize">{property.area_sqft} {(property.area_unit || 'sqft').replace('sq', 'sq. ')}</span>
+            <Maximize2 className="w-4 h-4 text-emerald-500" />
+            <span className="text-slate-900 font-bold capitalize">{property.area_sqft} {property.area_unit}</span>
           </div>
         </div>
 
         <Separator className="bg-slate-50" />
 
-        <div className="flex items-center gap-2 pt-1">
-          <Link href={`/properties/${property.id}`} className={cn(buttonVariants({ variant: "outline", size: "sm" }), "flex-1 text-xs h-8 border-slate-200  text-slate-600 hover:bg-slate-50 rounded-lg")}>
+        <div className="flex items-center  gap-2 pt-1">
+          <Link href={`/properties/${property.id}`} className={cn(buttonVariants({ variant: "outline", size: "sm" }), "flex-1 text-xs h-8 bg-emerald-300 border-slate-200  text-slate-600 hover:bg-emerald-50 rounded-lg")}>
             View Details
           </Link>
-          <Link href={`/properties/${property.id}/edit`} className={cn(buttonVariants({ variant: "ghost", size: "icon" }), "h-8 w-8 text-slate-400 hover:text-blue-600 transition-colors")}>
+          <Link href={`/properties/${property.id}/edit`} className={cn(buttonVariants({ variant: "ghost", size: "icon" }), "h-8 w-8 hover:bg-sky-500 hover:text-slate-100 text-blue-600 transition-colors")}>
             <Pencil className="w-4 h-4" />
           </Link>
           <DeleteDialog propertyTitle={property.title} onDelete={handleDelete} isPending={isPending} />
@@ -252,7 +256,7 @@ function DeleteDialog({ propertyTitle, onDelete, isPending }: { propertyTitle: s
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8 text-slate-400 cursor-pointer hover:text-red-500 transition-colors"
+            className="h-8 w-8  text-red-500 cursor-pointer hover:text-white  hover:bg-red-500 transition-colors"
             disabled={isPending}
           >
             {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}

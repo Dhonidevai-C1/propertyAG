@@ -5,7 +5,7 @@
 import { supabaseAdmin } from "@/lib/supabase/admin"
 
 async function seed() {
-  console.log("Starting seed process...")
+  // console.log("Starting seed process...")
 
   // 1. Create Agency
   const { data: agency, error: agencyError } = await supabaseAdmin
@@ -24,7 +24,7 @@ async function seed() {
     console.error("Error creating agency:", agencyError)
     return
   }
-  console.log("Created agency:", agency.name)
+  // console.log("Created agency:", agency.name)
 
   // 2. Create Admin User
   const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.createUser({
@@ -42,7 +42,7 @@ async function seed() {
     console.error("Error creating auth user:", authError)
     // Note: If user exists, we continue
   } else {
-    console.log("Created auth user:", authUser.user.email)
+    // console.log("Created auth user:", authUser.user.email)
   }
 
   // Reference for inserts
@@ -122,7 +122,7 @@ async function seed() {
   if (clientError) console.error("Error seeding clients:", clientError)
   else console.log("Seeded 4 sample clients")
 
-  console.log("Seed complete!")
+  // console.log("Seed complete!")
 }
 
 seed()

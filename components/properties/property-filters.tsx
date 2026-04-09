@@ -193,7 +193,7 @@ export function PropertyFilters({
             <SelectItem value="commercial">Commercial</SelectItem>
             <SelectItem value="plot">Plot</SelectItem>
             <SelectItem value="farmhouse">Farmhouse</SelectItem>
-            <SelectItem value="farmer_land">Farmer Land</SelectItem>
+            <SelectItem value="farmer_land">Agriculture Land</SelectItem>
             <SelectItem value="penthouse">Penthouse</SelectItem>
           </SelectContent>
         </Select>

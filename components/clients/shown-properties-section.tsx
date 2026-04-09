@@ -70,9 +70,9 @@ export function ShownPropertiesSection({ clientId }: ShownPropertiesSectionProps
           <Badge className="bg-slate-100 text-slate-500 px-2 py-0.5 rounded-md text-[10px] font-bold border-none">
             {shownProperties.length}
           </Badge>
-          <Button 
-            variant="ghost" 
-            size="icon" 
+          <Button
+            variant="ghost"
+            size="icon"
             className="h-8 w-8 rounded-lg text-emerald-600 hover:bg-emerald-50"
             onClick={() => setIsModalOpen(true)}
           >
@@ -121,9 +121,9 @@ export function ShownPropertiesSection({ clientId }: ShownPropertiesSectionProps
                       <TooltipProvider>
                         <Tooltip>
                           <TooltipTrigger render={
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
+                            <Button
+                              variant="ghost"
+                              size="icon"
                               className="h-8 w-8 text-slate-400 hover:text-red-500"
                               onClick={() => handleUnlink(record.id, record.property.title)}
                             >
@@ -167,9 +167,9 @@ export function ShownPropertiesSection({ clientId }: ShownPropertiesSectionProps
             ))}
           </div>
         ) : (
-          <div className="py-8 flex flex-col items-center text-center">
-            <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4 ring-8 ring-slate-50/50">
-              <Eye className="w-8 h-8 text-slate-100" />
+          <div className="py-5 flex flex-col items-center text-center">
+            <div className="w-16 h-16 bg-slate-200 rounded-full flex items-center justify-center mb-4 ring-8 ring-slate-200/50">
+              <Eye className="w-8 h-8 text-slate-500" />
             </div>
             <p className="text-sm font-bold text-slate-700">No properties shown yet</p>
             <p className="text-xs text-slate-400 font-medium mt-1 max-w-[200px]">Keep track of every property you show to this client.</p>

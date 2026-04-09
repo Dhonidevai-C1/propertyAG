@@ -72,7 +72,7 @@ const PROPERTY_TYPES = [
   { value: "plot", label: "Plot" },
   { value: "commercial", label: "Commercial" },
   { value: "farmhouse", label: "Farmhouse" },
-  { value: "farmer_land", label: "Farmer Land" },
+  { value: "farmer_land", label: "Agriculture Land" },
   { value: "penthouse", label: "Penthouse" },
 ]
 

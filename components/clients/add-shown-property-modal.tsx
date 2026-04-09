@@ -28,7 +28,7 @@ interface AddShownPropertyModalProps {
 
 export function AddShownPropertyModal({ clientId, isOpen, onOpenChange, onSuccess }: AddShownPropertyModalProps) {
   const [isPending, startTransition] = useTransition()
-  
+
   const [search, setSearch] = useState("")
   const [properties, setProperties] = useState<Property[]>([])
   const [isLoading, setIsLoading] = useState(false)
@@ -77,21 +77,21 @@ export function AddShownPropertyModal({ clientId, isOpen, onOpenChange, onSucces
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px] bg-white rounded-3xl p-0 overflow-hidden border-none shadow-2xl">
-        <DialogHeader className="p-6 pb-0">
+      <DialogContent className="sm:max-w-[500px] w-[95vw] max-h-[calc(100dvh-2rem)] bg-white rounded-3xl p-0 overflow-hidden border-none shadow-2xl flex flex-col">
+        <DialogHeader className="px-5 py-4 pb-0 shrink-0">
           <DialogTitle className="text-xl font-black text-slate-900 tracking-tight">Add property shown</DialogTitle>
-          <DialogDescription className="text-slate-500 font-medium pt-1">
+          <DialogDescription className="text-slate-500 font-medium ">
             Search and select a property you have shown to this client.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="p-6 space-y-5">
+        <div className="px-5 py-3 space-y-4 flex-1 flex flex-col min-h-0">
           {/* Search Input */}
-          <div className="relative group">
+          <div className="relative group shrink-0">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-emerald-500 transition-colors" />
             <Input
               placeholder="Search by title, location, BHK, or description…"
-              className="pl-11 h-12 bg-slate-50 border-none focus:bg-white focus:ring-2 focus:ring-emerald-500/20 text-slate-800 transition-all rounded-2xl"
+              className="pl-11 h-11 bg-slate-50 border-none focus:bg-white focus:ring-2 focus:ring-emerald-500/20 text-slate-800 transition-all rounded-2xl"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
@@ -103,9 +103,9 @@ export function AddShownPropertyModal({ clientId, isOpen, onOpenChange, onSucces
           </div>
 
           {/* Results Area */}
-          <div className="h-[280px] overflow-y-auto pr-1 -mr-1 scrollbar-thin scrollbar-thumb-slate-200">
+          <div className="flex-1 overflow-y-auto min-h-[150px] pr-1 -mr-1 scrollbar-thin scrollbar-thumb-slate-200">
             {properties.length > 0 ? (
-              <div className="space-y-2">
+              <div className="space-y-2 pb-2">
                 {properties.map((p) => (
                   <button
                     key={p.id}
@@ -158,11 +158,11 @@ export function AddShownPropertyModal({ clientId, isOpen, onOpenChange, onSucces
 
           {/* Notes */}
           {selectedPropertyId && (
-            <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
+            <div className="space-y-1 animate-in fade-in slide-in-from-top-2 duration-300">
               <label className="text-xs font-bold text-slate-400 uppercase tracking-widest px-1">Internal Notes (Feedback)</label>
               <Textarea
                 placeholder="How was the showing? 'Liked the kitchen but requested higher floor...'"
-                className="min-h-[80px] bg-slate-50 border-none focus:bg-white transition-all rounded-2xl text-sm"
+                className="min-h-[50px] bg-slate-50 border-none focus:bg-white transition-all rounded-2xl text-sm"
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
               />
@@ -170,18 +170,18 @@ export function AddShownPropertyModal({ clientId, isOpen, onOpenChange, onSucces
           )}
         </div>
 
-        <DialogFooter className="p-6 bg-slate-50/50 gap-2">
+        <DialogFooter className="px-6 my-1 bg-slate-50/50 gap-2">
           <Button
             variant="ghost"
             onClick={() => onOpenChange(false)}
-            className="flex-1 h-12 rounded-2xl font-bold text-slate-500 hover:bg-slate-100 transition-all border border-transparent"
+            className="flex-1 h-10 rounded-2xl font-bold text-slate-500 hover:bg-slate-100 transition-all border border-slate-300 cursor-pointer"
           >
             Cancel
           </Button>
           <Button
             disabled={!selectedPropertyId || isPending}
             onClick={handleLink}
-            className="flex-2 h-12 rounded-2xl font-bold bg-emerald-500 hover:bg-emerald-600 text-white shadow-lg shadow-emerald-200 transition-all border-none"
+            className="flex-2 h-10 rounded-2xl font-bold bg-emerald-500 hover:bg-emerald-600 text-white shadow-lg shadow-emerald-200 cursor-pointer transition-all border-none"
           >
             {isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Plus className="w-4 h-4 mr-2" />}
             Link Property

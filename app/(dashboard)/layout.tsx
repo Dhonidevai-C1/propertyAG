@@ -47,14 +47,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   return (
     <AuthProvider>
       <NotificationProvider>
-        <div className="flex bg-white h-screen overflow-hidden print:h-auto print:overflow-visible text-stone-800">
+        <div className="flex bg-slate-100 h-screen overflow-hidden print:h-auto print:overflow-visible text-stone-800">
           {/* Desktop Sidebar */}
           <div className="print:hidden z-20">
             <Sidebar isCollapsed={isCollapsed} setIsCollapsed={setIsCollapsed} />
           </div>
 
           {/* Main Content - Updated with Warm Professional Background */}
-          <main className="flex-1 min-w-0 bg-[#FDFCFB] overflow-y-auto print:bg-white">
+          <main className="flex-1 min-w-0 bg-slate-100 overflow-y-auto print:bg-white">
             <div className="p-4 md:p-6 pb-24 lg:pb-6 max-w-7xl mx-auto w-full print:p-0">
               {children}
             </div>

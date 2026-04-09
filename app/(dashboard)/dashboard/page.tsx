@@ -12,6 +12,9 @@ import {
   Bath,
   MapPin,
   IndianRupee,
+  AreaChartIcon,
+  BedDoubleIcon,
+  BedDouble,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Card, CardContent } from "@/components/ui/card"
@@ -285,7 +288,7 @@ export default async function DashboardPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {recentProperties.map(property => (
               <Link key={property.id} href={`/properties/${property.id}`}>
-                <Card className="border-slate-100 shadow-sm rounded-2xl overflow-hidden hover:shadow-md transition-all group cursor-pointer">
+                <Card className="border-slate-300 shadow-sm rounded-2xl overflow-hidden hover:shadow-md transition-all group cursor-pointer">
                   <div className="aspect-video w-full bg-slate-100 flex items-center justify-center overflow-hidden">
                     {property.cover_image_url ? (
                       <img src={property.cover_image_url} alt={property.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
@@ -293,31 +296,29 @@ export default async function DashboardPage() {
                       <Building2 className="w-10 h-10 text-slate-200" />
                     )}
                   </div>
-                  <CardContent className="p-4 space-y-3">
-                    <div>
+                  <CardContent className="p-3 space-y-1">
+                    <div >
                       <div className="flex items-start justify-between gap-2">
-                        <h3 className="font-bold text-slate-900 group-hover:text-emerald-600 transition-colors text-sm truncate">
+                        <h3 className="font-bold font-sans text-slate-900 group-hover:text-emerald-600 transition-colors text-sm truncate">
                           {property.title}
                         </h3>
                         <span className="text-sm font-black text-emerald-600 shrink-0">
                           {formatPrice(property.price)}
                         </span>
                       </div>
-                      <div className="flex items-center text-slate-400 text-xs mt-1">
+                      <div className="flex items-center text-slate-400  text-xs mt-1">
                         <MapPin className="w-3 h-3 mr-1 shrink-0" />
                         {[property.locality, property.city].filter(Boolean).join(", ")}
                       </div>
                     </div>
-                    <Separator className="bg-slate-50" />
-                    <div className="flex items-center gap-4 text-xs text-slate-500 font-medium">
+                    <Separator className="bg-slate-100 " />
+                    <div className="flex items-center gap-4 text-xs mt-2 text-slate-500 font-medium">
                       <div className="flex items-center gap-1">
-                        <Bed className="w-3.5 h-3.5 text-slate-300" />
-                        {property.bedrooms} Bed
+                        <AreaChartIcon className="w-3.5 h-3.5 text-slate-300" />
+                        {property.area_sqft} {property?.area_unit}
                       </div>
-                      <div className="flex items-center gap-1">
-                        <Bath className="w-3.5 h-3.5 text-slate-300" />
-                        {property.bathrooms} Bath
-                      </div>
+
+
                       <Badge className={cn(
                         "ml-auto text-[10px] font-bold border-none capitalize",
                         property.status === "available" ? "bg-emerald-50 text-emerald-600" :
@@ -333,7 +334,8 @@ export default async function DashboardPage() {
             ))}
           </div>
         </div>
-      )}
-    </div>
+      )
+      }
+    </div >
   )
 }

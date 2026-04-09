@@ -55,6 +55,7 @@ import {
   getAgencyPlotGroups,
   addAgencyPlotGroup
 } from "@/lib/actions/options"
+import { formatBudget } from "@/lib/utils/format"
 
 interface PropertyFormProps {
   initialData?: Partial<PropertyFormValues> & { id?: string }
@@ -69,7 +70,7 @@ const DEFAULT_AMENITIES = [
 
 const DEFAULT_APPROVALS = ["JDA", "HB", "Society", "90B"]
 
-const DEFAULT_PLOT_GROUPS = ["JDA Scheme Plots", "Gated Society Plots", "Other JDA Patta Plots", "Society Patta Plots"]
+const DEFAULT_PLOT_GROUPS = ["JDA Scheme", "Gated Society", "JDA Patta", "Society Patta"]
 
 const FACING_OPTIONS = ["North", "South", "East", "West", "North-East", "North-West", "South-East", "South-West"]
 
@@ -257,7 +258,7 @@ export function PropertyForm({ initialData, mode = "add" }: PropertyFormProps) {
   }
 
   const handleCropComplete = async (base64: string) => {
-    console.log("🚀 [UPLOAD] Using FormData for Next.js-native upload...")
+    // console.log("🚀 [UPLOAD] Using FormData for Next.js-native upload...")
     setUploadingImage(true)
 
     try {
@@ -276,7 +277,7 @@ export function PropertyForm({ initialData, mode = "add" }: PropertyFormProps) {
         throw new Error(result.error || "Server upload failed")
       }
 
-      console.log("✅ [UPLOAD] Success! URL:", result.url)
+      // console.log("✅ [UPLOAD] Success! URL:", result.url)
 
       // 3. Update form state
       const newUrls = [...imageUrls, result.url]
@@ -425,7 +426,7 @@ export function PropertyForm({ initialData, mode = "add" }: PropertyFormProps) {
                       <SelectItem value="plot">Plot</SelectItem>
                       <SelectItem value="commercial">Commercial</SelectItem>
                       <SelectItem value="farmhouse">Farmhouse</SelectItem>
-                      <SelectItem value="farmer_land">Farmer Land</SelectItem>
+                      <SelectItem value="farmer_land">Agriculture Land</SelectItem>
                       <SelectItem value="penthouse">Penthouse</SelectItem>
                     </SelectContent>
                   </Select>
@@ -883,6 +884,11 @@ export function PropertyForm({ initialData, mode = "add" }: PropertyFormProps) {
                     {...register("price", { valueAsNumber: true })}
                     className={cn(errors.price && "border-red-500 h-12 text-lg font-bold text-emerald-600")}
                   />
+                  {watch("price") > 0 && (
+                    <p className="text-xs font-black text-emerald-600/80 ml-1 animate-in fade-in slide-in-from-left-2 duration-300">
+                      ≈ {formatBudget(watch("price")).replace("L", " Lacs").replace("Cr", " Crores")}
+                    </p>
+                  )}
                 </div>
                 <div className="flex items-center gap-3">
                   <Switch checked={negotiableValue} onCheckedChange={(checked) => setValue("price_negotiable", checked, { shouldDirty: true })} />

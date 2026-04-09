@@ -44,7 +44,7 @@ export async function uploadImageAction(formData: FormData) {
       .from('property-images')
       .getPublicUrl(fileName)
 
-    console.log('[Upload] Success:', publicUrl)
+    // console.log('[Upload] Success:', publicUrl)
     return { url: publicUrl, error: null }
   } catch (err: any) {
     console.error('[Upload] Unexpected error:', err)

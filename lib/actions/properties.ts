@@ -65,7 +65,7 @@ export async function createProperty(formData: PropertyFormValues) {
     .single()
 
   if (error) return { error: error.message }
-  
+
   // Record activity
   await supabase
     .from('activities')
@@ -98,7 +98,7 @@ export async function updateProperty(id: string, formData: Partial<PropertyFormV
     .single()
 
   if (error) return { error: error.message }
-  
+
   // Record activity
   await supabase
     .from('activities')
@@ -127,7 +127,7 @@ export async function deleteProperty(id: string) {
     .single()
 
   if (fetchError) return { error: fetchError.message }
-  
+
   if (profile.role !== 'admin' && property.created_by !== profile.id) {
     return { error: "Unauthorized to delete this property" }
   }
@@ -161,7 +161,7 @@ export async function deleteProperty(id: string) {
     .match({ id, agency_id: profile.agency_id })
 
   if (error) return { error: error.message }
-  
+
   // Record activity
   await supabase
     .from('activities')
@@ -201,17 +201,17 @@ export async function getProperties(filters: PropertyFilters) {
 
   let query = supabase
     .from('properties')
-    .select('id, title, price, property_type, status, listing_type, city, locality, cover_image_url, is_featured, is_new, bedrooms, bathrooms, area_sqft, bhk, created_at, approval_type')
+    .select('id, title, price, property_type, status, listing_type, city, locality, cover_image_url, is_featured, is_new, bedrooms, bathrooms, area_sqft, bhk, created_at, approval_type, area_unit')
     .eq('agency_id', profile.agency_id)
     .eq('is_deleted', false)
     .order('created_at', { ascending: false })
 
   if (filters.search) {
     const terms = filters.search.split(' ').filter(Boolean)
-    
+
     terms.forEach(term => {
       const isNum = !isNaN(Number(term))
-      let orQuery = `title.ilike.%${term}%,locality.ilike.%${term}%,city.ilike.%${term}%,address.ilike.%${term}%,property_type.ilike.%${term}%,description.ilike.%${term}%`
+      let orQuery = `title.ilike.%${term}%,locality.ilike.%${term}%,city.ilike.%${term}%,address.ilike.%${term}%,property_type.ilike.%${term}%,description.ilike.%${term}%,group.ilike.%${term}%`
       if (isNum) {
         // Use overlaps operator for array search: bhk.cs.{val} for 'contains' or bhk.ov.{val} for overlap
         // In PostgREST, array contains is .cs.{val}

@@ -187,14 +187,14 @@ export function ClientList({ initialClients }: ClientListProps) {
       />
 
       {/* ── Filter Bar ─────────────────────────────── */}
-      <div className="bg-white rounded-2xl border border-slate-100 p-4 shadow-sm space-y-3">
+      <div className="bg-white rounded-2xl border border-slate-300 p-4 shadow-sm space-y-3">
         <div className="flex flex-col md:flex-row gap-3">
           {/* Instant search */}
           <div className="relative flex-1 group">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-emerald-500 transition-colors" />
+            <Search className="absolute left-3 top-1/2 text-emerald-300 text-emerald-70 -translate-y-3/4 w-5 h-5  group-focus-within:text-emerald-500 transition-colors" />
             <Input
               placeholder="Search by name, phone, email, location…"
-              className="pl-9 pr-9 bg-slate-50 border-transparent focus:bg-white focus:border-emerald-200 transition-all text-sm h-11 rounded-xl"
+              className="pl-9 pr-9 bg-slate-50 border focus:bg-white border-emerald-100 text-emerald-70 focus:border-emerald-200 transition-all text-sm h-11 rounded-xl"
               value={searchValue}
               onChange={(e) => setSearchValue(e.target.value)}
             />
@@ -247,8 +247,8 @@ export function ClientList({ initialClients }: ClientListProps) {
             <SelectTrigger className={cn(
               "h-9 px-3 text-sm font-semibold bg-white border-2 rounded-xl transition-all gap-2",
               budgetFilter !== "any"
-                ? "border-emerald-400 text-emerald-700 bg-emerald-50"
-                : "border-slate-200 text-slate-700 hover:border-slate-300"
+                ? "border-emerald-400 text-emerald-100 bg-emerald-50"
+                : "bg-emerald-100 text-emerald-700 hover:border-slate-300"
             )}>
               <SelectValue>
                 {budgetFilter === "any" ? "Budget" :
@@ -269,8 +269,8 @@ export function ClientList({ initialClients }: ClientListProps) {
             <SelectTrigger className={cn(
               "h-9 px-3 text-sm font-semibold bg-white border-2 rounded-xl transition-all gap-2",
               typeFilter !== "any"
-                ? "border-emerald-400 text-emerald-700 bg-emerald-50"
-                : "border-slate-200 text-slate-700 hover:border-slate-300"
+                ? "border-emerald-400 text-emerald-100 bg-emerald-50"
+                : "bg-emerald-100 text-emerald-700 hover:border-slate-300"
             )}>
               <SelectValue>
                 {typeFilter === "any" ? "Property Type" :
@@ -295,8 +295,8 @@ export function ClientList({ initialClients }: ClientListProps) {
             <SelectTrigger className={cn(
               "h-9 px-3 text-sm font-semibold bg-white border-2 rounded-xl transition-all gap-2",
               statusFilter !== "all"
-                ? "border-emerald-400 text-emerald-700 bg-emerald-50"
-                : "border-slate-200 text-slate-700 hover:border-slate-300"
+                ? "border-emerald-400 text-emerald-100 bg-emerald-50"
+                : "bg-emerald-100 text-emerald-700 hover:border-slate-300"
             )}>
               <SelectValue>
                 {statusFilter === "all" ? "Status" :
@@ -355,6 +355,14 @@ export function ClientList({ initialClients }: ClientListProps) {
               <Table>
                 <TableHeader>
                   <TableRow className="bg-slate-50 border-b border-slate-100 hover:bg-slate-50">
+
+                    <TableHead className="h-10 text-right pr-6 text-[10px] text-slate-400 uppercase font-bold tracking-wider">Actions</TableHead>
+                    <TableHead className="h-10 text-[10px] text-slate-400 uppercase font-bold tracking-wider">Client</TableHead>
+                    <TableHead className="h-10 text-[10px] text-slate-400 uppercase font-bold tracking-wider">Contact</TableHead>
+                    <TableHead className="h-10 text-[10px] text-slate-400 uppercase font-bold tracking-wider">Budget</TableHead>
+                    <TableHead className="h-10 text-[10px] text-slate-400 uppercase font-bold tracking-wider">Type</TableHead>
+                    <TableHead className="h-10 text-[10px] text-slate-400 uppercase font-bold tracking-wider">Requirements</TableHead>
+
                     <TableHead className="w-12 h-10 px-4">
                       <Checkbox
                         checked={selectedClients.length > 0 && selectedClients.length === filteredClients.length}
@@ -362,12 +370,7 @@ export function ClientList({ initialClients }: ClientListProps) {
                         className="border-slate-300 data-[state=checked]:bg-emerald-500 data-[state=checked]:border-none"
                       />
                     </TableHead>
-                    <TableHead className="h-10 text-[10px] text-slate-400 uppercase font-bold tracking-wider">Client</TableHead>
-                    <TableHead className="h-10 text-[10px] text-slate-400 uppercase font-bold tracking-wider">Contact</TableHead>
-                    <TableHead className="h-10 text-[10px] text-slate-400 uppercase font-bold tracking-wider">Budget</TableHead>
-                    <TableHead className="h-10 text-[10px] text-slate-400 uppercase font-bold tracking-wider">Type</TableHead>
-                    <TableHead className="h-10 text-[10px] text-slate-400 uppercase font-bold tracking-wider">Requirements</TableHead>
-                    <TableHead className="h-10 text-right pr-6 text-[10px] text-slate-400 uppercase font-bold tracking-wider">Actions</TableHead>
+
                   </TableRow>
                 </TableHeader>
                 <TableBody>

@@ -25,7 +25,7 @@ export function SingleMatchButton({ clientId, propertyId, label = "Find Matches"
         body: JSON.stringify({ clientId, propertyId }),
       })
       const data = await res.json()
-      
+
       if (data.success) {
         toast.success(`Match engine run! Found ${data.totalMatches} matches`)
         // If we found matches, maybe navigate to the matches tab
@@ -44,9 +44,9 @@ export function SingleMatchButton({ clientId, propertyId, label = "Find Matches"
     <Button
       onClick={runMatch}
       disabled={isRunning}
-      className="bg-emerald-500 hover:bg-emerald-600 text-white shadow-sm font-bold gap-2"
+      className="bg-emerald-500 cursor-pointer hover:bg-emerald-600 text-white shadow-sm font-bold gap-2"
     >
-      {isRunning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4 fill-white flex-shrink-0" />}
+      {isRunning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4 fill-white shrink-0" />}
       {isRunning ? "Matching..." : label}
     </Button>
   )

@@ -100,7 +100,7 @@ export default async function DashboardPage() {
     getDashboardStats(),
     getRecentNotifications(4),
     getRecentActivities(6),
-    getProperties({ limit: 3 } as any),
+    getProperties({ limit: 9 } as any),
     getTodaysFollowUps()
   ])
 
@@ -286,7 +286,7 @@ export default async function DashboardPage() {
             </Link>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {recentProperties.map(property => (
+            {recentProperties.map((property: any) => (
               <Link key={property.id} href={`/properties/${property.id}`}>
                 <Card className="border-slate-300 shadow-sm rounded-2xl overflow-hidden hover:shadow-md transition-all group cursor-pointer">
                   <div className="aspect-video w-full bg-slate-100 flex items-center justify-center overflow-hidden">
@@ -306,7 +306,7 @@ export default async function DashboardPage() {
                           {formatPrice(property.price)}
                         </span>
                       </div>
-                      <div className="flex items-center text-slate-400  text-xs mt-1">
+                      <div className="flex items-center text-slate-400 truncate  text-xs mt-1">
                         <MapPin className="w-3 h-3 mr-1 shrink-0" />
                         {[property.locality, property.city].filter(Boolean).join(", ")}
                       </div>

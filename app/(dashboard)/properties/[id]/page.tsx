@@ -110,7 +110,7 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
             Back to properties
           </Link>
           <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold text-slate-900 truncate max-w-md">{property.title}</h1>
+            <h1 className="text-2xl font-bold font-sans text-slate-900 truncate max-w-md">{property.title}</h1>
             <Badge className={cn(
               "text-xs capitalize px-3 py-1 border-none",
               property.status === "sold" && "bg-red-100 text-red-700 hover:bg-red-100",
@@ -143,7 +143,7 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
 
       {/* Print Title */}
       <div className="hidden print:block mb-4">
-        <h1 className="text-2xl font-bold text-slate-900">{property.title}</h1>
+        <h3 className="text-2xl font-sans font-black text-slate-900">{property.title}</h3>
         <p className="text-slate-500 text-sm mt-1">{[property.locality, property.city].filter(Boolean).join(", ")}</p>
       </div>
 
@@ -185,7 +185,7 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
                     href={property.google_maps_url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-1.5 text-emerald-600 font-bold hover:underline"
+                    className="flex items-center gap-1.5 text-emerald-600 font-bold hover:underline print:hidden"
                   >
                     <Navigation className="w-3.5 h-3.5 fill-emerald-600/10" />
                     View on Google Maps
@@ -372,18 +372,29 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
           </Card>
         </div>
       </div>
-      <style dangerouslySetInnerHTML={{ __html: `
+      <style dangerouslySetInnerHTML={{
+        __html: `
         @media print {
-          @page { margin: 15mm 10mm 15mm 10mm; }
+          @page { 
+            margin: 0; 
+            size: auto;
+          }
           body { 
             print-color-adjust: exact; 
             -webkit-print-color-adjust: exact;
             background: white !important;
+            margin: 0 !important;
+            padding: 1.5cm !important;
           }
-          /* Hide default browser headers and footers */
-          header, footer, table thead, table tfoot { display: none !important; }
-          /* General print cleanups */
-          .print\\:hidden { display: none !important; }
+          /* Hide default browser headers and footers (URL, Date, Title) */
+          header, footer, .no-print, .print\\:hidden { display: none !important; }
+          
+          /* Custom layout fixes for print */
+          .max-w-7xl { max-width: 100% !important; width: 100% !important; margin: 0 !important; }
+          .shadow-sm, .shadow-md, .shadow-lg, .shadow-xl { shadow: none !important; box-shadow: none !important; }
+          
+          /* Ensure PropDesk header is always clearly at the top */
+          .print\\:block { display: block !important; }
         }
       `}} />
     </div>

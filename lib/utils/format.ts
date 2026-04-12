@@ -7,6 +7,8 @@ export function formatPrice(amount: number): string {
   }).format(amount)
 }
 
+export const formatCurrency = formatPrice
+
 export function formatBudget(amount: number | null | undefined): string {
   if (!amount) return "0"
   if (amount >= 10000000) {
@@ -59,4 +61,15 @@ export function formatInitials(name: string): string {
     .join('')
     .substring(0, 2)
     .toUpperCase()
+}
+
+export function formatBhk(bhk: number[] | number | null | undefined): string {
+  if (!bhk) return "N/A"
+  if (Array.isArray(bhk)) {
+    if (bhk.length === 0) return "N/A"
+    const sorted = [...bhk].sort((a, b) => a - b)
+    if (sorted.length === 1) return `${sorted[0]} BHK`
+    return `${sorted[0]}-${sorted[sorted.length - 1]} BHK`
+  }
+  return `${bhk} BHK`
 }

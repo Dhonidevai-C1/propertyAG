@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useMemo } from "react"
+import React, { useState, useMemo, useTransition } from "react"
 import { Building2, LayoutGrid, List, Plus, Search, X, Filter, Download, Zap, Star, ShieldCheck } from "lucide-react"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
@@ -13,16 +13,40 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import {
+  Table,
+  TableBody,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+import { Checkbox } from "@/components/ui/checkbox"
+import { PropertyRow } from "@/components/properties/property-row"
 import { PropertyCard } from "@/components/properties/property-card"
 import { Property } from "@/lib/types/database"
 import { exportToExcel } from "@/lib/utils/export-utils"
+import { deleteProperty } from "@/lib/actions/properties"
+import { toast } from "sonner"
+import { useRouter } from "next/navigation"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 
 interface PropertyListProps {
   initialProperties: Property[]
 }
 
 export function PropertyList({ initialProperties }: PropertyListProps) {
-  const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
+  const router = useRouter()
+  const [isPending, startTransition] = useTransition()
+  const [viewMode, setViewMode] = useState<"grid" | "list">("list")
   const [searchValue, setSearchValue] = useState("")
   const [typeFilter, setTypeFilter] = useState("any")
   const [statusFilter, setStatusFilter] = useState("any")
@@ -30,6 +54,10 @@ export function PropertyList({ initialProperties }: PropertyListProps) {
   const [approvalFilter, setApprovalFilter] = useState("any")
   const [bedroomsFilter, setBedroomsFilter] = useState("any")
   const [priceFilter, setPriceFilter] = useState("any")
+
+  const [selectedProperties, setSelectedProperties] = useState<string[]>([])
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+  const [propertyToDelete, setPropertyToDelete] = useState<string | null>(null)
 
   // ── Pure client-side filtering ────────────────────────────
   const filtered = useMemo(() => {
@@ -93,6 +121,36 @@ export function PropertyList({ initialProperties }: PropertyListProps) {
     setApprovalFilter("any")
     setBedroomsFilter("any")
     setPriceFilter("any")
+  }
+
+  const handleSelectAll = (checked: boolean) => {
+    setSelectedProperties(checked ? filtered.map(p => p.id) : [])
+  }
+
+  const handleSelectOne = (id: string, checked: boolean) => {
+    if (checked) {
+      setSelectedProperties(prev => [...prev, id])
+    } else {
+      setSelectedProperties(prev => prev.filter(pId => pId !== id))
+    }
+  }
+
+  const handleDeleteProperty = (id: string) => {
+    setPropertyToDelete(id)
+    setIsDeleteDialogOpen(true)
+  }
+
+  const confirmDelete = async () => {
+    if (!propertyToDelete) return
+    const { error } = await deleteProperty(propertyToDelete)
+    if (error) {
+      toast.error(error)
+    } else {
+      toast.success("Property moved to trash")
+      startTransition(() => router.refresh())
+    }
+    setIsDeleteDialogOpen(false)
+    setPropertyToDelete(null)
   }
 
   const handleExport = () => {
@@ -322,14 +380,48 @@ export function PropertyList({ initialProperties }: PropertyListProps) {
 
       {/* ── Results ──────────────────────────────────────── */}
       {filtered.length > 0 ? (
-        <div className={viewMode === "grid"
-          ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
-          : "space-y-4"
-        }>
-          {filtered.map(property => (
-            <PropertyCard key={property.id} property={property} viewMode={viewMode} />
-          ))}
-        </div>
+        viewMode === "list" ? (
+          <div className="bg-white rounded-[2rem] border border-slate-300 shadow-xl shadow-slate-200/40 overflow-hidden">
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-slate-50 border-b border-slate-200 hover:bg-slate-50">
+                    <TableHead className="h-10 text-right pr-6 text-[10px] text-slate-400 uppercase font-black tracking-[0.2em]">Actions</TableHead>
+                    <TableHead className="h-10 text-[10px] text-slate-400 uppercase font-black tracking-[0.2em]">Property</TableHead>
+                    <TableHead className="h-10 text-[10px] text-slate-400 uppercase font-black tracking-[0.2em]">Status</TableHead>
+                    <TableHead className="h-10 text-[10px] text-slate-400 uppercase font-black tracking-[0.2em]">Price</TableHead>
+                    <TableHead className="h-10 text-[10px] text-slate-400 uppercase font-black tracking-[0.2em]">Type</TableHead>
+                    <TableHead className="h-10 text-[10px] text-slate-400 uppercase font-black tracking-[0.2em]">Details</TableHead>
+                    <TableHead className="w-12 h-10 px-4">
+                      <Checkbox
+                        checked={selectedProperties.length > 0 && selectedProperties.length === filtered.length}
+                        onCheckedChange={handleSelectAll}
+                        className="border-slate-300 data-[state=checked]:bg-emerald-500 data-[state=checked]:border-none"
+                      />
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filtered.map((property) => (
+                    <PropertyRow
+                      key={property.id}
+                      property={property}
+                      isSelected={selectedProperties.includes(property.id)}
+                      onSelect={handleSelectOne}
+                      onDelete={handleDeleteProperty}
+                    />
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filtered.map(property => (
+              <PropertyCard key={property.id} property={property} viewMode="grid" />
+            ))}
+          </div>
+        )
       ) : (
         <div className="flex flex-col items-center justify-center py-24 bg-white rounded-[2rem] border border-slate-100 border-dashed">
           <div className="w-24 h-24 bg-slate-50 rounded-full flex items-center justify-center mb-6 ring-8 ring-slate-50/50">
@@ -352,6 +444,26 @@ export function PropertyList({ initialProperties }: PropertyListProps) {
           )}
         </div>
       )}
+
+      {/* ── Delete Confirmation ────────────────────── */}
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent className="bg-white rounded-3xl max-w-[400px]">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-xl font-bold text-slate-900">Move to trash?</AlertDialogTitle>
+            <AlertDialogDescription className="text-slate-500 pt-1">
+              This property will be moved to trash and hidden from public searches.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex gap-3 pt-4">
+            <AlertDialogCancel className="flex-1 border-slate-200 rounded-2xl" onClick={() => { setIsDeleteDialogOpen(false); setPropertyToDelete(null); }}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction className="flex-1 bg-red-500 hover:bg-red-600 text-white border-none rounded-2xl" onClick={confirmDelete}>
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

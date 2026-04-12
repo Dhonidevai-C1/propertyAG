@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useMemo } from "react"
+import React, { useState, useMemo, useTransition } from "react"
 import {
   Plus,
   Search,
@@ -24,9 +24,31 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import {
+  Table,
+  TableBody,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+import { Checkbox } from "@/components/ui/checkbox"
+import { BrokerRow } from "@/components/brokers/broker-row"
 import { BrokerCard } from "@/components/brokers/broker-card"
 import { Broker } from "@/lib/types/database"
 import { exportToExcel } from "@/lib/utils/export-utils"
+import { deleteBroker } from "@/lib/actions/brokers"
+import { toast } from "sonner"
+import { useRouter } from "next/navigation"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 
 interface BrokerListProps {
   initialBrokers: Broker[]
@@ -39,10 +61,16 @@ const COMMON_SPECIALTIES = [
 ]
 
 export function BrokerList({ initialBrokers }: BrokerListProps) {
-  const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
+  const router = useRouter()
+  const [isPending, startTransition] = useTransition()
+  const [viewMode, setViewMode] = useState<"grid" | "list">("list")
   const [searchValue, setSearchValue] = useState("")
   const [typeFilter, setTypeFilter] = useState("any")
   const [specialtyFilter, setSpecialtyFilter] = useState("any")
+
+  const [selectedBrokers, setSelectedBrokers] = useState<string[]>([])
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+  const [brokerToDelete, setBrokerToDelete] = useState<string | null>(null)
 
   const filtered = useMemo(() => {
     const q = searchValue.toLowerCase().trim()
@@ -74,6 +102,36 @@ export function BrokerList({ initialBrokers }: BrokerListProps) {
     setSearchValue("")
     setTypeFilter("any")
     setSpecialtyFilter("any")
+  }
+
+  const handleSelectAll = (checked: boolean) => {
+    setSelectedBrokers(checked ? filtered.map(b => b.id) : [])
+  }
+
+  const handleSelectOne = (id: string, checked: boolean) => {
+    if (checked) {
+      setSelectedBrokers(prev => [...prev, id])
+    } else {
+      setSelectedBrokers(prev => prev.filter(bId => bId !== id))
+    }
+  }
+
+  const handleDeleteBroker = (id: string) => {
+    setBrokerToDelete(id)
+    setIsDeleteDialogOpen(true)
+  }
+
+  const confirmDelete = async () => {
+    if (!brokerToDelete) return
+    const { error } = await deleteBroker(brokerToDelete)
+    if (error) {
+      toast.error(error)
+    } else {
+      toast.success("Broker removed")
+      startTransition(() => router.refresh())
+    }
+    setIsDeleteDialogOpen(false)
+    setBrokerToDelete(null)
   }
 
   const handleExport = () => {
@@ -112,11 +170,30 @@ export function BrokerList({ initialBrokers }: BrokerListProps) {
             <Button
               variant="outline"
               onClick={handleExport}
-              className="h-12 px-6 rounded-2xl border-2 border-slate-500 text-slate-600 cursor-pointer font-bold hover:bg-slate-500 hover:text-slate-100 transition-all gap-2"
+              className="h-12 px-6 rounded-2xl border-2 border-slate-200 text-slate-600 font-bold hover:bg-slate-50 transition-all gap-2"
             >
               <Download className="w-4 h-4" />
               <span>Export</span>
             </Button>
+
+            <div className="flex items-center gap-1 bg-slate-50 p-1.5 rounded-2xl border border-slate-100">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setViewMode("grid")}
+                className={cn("h-9 w-9 rounded-xl transition-all", viewMode === "grid" ? "bg-white text-emerald-600 shadow-sm" : "text-slate-400")}
+              >
+                <LayoutGrid className="w-4 h-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setViewMode("list")}
+                className={cn("h-9 w-9 rounded-xl transition-all", viewMode === "list" ? "bg-white text-emerald-600 shadow-sm" : "text-slate-400")}
+              >
+                <List className="w-4 h-4" />
+              </Button>
+            </div>
 
             <Link href="/brokers/new">
               <Button className="h-12 cursor-pointer px-6 rounded-2xl bg-slate-900 text-white font-bold hover:bg-slate-800 transition-all gap-2">
@@ -180,13 +257,49 @@ export function BrokerList({ initialBrokers }: BrokerListProps) {
         </div>
       </div>
 
-      {/* Grid of Brokers */}
+      {/* Results */}
       {filtered.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filtered.map(broker => (
-            <BrokerCard key={broker.id} broker={broker} />
-          ))}
-        </div>
+        viewMode === "list" ? (
+          <div className="bg-white rounded-[2rem] border border-slate-200 shadow-xl shadow-slate-200/40 overflow-hidden">
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-slate-50 border-b border-slate-200 hover:bg-slate-50">
+                    <TableHead className="h-10 text-right pr-6 text-[10px] text-slate-400 uppercase font-black tracking-[0.2em]">Actions</TableHead>
+                    <TableHead className="h-10 text-[10px] text-slate-400 uppercase font-black tracking-[0.2em]">Broker</TableHead>
+                    <TableHead className="h-10 text-[10px] text-slate-400 uppercase font-black tracking-[0.2em]">Contact</TableHead>
+                    <TableHead className="h-10 text-[10px] text-slate-400 uppercase font-black tracking-[0.2em]">Agency / Area</TableHead>
+                    <TableHead className="h-10 text-[10px] text-slate-400 uppercase font-black tracking-[0.2em]">Specialties</TableHead>
+                    <TableHead className="w-12 h-10 px-4">
+                      <Checkbox
+                        checked={selectedBrokers.length > 0 && selectedBrokers.length === filtered.length}
+                        onCheckedChange={handleSelectAll}
+                        className="border-slate-300 data-[state=checked]:bg-amber-500 data-[state=checked]:border-none"
+                      />
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filtered.map((broker) => (
+                    <BrokerRow
+                      key={broker.id}
+                      broker={broker}
+                      isSelected={selectedBrokers.includes(broker.id)}
+                      onSelect={handleSelectOne}
+                      onDelete={handleDeleteBroker}
+                    />
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filtered.map(broker => (
+              <BrokerCard key={broker.id} broker={broker} />
+            ))}
+          </div>
+        )
       ) : (
         <div className="flex flex-col items-center justify-center py-24 bg-white rounded-[3rem] border-2 border-slate-100 border-dashed">
           <div className="w-24 h-24 bg-slate-50 rounded-full flex items-center justify-center mb-6 ring-8 ring-slate-50/50">
@@ -209,6 +322,26 @@ export function BrokerList({ initialBrokers }: BrokerListProps) {
           )}
         </div>
       )}
+
+      {/* ── Delete Confirmation ────────────────────── */}
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent className="bg-white rounded-3xl max-w-[400px]">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-xl font-bold text-slate-900 tracking-tight">Remove Broker?</AlertDialogTitle>
+            <AlertDialogDescription className="text-slate-500 pt-1 font-medium">
+              This will remove the broker from your active network list.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex gap-3 pt-4">
+            <AlertDialogCancel className="flex-1 border-slate-200 rounded-2xl font-bold" onClick={() => { setIsDeleteDialogOpen(false); setBrokerToDelete(null); }}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction className="flex-1 bg-red-500 hover:bg-red-600 text-white border-none rounded-2xl font-bold" onClick={confirmDelete}>
+              Remove
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

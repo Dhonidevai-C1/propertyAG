@@ -18,7 +18,7 @@ import {
   CheckCircle2,
   Trash2
 } from "lucide-react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { toast } from "sonner"
 import Image from "next/image"
 import { ImageCropperDialog } from "@/components/properties/image-cropper"
@@ -47,6 +47,8 @@ import {
 import { cn } from "@/lib/utils"
 import { PropertyFormSchema, PropertyFormValues } from "@/lib/validations/property"
 import { createProperty, updateProperty } from "@/lib/actions/properties"
+import { getBrokers } from "@/lib/actions/brokers"
+import { Broker } from "@/lib/types/database"
 import {
   getAgencyAmenities,
   addAgencyAmenity,
@@ -77,6 +79,7 @@ const FACING_OPTIONS = ["North", "South", "East", "West", "North-East", "North-W
 export function PropertyForm({ initialData, mode = "add" }: PropertyFormProps) {
   const router = useRouter()
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const searchParams = useSearchParams()
   const [uploadingImage, setUploadingImage] = useState(false)
   const [isDiscardDialogOpen, setIsDiscardDialogOpen] = useState(false)
   const [imageToCrop, setImageToCrop] = useState<string | null>(null)
@@ -93,6 +96,8 @@ export function PropertyForm({ initialData, mode = "add" }: PropertyFormProps) {
   const [isAddingPlotGroup, setIsAddingPlotGroup] = useState(false)
   const [isOtherPlotGroup, setIsOtherPlotGroup] = useState(false)
 
+  const [brokers, setBrokers] = useState<Broker[]>([])
+
   // Fetch global options
   useEffect(() => {
     const fetchOptions = async () => {
@@ -101,9 +106,11 @@ export function PropertyForm({ initialData, mode = "add" }: PropertyFormProps) {
         getAgencyApprovalTypes(),
         getAgencyPlotGroups()
       ])
+      const brokersData = await getBrokers()
       setDbAmenities(amenities)
       setDbApprovalTypes(approvals)
       setDbPlotGroups(plotGroups)
+      setBrokers(brokersData)
     }
     fetchOptions()
   }, [])
@@ -140,8 +147,8 @@ export function PropertyForm({ initialData, mode = "add" }: PropertyFormProps) {
     cover_image_url: initialData?.cover_image_url || "",
     image_urls: initialData?.image_urls || [],
     // New fields
-    seller_name: initialData?.seller_name || "",
-    seller_phone: initialData?.seller_phone || "",
+    seller_name: initialData?.seller_name || (mode === "add" ? searchParams.get("seller_name") || "" : ""),
+    seller_phone: initialData?.seller_phone || (mode === "add" ? searchParams.get("seller_phone") || "" : ""),
     approval_type: initialData?.approval_type || "",
     group: (initialData as any)?.group || "",
     slug: initialData?.slug || "",
@@ -150,7 +157,8 @@ export function PropertyForm({ initialData, mode = "add" }: PropertyFormProps) {
     amenities: initialData?.amenities || [],
     balconies: initialData?.balconies || 0,
     google_maps_url: initialData?.google_maps_url || "",
-    contact_type: initialData?.contact_type || "client",
+    source_broker_id: initialData?.source_broker_id || (mode === "add" ? searchParams.get("source_broker_id") || "" : ""),
+    contact_type: (initialData?.contact_type || (mode === "add" ? searchParams.get("contact_type") || "client" : "client")) as any,
   }
 
   const {
@@ -181,6 +189,7 @@ export function PropertyForm({ initialData, mode = "add" }: PropertyFormProps) {
   const bhkValues = watch("bhk") || []
   const groupValue = (watch as any)("group")
   const contactTypeValue = watch("contact_type")
+  const sourceBrokerId = watch("source_broker_id")
 
   // Auto-generate slug from title if empty
   const titleValue = watch("title")
@@ -454,7 +463,7 @@ export function PropertyForm({ initialData, mode = "add" }: PropertyFormProps) {
                     Status <span className="text-red-500">*</span>
                   </Label>
                   <Select onValueChange={(v) => setValue("status", v as any, { shouldDirty: true })} value={statusValue}>
-                    <SelectTrigger className="bg-slate-50 border-none font-bold text-slate-700">
+                    <SelectTrigger className=" border borde-slate-200 text-black">
                       <SelectValue placeholder="Status" />
                     </SelectTrigger>
                     <SelectContent className="bg-white">
@@ -778,6 +787,29 @@ export function PropertyForm({ initialData, mode = "add" }: PropertyFormProps) {
                   </SelectContent>
                 </Select>
               </div>
+
+              {contactTypeValue === "broker" && (
+                <div className="grid gap-2 animate-in slide-in-from-left-2 duration-300">
+                  <Label htmlFor="source_broker_id" className="flex items-center gap-1">
+                    Select Source Broker
+                  </Label>
+                  <Select
+                    onValueChange={(v) => setValue("source_broker_id", v, { shouldDirty: true })}
+                    value={sourceBrokerId || ""}
+                  >
+                    <SelectTrigger className="bg-amber-50 border-none font-bold text-amber-700">
+                      <SelectValue placeholder="Search or select broker" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-white font-bold">
+                      <SelectItem value="" className="text-slate-400 italic">None / Unknown</SelectItem>
+                      {brokers.map(b => (
+                        <SelectItem key={b.id} value={b.id}>{b.full_name} {b.company_name ? `(${b.company_name})` : ''}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-[10px] text-amber-600 italic">Linking this will show the broker as the primary point of contact.</p>
+                </div>
+              )}
             </div>
           </Section>
 

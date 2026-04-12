@@ -29,6 +29,7 @@ import { Badge } from "@/components/ui/badge"
 import { Card } from "@/components/ui/card"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Separator } from "@/components/ui/separator"
+import { Handshake } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { getProperty } from "@/lib/actions/properties"
 import { PropertyImageGallery } from "@/components/properties/property-gallery"
@@ -137,7 +138,7 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
             <PencilLine className="w-4 h-4 mr-2" />
             Edit property
           </Link>
-          <PropertyDetailActions propertyId={property.id} currentStatus={property.status} />
+          <PropertyDetailActions propertyId={property.id} propertyName={property.title} currentStatus={property.status} />
         </div>
       </div>
 
@@ -274,7 +275,51 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
 
         {/* Right Column */}
         <div className="lg:col-span-4 space-y-6 print:hidden">
-          {/* Seller Details */}
+          {/* Sourcing Broker (Priority) */}
+          {property.broker_relations?.some((r: any) => r.relation_type === 'sourced') && (
+            <Card className="p-6 border-amber-200 shadow-xl shadow-amber-50 rounded-2xl bg-amber-50 space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-black uppercase tracking-widest text-amber-700">Source Broker</h3>
+                <Handshake className="w-5 h-5 text-amber-600" />
+              </div>
+              <div className="space-y-4">
+                {(() => {
+                  const relation = property.broker_relations.find((r: any) => r.relation_type === 'sourced');
+                  const broker = relation.broker;
+                  return (
+                    <>
+                      <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center">
+                          <User className="w-5 h-5 text-amber-700" />
+                        </div>
+                        <div>
+                          <p className="font-bold text-lg text-amber-900">{broker.full_name}</p>
+                          {broker.company_name && <p className="text-xs text-amber-600 font-bold">{broker.company_name}</p>}
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        {broker.phones?.map((phone: string, i: number) => (
+                          <div key={i} className="flex items-center gap-4">
+                            <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center">
+                              <Phone className="w-5 h-5 text-amber-700" />
+                            </div>
+                            <p className="font-bold text-amber-900">{phone}</p>
+                          </div>
+                        ))}
+                      </div>
+                      <Link href={`/brokers/${broker.id}`}>
+                        <Button className="w-full bg-amber-600 hover:bg-amber-700 text-white border-none h-12 font-bold rounded-xl mt-2 transition-all shadow-lg shadow-amber-200">
+                          View Broker Profile
+                        </Button>
+                      </Link>
+                    </>
+                  );
+                })()}
+              </div>
+            </Card>
+          )}
+
+          {/* Seller Details (Seller if no broker, or secondary contact) */}
           {(property.seller_name || property.seller_phone) && (
             <Card className="p-6 border-slate-100 shadow-sm rounded-2xl bg-slate-900 text-white space-y-4 print:hidden">
               <h3 className="text-sm font-black uppercase tracking-widest text-emerald-400">Seller Contact</h3>

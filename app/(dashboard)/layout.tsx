@@ -12,7 +12,8 @@ import {
   Sparkles,
   Users,
   Building2,
-  LayoutDashboard
+  LayoutDashboard,
+  Handshake,
 } from "lucide-react"
 import { Sidebar } from "@/components/layout/sidebar"
 import { MobileNav } from "@/components/layout/mobile-nav"
@@ -34,6 +35,7 @@ const allNavItems = [
   { label: "Properties", icon: Building2, href: "/properties" },
   { label: "Leads", icon: Users, href: "/clients" },
   { label: "Smart Matches", icon: Sparkles, href: "/matches" },
+  { label: "Brokers", icon: Handshake, href: "/brokers" },
   { label: "Notifications", icon: Bell, href: "/notifications" },
   { label: "Team", icon: UserCog, href: "/team" },
   { label: "Settings", icon: Settings, href: "/settings" },

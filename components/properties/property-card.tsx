@@ -73,7 +73,7 @@ export function PropertyCard({ property, viewMode }: PropertyCardProps) {
       if (result.error) {
         toast.error(result.error)
       } else {
-        toast.success("Property moved to trash")
+        toast.success("Property deleted successfully")
         router.refresh()
       }
     })
@@ -110,7 +110,7 @@ export function PropertyCard({ property, viewMode }: PropertyCardProps) {
         <div className="flex-1 min-w-0 py-1">
           <div className="flex justify-between items-start mb-1">
             <div className="flex items-center gap-2">
-              <h3 className="font-semibold text-slate-900 truncate">{property.title}</h3>
+              <h3 className="font-semibold text-slate-900 font-sans truncate">{property.title}</h3>
               {property.is_new && (
                 <div className="px-1.5 py-0.5 bg-blue-500 text-white text-[9px] font-black rounded uppercase tracking-tighter shadow-sm animate-pulse">
                   NEW
@@ -140,14 +140,8 @@ export function PropertyCard({ property, viewMode }: PropertyCardProps) {
                 <span>{formatBhk(property.bhk)}</span>
               </div>
             )}
-            {property.bathrooms && property.bathrooms > 0 && (
-              <div className="flex items-center gap-1">
-                <Bath className="w-3.5 h-3.5" />
-                <span>{property.bathrooms}</span>
-              </div>
-            )}
-            <div className="flex items-center gap-1 font-medium">
-              <Maximize2 className="w-3.5 h-3.5" />
+            <div className="flex items-center gap-1 font-bold text-slate-700">
+              <Maximize2 className="w-3.5 h-3.5 text-emerald-500" />
               <span className="capitalize">{property.area_sqft} {(property.area_unit || 'sqft').replace('sq', 'sq. ')}</span>
             </div>
           </div>
@@ -267,20 +261,28 @@ function DeleteDialog({ propertyTitle, onDelete, isPending }: { propertyTitle: s
         <AlertDialogHeader>
           <AlertDialogTitle>Move to trash?</AlertDialogTitle>
           <AlertDialogDescription>
-            Are you sure you want to move <strong>"{propertyTitle}"</strong> to trash? It will be hidden from listings but can be recovered by an admin.
+            Are you sure you want delelte <strong>"{propertyTitle}"</strong>?
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel
-            render={<Button variant="outline" className="border-slate-200 rounded-lg px-6 h-10" />}
+            render={<Button variant="outline" className="border-slate-200 rounded-lg cursor-pointer px-6 h-10" />}
           >
             Cancel
           </AlertDialogCancel>
           <AlertDialogAction
             onClick={onDelete}
-            className="bg-red-500 text-white hover:bg-red-600 border-none rounded-lg px-6 h-10"
+            disabled={isPending}
+            className="bg-red-500 cursor-pointer text-white hover:bg-red-600 border-none rounded-lg px-6 h-10 flex items-center justify-center gap-2"
           >
-            Move to trash
+            {isPending ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>Deleting...</span>
+              </>
+            ) : (
+              "Move to trash"
+            )}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

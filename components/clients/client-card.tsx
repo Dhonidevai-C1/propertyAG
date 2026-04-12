@@ -1,9 +1,9 @@
 'use client'
 
 import React from "react"
-import { 
-  Sparkles, 
-  Pencil, 
+import {
+  Sparkles,
+  Pencil,
   Trash2,
   Phone,
   Mail,
@@ -47,7 +47,7 @@ export function ClientCard({ client, onDelete }: ClientCardProps) {
   }
 
   return (
-    <Card className="p-4 border-slate-100 shadow-sm bg-white hover:border-emerald-100 transition-all group">
+    <Card className="p-4 border-slate-400 shadow-sm bg-white hover:border-emerald-100 transition-all group">
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center gap-3">
           <Avatar className={cn("h-10 w-10 border-none font-bold", getAvatarColor(client.full_name))}>
@@ -63,7 +63,7 @@ export function ClientCard({ client, onDelete }: ClientCardProps) {
         </Badge>
       </div>
 
-      <div className="space-y-2.5 mb-4">
+      <div className="space-y-0.5 mb-2">
         <div className="flex items-center gap-2 text-sm text-slate-500 font-medium">
           <Phone className="w-3.5 h-3.5" />
           <span>{client.phone}</span>
@@ -79,10 +79,10 @@ export function ClientCard({ client, onDelete }: ClientCardProps) {
         </div>
       </div>
 
-      <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-1 mb-4">
+      <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-1 mb-2">
         {client.property_types && client.property_types.map((req, i) => (
-          <span 
-            key={i} 
+          <span
+            key={i}
             className="px-2.5 py-0.5 bg-slate-50 text-slate-500 text-xs font-semibold rounded-full border border-slate-100 whitespace-nowrap capitalize"
           >
             {req.replace('_', ' ')}
@@ -90,22 +90,19 @@ export function ClientCard({ client, onDelete }: ClientCardProps) {
         ))}
       </div>
 
-      <div className="pt-4 border-t border-slate-50 flex items-center justify-between">
-        <div className="flex items-center gap-1.5 text-amber-600 font-bold group-hover:scale-105 transition-transform origin-left">
-          <Sparkles className="w-4 h-4" />
-          <span className="text-xs">matches</span>
-        </div>
-        
+      <div className="pt-2 border-t border-slate-50 flex items-center justify-between">
+
+
         <div className="flex items-center gap-2">
           <Link href={`/clients/${client.id}`}>
-            <Button size="sm" variant="outline" className="h-8 px-3 text-xs border-slate-200 text-slate-600 rounded-lg">
+            <Button size="sm" variant="outline" className="h-8 px-3 cursor-pointer text-xs border-emerald-600 text-emerald-600 hover:text-white hover:bg-emerald-600 rounded-lg">
               View
             </Button>
           </Link>
-          <Button 
-            size="sm" 
-            variant="ghost" 
-            className="h-8 w-8 p-0 text-slate-400 hover:text-blue-600 rounded-lg"
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-8 w-8 p-0 text-slate-400 hover:text-white hover:bg-slate-600 cursor-pointer border border-slate-500 rounded-lg"
           >
             <Pencil className="w-4 h-4" />
           </Button>

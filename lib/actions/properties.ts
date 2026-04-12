@@ -6,6 +6,7 @@ import { PropertyFormValues, PropertyFilters } from '@/lib/validations/property'
 import { Property, PropertyStatus } from '@/lib/types/database'
 import { revalidatePath } from 'next/cache'
 import { toSlug } from '@/lib/utils/slug'
+import { supabaseAdmin } from '@/lib/supabase/admin'
 
 export type PropertyWithCreator = Property & {
   profiles: {
@@ -53,10 +54,12 @@ export async function createProperty(formData: PropertyFormValues) {
     profile.agency_id
   )
 
+  const { source_broker_id, ...propertyData } = formData
+
   const { data, error } = await supabase
     .from('properties')
     .insert({
-      ...formData,
+      ...propertyData,
       slug: uniqueSlug,
       agency_id: profile.agency_id,
       created_by: profile.id,
@@ -65,6 +68,19 @@ export async function createProperty(formData: PropertyFormValues) {
     .single()
 
   if (error) return { error: error.message }
+
+  // Record linkage to broker if provided
+  if (source_broker_id) {
+    const { error: linkError } = await supabase
+      .from('broker_property_relations')
+      .insert({
+        agency_id: profile.agency_id,
+        broker_id: source_broker_id,
+        property_id: data.id,
+        relation_type: 'sourced'
+      })
+    if (linkError) console.error("Link error:", linkError)
+  }
 
   // Record activity
   await supabase
@@ -90,14 +106,36 @@ export async function updateProperty(id: string, formData: Partial<PropertyFormV
     throw new Error("User must belong to an agency to update properties")
   }
 
+  const { source_broker_id, ...propertyData } = formData
+
   const { data, error } = await supabase
     .from('properties')
-    .update(formData)
+    .update(propertyData)
     .match({ id, agency_id: profile.agency_id })
     .select()
     .single()
 
   if (error) return { error: error.message }
+
+  // Sync linkage to broker if provided
+  if (source_broker_id) {
+    // Delete existing sourced link for this property first
+    await supabase
+      .from('broker_property_relations')
+      .delete()
+      .eq('property_id', id)
+      .eq('relation_type', 'sourced')
+
+    const { error: linkError } = await supabase
+      .from('broker_property_relations')
+      .insert({
+        agency_id: profile.agency_id,
+        broker_id: source_broker_id,
+        property_id: id,
+        relation_type: 'sourced'
+      })
+    if (linkError) console.error("Link sync error:", linkError)
+  }
 
   // Record activity
   await supabase
@@ -151,14 +189,10 @@ export async function deleteProperty(id: string) {
     }
   }
 
-  if (!profile.agency_id) {
-    throw new Error("User must belong to an agency to delete properties")
-  }
-
-  const { error } = await supabase
+  const { error } = await supabaseAdmin
     .from('properties')
     .update({ is_deleted: true })
-    .match({ id, agency_id: profile.agency_id })
+    .eq('id', id)
 
   if (error) return { error: error.message }
 
@@ -184,11 +218,20 @@ export async function updatePropertyStatus(id: string, status: PropertyStatus) {
 
 export async function getProperty(id: string) {
   const supabase = await createClient()
+  const profile = await requireProfile()
 
   const { data, error } = await supabase
     .from('properties')
-    .select('*, profiles:created_by(full_name)')
+    .select(`
+      *, 
+      profiles:profiles!properties_created_by_fkey(full_name),
+      broker_relations:broker_property_relations(
+        *,
+        broker:brokers(*)
+      )
+    `)
     .eq('id', id)
+    .eq('agency_id', profile.agency_id)
     .single()
 
   if (error) return null

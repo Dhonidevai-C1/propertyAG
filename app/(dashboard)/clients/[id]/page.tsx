@@ -20,11 +20,14 @@ import {
   UserCheck,
   AlertCircle,
   Home,
+  Handshake,
+  ExternalLink
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
 import { Card } from "@/components/ui/card"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Button } from "@/components/ui/button"
 import { getClient } from "@/lib/actions/clients"
 import { getMatchesForClient } from "@/lib/actions/matches"
 import { notFound } from "next/navigation"
@@ -62,6 +65,9 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
   const preferredBhks: number[] = (client as any).preferred_bhks || []
 
   const isTodayOrPast = client.follow_up_date && new Date(client.follow_up_date) <= new Date()
+
+  const sourcedBrokerRelation = (client as any).broker_relations?.find((r: any) => r.relation_type === 'sourced')
+  const sourcedBroker = sourcedBrokerRelation?.broker
 
   return (
     <div className="space-y-6 pb-24">
@@ -162,6 +168,31 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
               </div>
             )}
           </SectionCard>
+
+          {/* Broker Source Info */}
+          {sourcedBroker && (
+            <Card className="bg-indigo-50 border-none rounded-[1.5rem] p-6 flex flex-col sm:flex-row items-start sm:items-center gap-6 shadow-sm">
+              <div className="w-14 h-14 rounded-2xl bg-white flex items-center justify-center shadow-lg shadow-indigo-100 shrink-0">
+                <Handshake className="w-7 h-7 text-indigo-600" />
+              </div>
+              <div className="flex-1 space-y-1">
+                <p className="text-[10px] font-black text-indigo-600 uppercase tracking-widest">Sourced from Broker</p>
+                <div className="flex flex-col sm:flex-row sm:items-center gap-x-4 gap-y-1">
+                  <h3 className="text-xl font-bold text-slate-900">{sourcedBroker.full_name}</h3>
+                  <div className="flex items-center gap-2 text-sm font-medium text-slate-500">
+                    <Phone className="w-3.5 h-3.5" />
+                    {sourcedBroker.phones?.[0] || "No phone"}
+                  </div>
+                </div>
+              </div>
+              <Link href={`/brokers/${sourcedBroker.id}`}>
+                <Button className="h-11 px-4 cursor-pointer rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold gap-2">
+                  View Broker
+                  <ExternalLink className="w-4 h-4" />
+                </Button>
+              </Link>
+            </Card>
+          )}
 
           {/* Property Requirements */}
           <SectionCard title="Property requirements" icon={<Sparkles className="w-4 h-4 text-amber-500" />}>

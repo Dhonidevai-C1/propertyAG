@@ -61,6 +61,7 @@ export const PropertyFormSchema = z.object({
   amenities: z.array(z.string()).default([]),
   balconies: z.number().min(0).optional().nullable(),
   google_maps_url: z.string().url("Must be a valid URL").optional().nullable().or(z.literal("")),
+  source_broker_id: z.string().optional().nullable(),
 })
 
 export type PropertyFormValues = z.infer<typeof PropertyFormSchema>

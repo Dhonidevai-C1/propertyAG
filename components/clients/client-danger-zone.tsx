@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState } from "react"
-import { AlertTriangle, Trash2, CheckCircle2 } from "lucide-react"
+import { AlertTriangle, Trash2, CheckCircle2, Loader2 } from "lucide-react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { toast } from "sonner"
@@ -33,12 +33,12 @@ export function ClientDangerZone({ clientId, clientName }: ClientDangerZoneProps
     setIsClosing(true)
     const { error } = await updateClientStatus(clientId, 'closed')
     setIsClosing(false)
-    
+
     if (error) {
       toast.error(error)
       return
     }
-    
+
     toast.success("Client marked as closed", {
       description: `${clientName}'s requirement has been archived.`
     })
@@ -67,14 +67,14 @@ export function ClientDangerZone({ clientId, clientName }: ClientDangerZoneProps
         <AlertTriangle className="w-5 h-5" />
         <h3 className="font-bold tracking-tight">Danger zone</h3>
       </div>
-      
+
       <div className="space-y-4">
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 bg-white rounded-xl border border-red-100">
           <div>
             <p className="text-sm font-bold text-slate-900">Mark client as closed</p>
             <p className="text-xs text-slate-500 font-medium">Use this if the client has bought/rented or is no longer looking.</p>
           </div>
-          
+
           <AlertDialog>
             <AlertDialogTrigger render={
               <Button variant="outline" className="w-full sm:w-auto border-red-100 text-red-600 hover:bg-red-50 font-bold rounded-lg h-9">
@@ -91,11 +91,19 @@ export function ClientDangerZone({ clientId, clientName }: ClientDangerZoneProps
               </AlertDialogHeader>
               <AlertDialogFooter className="flex gap-3 pt-4">
                 <AlertDialogCancel className="flex-1 border-slate-200 rounded-xl font-bold">Cancel</AlertDialogCancel>
-                <AlertDialogAction 
-                  className="flex-1 bg-red-500 hover:bg-red-600 text-white border-none rounded-xl font-bold"
+                <AlertDialogAction
+                  className="flex-1 bg-red-500 hover:bg-red-600 text-white border-none rounded-xl font-bold flex items-center justify-center gap-2"
                   onClick={handleCloseClient}
+                  disabled={isClosing}
                 >
-                  Archive client
+                  {isClosing ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Archiving...</span>
+                    </>
+                  ) : (
+                    "Archive client"
+                  )}
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
@@ -107,10 +115,10 @@ export function ClientDangerZone({ clientId, clientName }: ClientDangerZoneProps
             <p className="text-sm font-bold text-slate-900">Delete client permanently</p>
             <p className="text-xs text-slate-500 font-medium">This action is irreversible and deletes all history.</p>
           </div>
-          
+
           <AlertDialog>
             <AlertDialogTrigger render={
-              <Button className="w-full sm:w-auto bg-red-500 hover:bg-red-600 text-white border-none font-bold rounded-lg h-9">
+              <Button className="w-full sm:w-auto bg-red-500 hover:bg-red-600 cursor-pointer text-white border-none font-bold rounded-lg h-9">
                 <Trash2 className="w-4 h-4 mr-2" />
                 Delete permanently
               </Button>
@@ -126,11 +134,19 @@ export function ClientDangerZone({ clientId, clientName }: ClientDangerZoneProps
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter className="flex flex-col gap-2 pt-4">
-                <AlertDialogAction 
-                  className="w-full bg-red-600 hover:bg-red-700 text-white border-none rounded-xl font-bold h-11"
+                <AlertDialogAction
+                  className="w-full bg-red-600 cursor-pointer hover:bg-red-700 text-white border-none rounded-xl font-bold h-11 flex items-center justify-center gap-2"
                   onClick={handleDeleteClient}
+                  disabled={isDeleting}
                 >
-                  Delete permanently
+                  {isDeleting ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Deleting...</span>
+                    </>
+                  ) : (
+                    "Delete permanently"
+                  )}
                 </AlertDialogAction>
                 <AlertDialogCancel className="w-full border-slate-200 rounded-xl font-bold h-11">
                   Cancel

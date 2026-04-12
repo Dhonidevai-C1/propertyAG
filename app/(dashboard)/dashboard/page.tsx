@@ -100,7 +100,7 @@ export default async function DashboardPage() {
     getDashboardStats(),
     getRecentNotifications(4),
     getRecentActivities(6),
-    getProperties({ limit: 9 } as any),
+    getProperties({ limit: 6 } as any),
     getTodaysFollowUps()
   ])
 

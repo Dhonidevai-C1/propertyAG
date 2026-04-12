@@ -151,7 +151,11 @@ export async function getClient(id: string) {
     .from('clients')
     .select(`
       *,
-      assignee:profiles!clients_assigned_to_fkey(*)
+      assignee:profiles!clients_assigned_to_fkey(*),
+      broker_relations:broker_client_relations(
+        *,
+        broker:brokers(*)
+      )
     `)
     .eq('id', id)
     .eq('is_deleted', false)
@@ -204,12 +208,7 @@ export async function getClients(filters: ClientFilters) {
   }
 
   // Sort priority in JS to guarantee High -> Medium -> Low
-  const priorityMap: Record<string, number> = { high: 3, medium: 2, low: 1 }
   const sorted = data.sort((a, b) => {
-    const pA = priorityMap[a.priority as string] || 0
-    const pB = priorityMap[b.priority as string] || 0
-    if (pA !== pB) return pB - pA
-    // fallback to created_at
     return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
   })
 

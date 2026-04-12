@@ -2,7 +2,8 @@
 
 import React, { useState } from "react"
 import { useRouter } from "next/navigation"
-import { MoreVertical, Loader2 } from "lucide-react"
+import { MoreVertical, Loader2, Share2 } from "lucide-react"
+import { SharePropertyModal } from "@/components/brokers/share-property-modal"
 import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
@@ -28,14 +29,16 @@ import { updatePropertyStatus, deleteProperty } from "@/lib/actions/properties"
 
 interface PropertyDetailActionsProps {
   propertyId: string
+  propertyName: string
   currentStatus: string
 }
 
-export function PropertyDetailActions({ propertyId, currentStatus }: PropertyDetailActionsProps) {
+export function PropertyDetailActions({ propertyId, propertyName, currentStatus }: PropertyDetailActionsProps) {
   const router = useRouter()
   const [isDeleting, setIsDeleting] = useState(false)
   const [showDeleteAlert, setShowDeleteAlert] = useState(false)
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false)
+  const [showShareModal, setShowShareModal] = useState(false)
 
   const handleStatusChange = async (newStatus: "sold" | "rented" | "available") => {
     if (newStatus === currentStatus) return
@@ -99,6 +102,13 @@ export function PropertyDetailActions({ propertyId, currentStatus }: PropertyDet
             </DropdownMenuItem>
           )}
           <DropdownMenuSeparator className="bg-slate-100 my-1" />
+          <DropdownMenuItem 
+            className="text-amber-600 cursor-pointer rounded-md focus:bg-amber-50 focus:text-amber-700 font-bold flex items-center gap-2" 
+            onClick={() => setShowShareModal(true)}
+          >
+            <Share2 className="w-4 h-4" /> Share with Broker
+          </DropdownMenuItem>
+          <DropdownMenuSeparator className="bg-slate-100 my-1" />
           <DropdownMenuItem className="text-red-600 cursor-pointer rounded-md focus:bg-red-50 focus:text-red-700" onClick={() => setShowDeleteAlert(true)}>
             Delete Property
           </DropdownMenuItem>
@@ -129,6 +139,13 @@ export function PropertyDetailActions({ propertyId, currentStatus }: PropertyDet
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <SharePropertyModal 
+        propertyId={propertyId} 
+        propertyName={propertyName} 
+        isOpen={showShareModal} 
+        onClose={() => setShowShareModal(false)} 
+      />
     </>
   )
 }

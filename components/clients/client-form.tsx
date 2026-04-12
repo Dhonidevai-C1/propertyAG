@@ -24,6 +24,7 @@ import {
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { format } from "date-fns"
+import { useSearchParams } from "next/navigation"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -57,6 +58,7 @@ import { cn } from "@/lib/utils"
 
 import { ClientFormSchema, ClientFormValues } from "@/lib/validations/client"
 import { createClient, updateClient, getTeamMembers } from "@/lib/actions/clients"
+import { linkClientToBroker } from "@/lib/actions/brokers"
 
 interface ClientFormProps {
   initialData?: Partial<ClientFormValues> & { id?: string }
@@ -80,6 +82,7 @@ const BHK_OPTIONS = [1, 2, 3, 4, 5]
 
 export function ClientForm({ initialData, mode = "add" }: ClientFormProps) {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isMatching, setIsMatching] = useState(false)
   const [showDiscardDialog, setShowDiscardDialog] = useState(false)
@@ -115,9 +118,20 @@ export function ClientForm({ initialData, mode = "add" }: ClientFormProps) {
       source: initialData?.source || "Walk-in",
       assigned_to: initialData?.assigned_to || "",
       notes: initialData?.notes || "",
-      contact_type: (initialData as any)?.contact_type || "client",
+      contact_type: (initialData as any)?.contact_type || (searchParams?.get("contact_type") as any) || "client",
     },
   })
+
+  // Pre-fill from query params for sourcing workflow
+  useEffect(() => {
+    if (mode === "add" && searchParams) {
+      const brokerId = searchParams.get("source_broker_id")
+      if (brokerId) {
+        setValue("source", "referral")
+        setValue("contact_type" as any, "broker")
+      }
+    }
+  }, [searchParams, mode, setValue])
 
   // Fetch real team members
   useEffect(() => {
@@ -147,7 +161,7 @@ export function ClientForm({ initialData, mode = "add" }: ClientFormProps) {
     setIsSubmitting(true)
     if (!data.min_bedrooms) data.min_bedrooms = 0
 
-    const { error } = mode === "add"
+    const { data: client, error } = mode === "add"
       ? await createClient(data)
       : await updateClient(initialData?.id!, data)
 
@@ -170,6 +184,17 @@ export function ClientForm({ initialData, mode = "add" }: ClientFormProps) {
     }
 
     setIsSubmitting(false)
+
+    // Handle broker linking if this was a sourcing workflow
+    const brokerId = searchParams?.get("source_broker_id")
+    if (mode === "add" && client?.id && brokerId) {
+      try {
+        await linkClientToBroker(brokerId, client.id, "sourced")
+      } catch (err) {
+        console.error("Failed to link client to broker:", err)
+      }
+    }
+
     router.push(mode === "add" ? "/clients" : `/clients/${initialData?.id}`)
     router.refresh()
   }

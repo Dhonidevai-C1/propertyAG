@@ -39,6 +39,16 @@ export interface Database {
         Insert: Omit<Notification, 'id' | 'created_at'>
         Update: Partial<Omit<Notification, 'id' | 'created_at'>>
       }
+      brokers: {
+        Row: Broker
+        Insert: Omit<Broker, 'id' | 'created_at' | 'updated_at'>
+        Update: Partial<Omit<Broker, 'id' | 'created_at' | 'updated_at'>>
+      }
+      broker_property_relations: {
+        Row: BrokerPropertyRelation
+        Insert: Omit<BrokerPropertyRelation, 'id' | 'created_at'>
+        Update: Partial<Omit<BrokerPropertyRelation, 'id' | 'created_at'>>
+      }
     }
     Views: {
       [_ in never]: never
@@ -54,7 +64,7 @@ export interface Database {
       }
     }
     Enums: {
-      [_ in never]: never
+      broker_type: 'freelance' | 'agency' | 'other'
     }
   }
 }
@@ -209,4 +219,42 @@ export type PropertyWithCreator = Property & {
 
 export type ClientWithAssignee = Client & {
   assignee: Profile | null
+}
+
+export interface Broker {
+  id: string
+  agency_id: string
+  created_by: string | null
+  full_name: string
+  phones: string[]
+  email: string | null
+  company_name: string | null
+  broker_type: 'freelance' | 'agency' | 'other'
+  rating: number
+  area: string | null
+  specialties: string[]
+  notes: string | null
+  is_deleted: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface BrokerPropertyRelation {
+  id: string
+  agency_id: string
+  broker_id: string
+  property_id: string
+  relation_type: 'sourced' | 'shared'
+  notes: string | null
+  created_at: string
+}
+
+export interface BrokerClientRelation {
+  id: string
+  agency_id: string
+  broker_id: string
+  client_id: string
+  relation_type: 'sourced' | 'shared'
+  notes: string | null
+  created_at: string
 }

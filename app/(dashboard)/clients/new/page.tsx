@@ -1,8 +1,6 @@
-'use client'
-
-import React from "react"
+import React, { Suspense } from "react"
 import Link from "next/link"
-import { ChevronLeft } from "lucide-react"
+import { ChevronLeft, Loader2 } from "lucide-react"
 import { ClientForm } from "@/components/clients/client-form"
 
 export default function NewClientPage() {
@@ -25,7 +23,14 @@ export default function NewClientPage() {
       </div>
 
       {/* Form Section */}
-      <ClientForm />
+      <Suspense fallback={
+        <div className="flex flex-col items-center justify-center py-12 bg-white rounded-2xl border border-slate-100">
+          <Loader2 className="w-8 h-8 text-emerald-500 animate-spin mb-2" />
+          <p className="text-sm text-slate-500 font-medium">Loading form...</p>
+        </div>
+      }>
+        <ClientForm />
+      </Suspense>
     </div>
   )
 }

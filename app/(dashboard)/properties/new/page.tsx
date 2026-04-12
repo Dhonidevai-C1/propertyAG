@@ -1,6 +1,6 @@
-import React from "react"
+import React, { Suspense } from "react"
 import Link from "next/link"
-import { ChevronLeft } from "lucide-react"
+import { ChevronLeft, Loader2 } from "lucide-react"
 import { PropertyForm } from "@/components/properties/property-form"
 
 export default function NewPropertyPage() {
@@ -23,7 +23,14 @@ export default function NewPropertyPage() {
       </div>
 
       {/* Form */}
-      <PropertyForm />
+      <Suspense fallback={
+        <div className="flex flex-col items-center justify-center py-12 bg-white rounded-2xl border border-slate-100 min-h-[400px]">
+          <Loader2 className="w-8 h-8 text-emerald-500 animate-spin mb-2" />
+          <p className="text-sm text-slate-500 font-medium font-sans">Preparing property form...</p>
+        </div>
+      }>
+        <PropertyForm />
+      </Suspense>
     </div>
   )
 }

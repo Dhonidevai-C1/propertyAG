@@ -1,5 +1,5 @@
-import React from "react"
-import { ChevronLeft } from "lucide-react"
+import React, { Suspense } from "react"
+import { ChevronLeft, Loader2 } from "lucide-react"
 import Link from "next/link"
 import { BrokerForm } from "@/components/brokers/broker-form"
 
@@ -22,7 +22,14 @@ export default function NewBrokerPage() {
         </div>
       </div>
 
-      <BrokerForm />
+      <Suspense fallback={
+        <div className="flex flex-col items-center justify-center py-12 bg-white rounded-2xl border border-slate-100 min-h-[300px]">
+          <Loader2 className="w-8 h-8 text-slate-400 animate-spin mb-2" />
+          <p className="text-sm text-slate-500 font-medium">Initializing agent form...</p>
+        </div>
+      }>
+        <BrokerForm />
+      </Suspense>
     </div>
   )
 }

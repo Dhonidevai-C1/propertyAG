@@ -12,6 +12,7 @@ import { formatBudgetRange } from '@/lib/utils/format'
 
 export type ClientWithAssignee = Client & {
   assignee: Profile | null
+  broker_relations?: any[]
 }
 
 export async function createClient(formData: ClientFormValues) {

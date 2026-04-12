@@ -12,6 +12,7 @@ export type PropertyWithCreator = Property & {
   profiles: {
     full_name: string
   }
+  broker_relations?: any[]
 }
 
 async function generateUniqueSlug(title: string | null | undefined, agencyId: string, excludeId?: string): Promise<string> {

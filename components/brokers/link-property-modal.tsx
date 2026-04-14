@@ -44,7 +44,7 @@ export function LinkPropertyModal({ brokerId, brokerName, isOpen, onClose }: Lin
       setIsSearching(true)
       getProperties({ search: debouncedSearch, status: 'available' })
         .then(res => {
-          setProperties(res || [])
+          setProperties(res?.data || [])
         })
         .finally(() => setIsSearching(false))
     }

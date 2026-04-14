@@ -10,19 +10,26 @@ export type BrokerFilters = {
   search?: string
   broker_type?: 'freelance' | 'agency'
   specialty?: string
+  page?: number
 }
 
 export async function getBrokers(filters?: BrokerFilters) {
   const profile = await requireProfile()
   const supabase = await createClient()
 
+  const pageSize = 30
+  const currentPage = filters?.page || 1
+  const from = (currentPage - 1) * pageSize
+  const to = from + pageSize - 1
+
+  // 1. Core query with count enabled
   let query = supabase
     .from('brokers')
-    .select('*')
+    .select('*', { count: 'exact' })
     .eq('agency_id', profile.agency_id)
     .eq('is_deleted', false)
-    .order('created_at', { ascending: false })
 
+  // 2. Apply all filters BEFORE range/order for accurate counting
   if (filters?.search) {
     query = query.ilike('full_name', `%${filters.search}%`)
   }
@@ -35,14 +42,31 @@ export async function getBrokers(filters?: BrokerFilters) {
     query = query.contains('specialties', [filters.specialty])
   }
 
-  const { data, error } = await query
+  // 3. Apply Ordering and Range LAST
+  const { data, error, count } = await query
+    .order('created_at', { ascending: false })
+    .range(from, to)
 
   if (error) {
+    // Handle "Requested range not satisfiable" (PGRST103)
+    if (error.code === 'PGRST103') {
+      return { 
+        data: [], 
+        count: count || 0, 
+        page: currentPage, 
+        totalPages: Math.ceil((count || 0) / pageSize) 
+      }
+    }
     console.error('Error fetching brokers:', error)
-    return []
+    return { data: [], count: 0 }
   }
 
-  return data as Broker[]
+  return {
+    data: data as Broker[],
+    count: count || 0,
+    page: currentPage,
+    totalPages: Math.ceil((count || 0) / pageSize)
+  }
 }
 
 export async function getBrokerById(id: string) {

@@ -234,7 +234,7 @@ export async function ensureDailyFollowUpNotification(count: number) {
   const supabase = await createClient()
   
   // Format YYYY-MM-DD
-  const todayDate = new Date().toLocaleDateString('en-CA')
+  const todayDate = new Date().toISOString().split('T')[0]
   
   // Check if we already inserted a follow-up notification today for this user
   const { data } = await supabase

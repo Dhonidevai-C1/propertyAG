@@ -43,8 +43,7 @@ export function LinkClientModal({ brokerId, brokerName, isOpen, onClose }: LinkC
       setIsSearching(true)
       getClients({ search: debouncedSearch, status: 'all' })
         .then(res => {
-          // getClients returns an array or object depending on implementation
-          setClients(res || [])
+          setClients(res?.data || [])
         })
         .finally(() => setIsSearching(false))
     }

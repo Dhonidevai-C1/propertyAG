@@ -151,13 +151,6 @@ export function BrokerRow({ broker, isSelected, onSelect, onDelete }: BrokerRowP
         </div>
       </TableCell>
 
-      <TableCell className="w-12">
-        <Checkbox
-          checked={isSelected}
-          onCheckedChange={(checked) => onSelect(broker.id, !!checked)}
-          className="border-slate-300 cursor-pointer data-[state=checked]:bg-amber-500 data-[state=checked]:border-none"
-        />
-      </TableCell>
     </TableRow>
   )
 }

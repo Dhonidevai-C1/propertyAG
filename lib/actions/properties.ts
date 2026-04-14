@@ -89,10 +89,10 @@ export async function createProperty(formData: PropertyFormValues) {
     .insert({
       agency_id: profile.agency_id,
       user_id: profile.id,
-      action_type: 'upload',
+      action: 'create',
       entity_type: 'property',
       entity_id: data.id,
-      metadata: { title: data.title }
+      details: { title: data.title }
     })
 
   revalidatePath('/properties')
@@ -144,10 +144,10 @@ export async function updateProperty(id: string, formData: Partial<PropertyFormV
     .insert({
       agency_id: profile.agency_id,
       user_id: profile.id,
-      action_type: 'update',
+      action: 'update',
       entity_type: 'property',
       entity_id: data.id,
-      metadata: { title: data.title }
+      details: { title: data.title }
     })
 
   revalidatePath('/properties')
@@ -203,10 +203,10 @@ export async function deleteProperty(id: string) {
     .insert({
       agency_id: profile.agency_id,
       user_id: profile.id,
-      action_type: 'delete',
+      action: 'delete',
       entity_type: 'property',
       entity_id: id,
-      metadata: { title: property.title }
+      details: { title: property.title }
     })
 
   revalidatePath('/properties')
@@ -243,13 +243,19 @@ export async function getProperties(filters: PropertyFilters) {
   const profile = await requireProfile()
   const supabase = await createClient()
 
+  const pageSize = 30
+  const currentPage = filters.page || 1
+  const from = (currentPage - 1) * pageSize
+  const to = from + pageSize - 1
+
+  // 1. Core query with count enabled
   let query = supabase
     .from('properties')
-    .select('id, title, price, property_type, status, listing_type, city, locality, cover_image_url, is_featured, is_new, bedrooms, bathrooms, area_sqft, bhk, created_at, approval_type, area_unit')
+    .select('id, title, price, property_type, status, listing_type, city, locality, cover_image_url, is_featured, is_new, bedrooms, bathrooms, area_sqft, bhk, created_at, approval_type, area_unit', { count: 'exact' })
     .eq('agency_id', profile.agency_id)
     .eq('is_deleted', false)
-    .order('created_at', { ascending: false })
 
+  // 2. Apply all filters BEFORE range/order for accurate counting
   if (filters.search) {
     const terms = filters.search.split(' ').filter(Boolean)
 
@@ -257,35 +263,32 @@ export async function getProperties(filters: PropertyFilters) {
       const isNum = !isNaN(Number(term))
       let orQuery = `title.ilike.%${term}%,locality.ilike.%${term}%,city.ilike.%${term}%,address.ilike.%${term}%,property_type.ilike.%${term}%,description.ilike.%${term}%,group.ilike.%${term}%`
       if (isNum) {
-        // Use overlaps operator for array search: bhk.cs.{val} for 'contains' or bhk.ov.{val} for overlap
-        // In PostgREST, array contains is .cs.{val}
         orQuery += `,bhk.cs.{${term}},bedrooms.eq.${term}`
       }
       query = query.or(orQuery)
     })
   }
 
-  if (filters.property_type && filters.property_type !== 'all') {
+  if (filters.property_type && filters.property_type !== 'all' && filters.property_type !== 'any') {
     query = query.eq('property_type', filters.property_type)
   }
 
-  if (filters.status && filters.status !== 'all') {
+  if (filters.status && filters.status !== 'all' && filters.status !== 'any') {
     query = query.eq('status', filters.status)
   }
 
-  if (filters.listing_type && filters.listing_type !== 'all') {
+  if (filters.listing_type && filters.listing_type !== 'all' && filters.listing_type !== 'any') {
     query = query.eq('listing_type', filters.listing_type)
   }
 
-  if (filters.approval_type && filters.approval_type !== 'all') {
+  if (filters.approval_type && filters.approval_type !== 'all' && filters.approval_type !== 'any') {
     query = query.eq('approval_type', filters.approval_type)
   }
 
-  if (filters.bhk && filters.bhk !== 'all') {
+  if (filters.bhk && filters.bhk !== 'all' && filters.bhk !== 'any') {
     const bhkStr = String(filters.bhk)
     const bhkValues = bhkStr.split(',').map((v: string) => parseInt(v.trim())).filter((v: number) => !isNaN(v))
     if (bhkValues.length > 0) {
-      // Filter bhk array to see if it overlaps with these values
       query = query.filter('bhk', 'ov', `{${bhkValues.join(',')}}`)
     }
   }
@@ -298,12 +301,29 @@ export async function getProperties(filters: PropertyFilters) {
     query = query.lte('price', filters.price_max)
   }
 
-  const { data, error } = await query
+  // 3. Apply Ordering and Range LAST
+  const { data, error, count } = await query
+    .order('created_at', { ascending: false })
+    .range(from, to)
 
   if (error) {
+    // Handle "Requested range not satisfiable" (PGRST103)
+    if (error.code === 'PGRST103') {
+      return { 
+        data: [], 
+        count: count || 0, 
+        page: currentPage, 
+        totalPages: Math.ceil((count || 0) / pageSize) 
+      }
+    }
     console.error('Error fetching properties:', error)
-    return []
+    return { data: [], count: 0 }
   }
 
-  return data as Property[]
+  return {
+    data: data as Property[],
+    count: count || 0,
+    page: currentPage,
+    totalPages: Math.ceil((count || 0) / pageSize)
+  }
 }

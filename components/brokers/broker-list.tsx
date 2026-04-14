@@ -2,6 +2,8 @@
 
 import React, { useState, useMemo, useTransition } from "react"
 import {
+  ChevronLeft,
+  ChevronRight,
   Plus,
   Search,
   Filter,
@@ -38,7 +40,8 @@ import { Broker } from "@/lib/types/database"
 import { exportToExcel } from "@/lib/utils/export-utils"
 import { deleteBroker } from "@/lib/actions/brokers"
 import { toast } from "sonner"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
+import { useDebounce } from "use-debounce"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -52,6 +55,7 @@ import {
 
 interface BrokerListProps {
   initialBrokers: Broker[]
+  totalCount: number
 }
 
 const COMMON_SPECIALTIES = [
@@ -60,48 +64,65 @@ const COMMON_SPECIALTIES = [
   "Rentals", "Resale"
 ]
 
-export function BrokerList({ initialBrokers }: BrokerListProps) {
+export function BrokerList({ initialBrokers, totalCount }: BrokerListProps) {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [isPending, startTransition] = useTransition()
   const [viewMode, setViewMode] = useState<"grid" | "list">("list")
-  const [searchValue, setSearchValue] = useState("")
-  const [typeFilter, setTypeFilter] = useState("any")
-  const [specialtyFilter, setSpecialtyFilter] = useState("any")
+
+  // ── Unified Server-Driven Filters ──
+  const [searchValue, setSearchValue] = useState(searchParams.get("search") || "")
+  const [typeFilter, setTypeFilter] = useState(searchParams.get("broker_type") || "any")
+  const [specialtyFilter, setSpecialtyFilter] = useState(searchParams.get("specialty") || "any")
+  const currentPage = parseInt(searchParams.get("page") || "1")
+
+  const [debouncedSearch] = useDebounce(searchValue, 400)
+
+  // Sync state to URL
+  React.useEffect(() => {
+    const params = new URLSearchParams(searchParams.toString())
+
+    if (debouncedSearch) params.set("search", debouncedSearch)
+    else params.delete("search")
+
+    if (typeFilter !== "any") params.set("broker_type", typeFilter)
+    else params.delete("broker_type")
+
+    if (specialtyFilter !== "any") params.set("specialty", specialtyFilter)
+    else params.delete("specialty")
+
+    // Reset page on filter change
+    const hasFilterChanged =
+      debouncedSearch !== (searchParams.get("search") || "") ||
+      typeFilter !== (searchParams.get("broker_type") || "any") ||
+      specialtyFilter !== (searchParams.get("specialty") || "any")
+
+    if (hasFilterChanged) {
+      params.set("page", "1")
+    }
+
+    router.push(`/brokers?${params.toString()}`, { scroll: false })
+  }, [debouncedSearch, typeFilter, specialtyFilter])
 
   const [selectedBrokers, setSelectedBrokers] = useState<string[]>([])
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [brokerToDelete, setBrokerToDelete] = useState<string | null>(null)
 
-  const filtered = useMemo(() => {
-    const q = searchValue.toLowerCase().trim()
+  const filtered = initialBrokers
+  const totalPages = Math.ceil(totalCount / 30)
 
-    return initialBrokers.filter(b => {
-      // Search logic
-      if (q) {
-        const haystack = [
-          b.full_name,
-          b.company_name,
-          b.area,
-          b.email,
-          ...(b.phones || []),
-          ...(b.specialties || []),
-          b.notes
-        ].filter(Boolean).join(" ").toLowerCase()
-        if (!haystack.includes(q)) return false
-      }
-
-      // Filter logic
-      if (typeFilter !== "any" && b.broker_type !== typeFilter) return false
-      if (specialtyFilter !== "any" && !b.specialties?.includes(specialtyFilter)) return false
-
-      return true
-    })
-  }, [initialBrokers, searchValue, typeFilter, specialtyFilter])
+  const hasActiveFilters = searchValue || typeFilter !== "any" || specialtyFilter !== "any"
 
   const resetFilters = () => {
     setSearchValue("")
     setTypeFilter("any")
     setSpecialtyFilter("any")
+  }
+
+  const handlePageChange = (newPage: number) => {
+    const params = new URLSearchParams(searchParams.toString())
+    params.set("page", newPage.toString())
+    router.push(`/brokers?${params.toString()}`, { scroll: true })
   }
 
   const handleSelectAll = (checked: boolean) => {
@@ -149,7 +170,6 @@ export function BrokerList({ initialBrokers }: BrokerListProps) {
     exportToExcel(dataToExport, `brokers_export_${new Date().toISOString().split('T')[0]}`)
   }
 
-  const hasActiveFilters = searchValue || typeFilter !== "any" || specialtyFilter !== "any"
 
   return (
     <div className="space-y-6">
@@ -160,10 +180,18 @@ export function BrokerList({ initialBrokers }: BrokerListProps) {
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-amber-600 transition-colors" />
             <Input
               placeholder="Search by name, phone, area or agency..."
-              className="pl-11 h-12 bg-slate-50 border-none rounded-2xl focus:bg-white transition-all text-slate-800"
+              className={cn(
+                "pl-11 h-12 bg-slate-50 border-none rounded-2xl focus:bg-white transition-all text-slate-800",
+                isPending && "opacity-70 animate-pulse"
+              )}
               value={searchValue}
               onChange={e => setSearchValue(e.target.value)}
             />
+            {isPending && (
+              <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                <div className="w-4 h-4 border-2 border-amber-500 border-t-transparent rounded-full animate-spin" />
+              </div>
+            )}
           </div>
 
           <div className="flex items-center gap-2">
@@ -244,16 +272,16 @@ export function BrokerList({ initialBrokers }: BrokerListProps) {
           {hasActiveFilters && (
             <button
               onClick={resetFilters}
-              className="flex items-center gap-1.5 h-10 px-4 text-xs text-red-600 font-bold rounded-xl bg-red-50 hover:bg-red-100 transition-all"
+              className="flex items-center gap-1 h-9 px-3 text-xs text-red-500 font-bold rounded-xl border-2 border-red-100 bg-red-50 hover:bg-red-100 transition-all cursor-pointer"
             >
-              <X className="w-3.5 h-3.5" />
+              <X className="w-3 h-3" />
               Reset
             </button>
           )}
 
-          <div className="ml-auto text-[10px] font-black uppercase tracking-widest text-slate-400">
-            {filtered.length} of {initialBrokers.length} Brokers
-          </div>
+          <span className="ml-auto text-xs text-slate-500 font-semibold italic">
+            Showing page {currentPage} of {totalPages || 1} ({totalCount} total)
+          </span>
         </div>
       </div>
 
@@ -270,13 +298,7 @@ export function BrokerList({ initialBrokers }: BrokerListProps) {
                     <TableHead className="h-10 text-[10px] text-slate-400 uppercase font-black tracking-[0.2em]">Contact</TableHead>
                     <TableHead className="h-10 text-[10px] text-slate-400 uppercase font-black tracking-[0.2em]">Agency / Area</TableHead>
                     <TableHead className="h-10 text-[10px] text-slate-400 uppercase font-black tracking-[0.2em]">Specialties</TableHead>
-                    <TableHead className="w-12 h-10 px-4">
-                      <Checkbox
-                        checked={selectedBrokers.length > 0 && selectedBrokers.length === filtered.length}
-                        onCheckedChange={handleSelectAll}
-                        className="border-slate-300 data-[state=checked]:bg-amber-500 data-[state=checked]:border-none"
-                      />
-                    </TableHead>
+
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -342,6 +364,71 @@ export function BrokerList({ initialBrokers }: BrokerListProps) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* ── Pagination Footer ─────────────────────── */}
+      <div className="flex items-center justify-between gap-4 mt-8 pb-10 border-t border-slate-100 pt-6">
+        <div className="flex-1 flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handlePageChange(currentPage - 1)}
+            disabled={currentPage <= 1}
+            className="rounded-xl border-2 border-slate-200 font-bold text-slate-600 disabled:opacity-50 h-10 px-4"
+          >
+            <ChevronLeft className="w-4 h-4 mr-2" />
+            Previous
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handlePageChange(currentPage + 1)}
+            disabled={currentPage >= totalPages}
+            className="rounded-xl border-2 border-slate-200 font-bold text-slate-600 disabled:opacity-50 h-10 px-4"
+          >
+            Next
+            <ChevronRight className="w-4 h-4 ml-2" />
+          </Button>
+        </div>
+
+        <div className="hidden sm:flex items-center gap-2">
+          {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+            // Show pages around current
+            let pageNum = currentPage
+            if (totalPages <= 5) pageNum = i + 1
+            else if (currentPage <= 3) pageNum = i + 1
+            else if (currentPage >= totalPages - 2) pageNum = totalPages - 4 + i
+            else pageNum = currentPage - 2 + i
+
+            if (pageNum <= 0 || pageNum > totalPages) return null
+
+            return (
+              <Button
+                key={pageNum}
+                variant={currentPage === pageNum ? "default" : "outline"}
+                size="icon"
+                onClick={() => handlePageChange(pageNum)}
+                className={cn(
+                  "h-10 w-10 rounded-xl font-bold transition-all",
+                  currentPage === pageNum
+                    ? "bg-slate-900 hover:bg-slate-800 text-white border-none shadow-lg shadow-slate-100"
+                    : "border-2 border-slate-200 text-slate-600 hover:border-slate-300"
+                )}
+              >
+                {pageNum}
+              </Button>
+            )
+          })}
+          {totalPages > 5 && currentPage < totalPages - 2 && (
+            <span className="text-slate-400 font-bold px-2">...</span>
+          )}
+        </div>
+
+        <div className="flex-1 flex justify-end">
+          <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">
+            Page {currentPage} of {totalPages}
+          </p>
+        </div>
+      </div>
     </div>
   )
 }

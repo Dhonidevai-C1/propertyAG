@@ -38,15 +38,18 @@ import {
 import { deleteClient, ClientWithAssignee } from "@/lib/actions/clients"
 import Link from "next/link"
 import { exportToExcel } from "@/lib/utils/export-utils"
+import { useDebounce } from "use-debounce"
+import { ChevronLeft, ChevronRight } from "lucide-react"
 
 interface ClientListProps {
   initialClients: ClientWithAssignee[]
+  totalCount: number
 }
 
-export function ClientList({ initialClients }: ClientListProps) {
+export function ClientList({ initialClients, totalCount }: ClientListProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const [, startTransition] = useTransition()
+  const [isPending, startTransition] = useTransition()
 
   const [viewMode, setViewMode] = useState<"grid" | "list">("list")
   const [selectedClients, setSelectedClients] = useState<string[]>([])
@@ -54,68 +57,58 @@ export function ClientList({ initialClients }: ClientListProps) {
   const [clientToDelete, setClientToDelete] = useState<string | null>(null)
   const [isDeletingId, setIsDeletingId] = useState<string | null>(null)
 
-  // ── Client-side instant search/filter state ──
-  const [searchValue, setSearchValue] = useState("")
-  const [budgetFilter, setBudgetFilter] = useState<string>("any")
-  const [typeFilter, setTypeFilter] = useState<string>("any")
-  const [statusFilter, setStatusFilter] = useState<string>("all")
-  const [lookingForFilter, setLookingForFilter] = useState<string>("any")
+  // ── Unified Server-Driven Filters ──
+  const [searchValue, setSearchValue] = useState(searchParams.get("search") || "")
+  const [budgetFilter, setBudgetFilter] = useState<string>(searchParams.get("budget_max") || "any")
+  const [typeFilter, setTypeFilter] = useState<string>(searchParams.get("property_types") || "any")
+  const [statusFilter, setStatusFilter] = useState<string>(searchParams.get("status") || "all")
+  const currentPage = parseInt(searchParams.get("page") || "1")
 
-  // ── Pure client-side filtering — no server round-trips ──
-  const filteredClients = useMemo(() => {
-    const q = searchValue.toLowerCase().trim()
+  const [debouncedSearch] = useDebounce(searchValue, 400)
 
-    return initialClients.filter(client => {
-      // Search across all text-like attributes
-      if (q) {
-        const haystack = [
-          client.full_name,
-          client.phone,
-          client.email,
-          client.source,
-          client.notes,
-          client.status,
-          client.priority,
-          ...(client.preferred_locations || []),
-          ...(client.property_types || []),
-        ].filter(Boolean).join(" ").toLowerCase()
+  // Sync state to URL
+  React.useEffect(() => {
+    const params = new URLSearchParams(searchParams.toString())
+    
+    if (debouncedSearch) params.set("search", debouncedSearch)
+    else params.delete("search")
+    
+    if (budgetFilter !== "any") params.set("budget_max", budgetFilter)
+    else params.delete("budget_max")
+    
+    if (typeFilter !== "any") params.set("property_types", typeFilter)
+    else params.delete("property_types")
+    
+    if (statusFilter !== "all") params.set("status", statusFilter)
+    else params.delete("status")
 
-        if (!haystack.includes(q)) return false
-      }
+    // Reset page on filter change
+    if (debouncedSearch !== (searchParams.get("search") || "") || 
+        budgetFilter !== (searchParams.get("budget_max") || "any") ||
+        typeFilter !== (searchParams.get("property_types") || "any") ||
+        statusFilter !== (searchParams.get("status") || "all")) {
+      params.set("page", "1")
+    }
 
-      // Budget filter — client's budget_max must be >= min threshold
-      if (budgetFilter !== "any") {
-        const threshold = parseInt(budgetFilter)
-        if (client.budget_max && client.budget_max > threshold) return false
-      }
+    router.push(`/clients?${params.toString()}`, { scroll: false })
+  }, [debouncedSearch, budgetFilter, typeFilter, statusFilter])
 
-      // Property type filter
-      if (typeFilter !== "any") {
-        if (!client.property_types?.includes(typeFilter as any)) return false
-      }
+  const filteredClients = initialClients
+  const totalPages = Math.ceil(totalCount / 30)
 
-      // Status filter
-      if (statusFilter !== "all") {
-        if (client.status !== statusFilter) return false
-      }
-
-      // Looking For filter
-      if (lookingForFilter !== "any") {
-        if (client.looking_for !== lookingForFilter) return false
-      }
-
-      return true
-    })
-  }, [initialClients, searchValue, budgetFilter, typeFilter, statusFilter])
-
-  const hasActiveFilters = searchValue || budgetFilter !== "any" || typeFilter !== "any" || statusFilter !== "all" || lookingForFilter !== "any"
+  const hasActiveFilters = searchValue || budgetFilter !== "any" || typeFilter !== "any" || statusFilter !== "all"
 
   const resetFilters = () => {
     setSearchValue("")
     setBudgetFilter("any")
     setTypeFilter("any")
     setStatusFilter("all")
-    setLookingForFilter("any")
+  }
+
+  const handlePageChange = (newPage: number) => {
+    const params = new URLSearchParams(searchParams.toString())
+    params.set("page", newPage.toString())
+    router.push(`/clients?${params.toString()}`, { scroll: true })
   }
 
   const handleSelectAll = (checked: boolean) => {
@@ -143,7 +136,9 @@ export function ClientList({ initialClients }: ClientListProps) {
       toast.error(error)
     } else {
       toast.success("Client deleted successfully")
-      startTransition(() => router.refresh())
+    startTransition(() => {
+      router.refresh()
+    })
     }
     setIsDeleteDialogOpen(false)
     setClientToDelete(null)
@@ -194,10 +189,18 @@ export function ClientList({ initialClients }: ClientListProps) {
             <Search className="absolute left-3 top-1/2 text-emerald-300 text-emerald-70 -translate-y-3/4 w-5 h-5  group-focus-within:text-emerald-500 transition-colors" />
             <Input
               placeholder="Search by name, phone, email, location…"
-              className="pl-9 pr-9 bg-slate-50 border focus:bg-white border-emerald-100 text-emerald-70 focus:border-emerald-200 transition-all text-sm h-11 rounded-xl"
+              className={cn(
+                "pl-9 pr-9 bg-slate-50 border focus:bg-white border-emerald-100 text-emerald-70 focus:border-emerald-200 transition-all text-sm h-11 rounded-xl",
+                isPending && "opacity-70 animate-pulse"
+              )}
               value={searchValue}
               onChange={(e) => setSearchValue(e.target.value)}
             />
+            {isPending && (
+              <div className="absolute right-10 top-1/2 -translate-y-1/2">
+                <div className="w-4 h-4 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+              </div>
+            )}
             {searchValue && (
               <button
                 onClick={() => setSearchValue("")}
@@ -334,15 +337,15 @@ export function ClientList({ initialClients }: ClientListProps) {
           {hasActiveFilters && (
             <button
               onClick={resetFilters}
-              className="flex items-center gap-1 h-9 px-3 text-xs text-red-500 font-bold rounded-xl border-2 border-red-100 bg-red-50 hover:bg-red-100 transition-all"
+              className="flex items-center gap-1 h-9 px-3 text-xs text-red-500 font-bold rounded-xl border-2 border-red-100 bg-red-50 hover:bg-red-100 transition-all cursor-pointer"
             >
               <X className="w-3 h-3" />
               Reset
             </button>
           )}
 
-          <span className="ml-auto text-xs text-slate-500 font-semibold">
-            {filteredClients.length} of {initialClients.length} clients
+          <span className="ml-auto text-xs text-slate-500 font-semibold italic">
+            Showing page {currentPage} of {totalPages || 1} ({totalCount} total)
           </span>
         </div>
       </div>
@@ -443,6 +446,71 @@ export function ClientList({ initialClients }: ClientListProps) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* ── Pagination Footer ─────────────────────── */}
+      <div className="flex items-center justify-between gap-4 mt-8 pb-10 border-t border-slate-100 pt-6">
+        <div className="flex-1 flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handlePageChange(currentPage - 1)}
+            disabled={currentPage <= 1}
+            className="rounded-xl border-2 border-slate-200 font-bold text-slate-600 disabled:opacity-50 h-10 px-4"
+          >
+            <ChevronLeft className="w-4 h-4 mr-2" />
+            Previous
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handlePageChange(currentPage + 1)}
+            disabled={currentPage >= totalPages}
+            className="rounded-xl border-2 border-slate-200 font-bold text-slate-600 disabled:opacity-50 h-10 px-4"
+          >
+            Next
+            <ChevronRight className="w-4 h-4 ml-2" />
+          </Button>
+        </div>
+
+        <div className="hidden sm:flex items-center gap-2">
+          {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+            // Show pages around current
+            let pageNum = currentPage
+            if (totalPages <= 5) pageNum = i + 1
+            else if (currentPage <= 3) pageNum = i + 1
+            else if (currentPage >= totalPages - 2) pageNum = totalPages - 4 + i
+            else pageNum = currentPage - 2 + i
+
+            if (pageNum <= 0 || pageNum > totalPages) return null
+
+            return (
+              <Button
+                key={pageNum}
+                variant={currentPage === pageNum ? "default" : "outline"}
+                size="icon"
+                onClick={() => handlePageChange(pageNum)}
+                className={cn(
+                  "h-10 w-10 rounded-xl font-bold transition-all",
+                  currentPage === pageNum 
+                    ? "bg-emerald-500 hover:bg-emerald-600 text-white border-none shadow-lg shadow-emerald-100" 
+                    : "border-2 border-slate-200 text-slate-600 hover:border-slate-300"
+                )}
+              >
+                {pageNum}
+              </Button>
+            )
+          })}
+          {totalPages > 5 && currentPage < totalPages - 2 && (
+            <span className="text-slate-400 font-bold px-2">...</span>
+          )}
+        </div>
+
+        <div className="flex-1 flex justify-end">
+          <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">
+            Page {currentPage} of {totalPages}
+          </p>
+        </div>
+      </div>
     </>
   )
 }

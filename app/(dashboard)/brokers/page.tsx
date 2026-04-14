@@ -6,8 +6,25 @@ import { buttonVariants } from "@/components/ui/button-variants"
 import { BrokerList } from "@/components/brokers/broker-list"
 import { getBrokers } from "@/lib/actions/brokers"
 
-export default async function BrokersPage() {
-  const brokers = await getBrokers()
+interface BrokersPageProps {
+  searchParams: Promise<{
+    search?: string
+    broker_type?: string
+    specialty?: string
+    page?: string
+  }>
+}
+
+export default async function BrokersPage(props: BrokersPageProps) {
+  const searchParams = await props.searchParams
+  const filters = {
+    search: searchParams.search,
+    broker_type: searchParams.broker_type as any,
+    specialty: searchParams.specialty,
+    page: searchParams.page ? parseInt(searchParams.page) : 1,
+  }
+
+  const { data: brokers, count: totalCount } = await getBrokers(filters)
 
   return (
     <div className="space-y-6 pb-12">
@@ -28,7 +45,7 @@ export default async function BrokersPage() {
         </Link>
       </div>
 
-      <BrokerList initialBrokers={brokers} />
+      <BrokerList initialBrokers={brokers} totalCount={totalCount} />
     </div>
   )
 }

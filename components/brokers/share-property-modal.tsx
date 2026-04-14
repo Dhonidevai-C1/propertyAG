@@ -39,7 +39,7 @@ export function SharePropertyModal({ propertyId, propertyName, isOpen, onClose }
 
   useEffect(() => {
     if (isOpen) {
-      getBrokers().then(setBrokers)
+      getBrokers().then(res => setBrokers(res?.data || []))
     }
   }, [isOpen])
 

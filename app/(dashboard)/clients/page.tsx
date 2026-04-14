@@ -13,6 +13,7 @@ interface ClientsPageProps {
     budget_max?: string
     property_types?: string
     status?: string
+    page?: string
   }>
 }
 
@@ -24,9 +25,10 @@ export default async function ClientsPage(props: ClientsPageProps) {
     budget_max: searchParams.budget_max ? parseInt(searchParams.budget_max) : undefined,
     property_types: searchParams.property_types ? searchParams.property_types.split(',') : undefined,
     status: searchParams.status,
+    page: searchParams.page ? parseInt(searchParams.page) : 1,
   }
 
-  const clients = await getClients(filters)
+  const { data: clients, count: totalCount } = await getClients(filters)
 
   return (
     <div className="space-y-6 pb-20">
@@ -48,7 +50,7 @@ export default async function ClientsPage(props: ClientsPageProps) {
       </div>
 
       <Suspense fallback={<div className="h-40 bg-white animate-pulse rounded-2xl border border-slate-100" />}>
-        <ClientList initialClients={clients} />
+        <ClientList initialClients={clients} totalCount={totalCount} />
       </Suspense>
     </div>
   )

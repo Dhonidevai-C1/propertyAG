@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'
+
 import React from "react"
 import Link from "next/link"
 import {
@@ -26,13 +28,13 @@ import { getProperties } from "@/lib/actions/properties"
 import { requireProfile } from "@/lib/auth/get-session"
 import { Notification } from "@/lib/types/database"
 import { formatRelativeTime, formatPrice } from "@/lib/utils/format"
-import { getTodaysFollowUps } from "@/lib/actions/clients"
+import { getUpcomingFollowUps } from "@/lib/actions/clients"
 import { ensureDailyFollowUpNotification } from "@/lib/actions/matches"
 import { FollowUpWidget } from "@/components/dashboard/follow-up-widget"
 
 function activityIcon(type: string) {
   const map: Record<string, typeof Building2> = {
-    upload: UserPlus,
+    create: UserPlus,
     update: Building2,
     delete: Clock,
     match: Sparkles,
@@ -42,7 +44,7 @@ function activityIcon(type: string) {
 
 function activityColor(type: string) {
   const map: Record<string, string> = {
-    upload: "bg-emerald-100 text-emerald-600",
+    create: "bg-emerald-100 text-emerald-600",
     update: "bg-blue-100 text-blue-600",
     delete: "bg-red-100 text-red-600",
     match: "bg-amber-100 text-amber-600",
@@ -101,10 +103,15 @@ export default async function DashboardPage() {
     getRecentNotifications(4),
     getRecentActivities(6),
     getProperties({ limit: 6 } as any),
-    getTodaysFollowUps()
+    getUpcomingFollowUps()
   ])
 
+  const propertiesResult = recentProperties as any
+  const properties = propertiesResult?.data || (Array.isArray(recentProperties) ? recentProperties : [])
+
   const followUps = followUpsRes && Array.isArray(followUpsRes) ? followUpsRes : (followUpsRes as any)?.data || []
+
+  console.log(`[DASHBOARD] Follow-ups fetched: ${followUps.length}`)
 
   if (followUps.length > 0) {
     // Run asynchronously without blocking the render
@@ -137,12 +144,12 @@ export default async function DashboardPage() {
       bg: "bg-amber-50",
     },
     {
-      label: "Follow-ups due",
+      label: "Upcoming follow-ups",
       value: followUps.length,
       icon: Clock,
-      sub: "need attention",
-      color: followUps.length > 0 ? "text-red-500" : "text-emerald-600",
-      bg: followUps.length > 0 ? "bg-red-50" : "bg-emerald-50",
+      sub: "scheduled",
+      color: followUps.length > 0 ? "text-emerald-600" : "text-slate-400",
+      bg: followUps.length > 0 ? "bg-emerald-50" : "bg-slate-50",
     },
   ]
 
@@ -195,22 +202,22 @@ export default async function DashboardPage() {
             {recentActivities.length > 0 ? (
               <div className="divide-y divide-slate-100">
                 {recentActivities.map(activity => {
-                  const Icon = activityIcon(activity.action_type)
+                  const Icon = activityIcon(activity.action)
                   const href =
-                    (activity.action_type === 'delete') ? null :
+                    (activity.action === 'delete') ? null :
                       activity.entity_type === "client" ? `/clients/${activity.entity_id}` :
                         activity.entity_type === "property" ? `/properties/${activity.entity_id}` :
                           activity.entity_type === "match" ? `/matches/${activity.entity_id}` :
                             "/dashboard"
 
                   const actionText =
-                    activity.action_type === 'upload' ? 'added new' :
-                      activity.action_type === 'update' ? 'updated' :
-                        activity.action_type === 'delete' ? 'removed' : 'found match for'
+                    activity.action === 'create' ? 'added new' :
+                      activity.action === 'update' ? 'updated' :
+                        activity.action === 'delete' ? 'removed' : 'found match for'
 
                   const content = (
                     <div className="p-5 flex items-center gap-4 hover:bg-slate-50 transition-all duration-300 group">
-                      <div className={cn("w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 shadow-sm", activityColor(activity.action_type))}>
+                      <div className={cn("w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 shadow-sm", activityColor(activity.action))}>
                         <Icon className="w-4 h-4" />
                       </div>
                       <div className="flex-1 min-w-0">
@@ -218,7 +225,7 @@ export default async function DashboardPage() {
                           <span className="font-bold text-slate-900 drop-shadow-sm">{activity.profiles?.full_name}</span>
                           {" "}<span className="text-slate-500">{actionText}</span>{" "}
                           <span className="font-bold text-slate-800">
-                            {activity.metadata?.title || activity.entity_type}
+                            {activity.details?.title || activity.entity_type}
                           </span>
                         </p>
                         <p className="text-xs text-slate-400 mt-1 font-medium flex items-center gap-1">
@@ -277,7 +284,7 @@ export default async function DashboardPage() {
       </div>
 
       {/* Recent Properties */}
-      {recentProperties.length > 0 && (
+      {properties.length > 0 && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-base font-bold text-slate-900">Recent properties</h2>
@@ -286,7 +293,7 @@ export default async function DashboardPage() {
             </Link>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {recentProperties.map((property: any) => (
+            {properties.map((property: any) => (
               <Link key={property.id} href={`/properties/${property.id}`}>
                 <Card className="border-slate-300 shadow-sm rounded-2xl overflow-hidden hover:shadow-md transition-all group cursor-pointer">
                   <div className="aspect-video w-full bg-slate-100 flex items-center justify-center overflow-hidden">

@@ -106,11 +106,11 @@ export function PropertyForm({ initialData, mode = "add" }: PropertyFormProps) {
         getAgencyApprovalTypes(),
         getAgencyPlotGroups()
       ])
-      const brokersData = await getBrokers()
+      const brokersData = await getBrokers({ page: 1 })
       setDbAmenities(amenities)
       setDbApprovalTypes(approvals)
       setDbPlotGroups(plotGroups)
-      setBrokers(brokersData)
+      setBrokers(Array.isArray(brokersData) ? brokersData : (brokersData.data || []))
     }
     fetchOptions()
   }, [])
@@ -225,10 +225,15 @@ export function PropertyForm({ initialData, mode = "add" }: PropertyFormProps) {
 
       fieldsToNullify.forEach(field => {
         const val = (cleanedData as any)[field]
-        if (val === 0 || val === "" || val === "0" || val === undefined) {
+        if (val === 0 || val === "" || val === "0" || val === undefined || (typeof val === 'number' && isNaN(val))) {
           (cleanedData as any)[field] = null
         }
       })
+
+      // If area is null, nullify unit too
+      if (cleanedData.area_sqft === null) {
+        cleanedData.area_unit = null
+      }
 
       // If land, set furnishing to null
       if (propertyTypeValue === "plot" || propertyTypeValue === "farmhouse" || propertyTypeValue === "farmer_land") {
@@ -802,7 +807,7 @@ export function PropertyForm({ initialData, mode = "add" }: PropertyFormProps) {
                     </SelectTrigger>
                     <SelectContent className="bg-white font-bold">
                       <SelectItem value="" className="text-slate-400 italic">None / Unknown</SelectItem>
-                      {brokers.map(b => (
+                      {brokers?.map(b => (
                         <SelectItem key={b.id} value={b.id}>{b.full_name} {b.company_name ? `(${b.company_name})` : ''}</SelectItem>
                       ))}
                     </SelectContent>

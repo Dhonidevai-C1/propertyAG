@@ -75,4 +75,5 @@ export type PropertyFilters = {
   bhk?: string | number[]
   price_min?: number
   price_max?: number
+  page?: number
 }

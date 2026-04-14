@@ -150,14 +150,6 @@ export function PropertyRow({ property, isSelected, onSelect, onDelete }: Proper
           </div>
         </div>
       </TableCell>
-
-      <TableCell className="w-12">
-        <Checkbox
-          checked={isSelected}
-          onCheckedChange={(checked) => onSelect(property.id, !!checked)}
-          className="border-slate-300 cursor-pointer data-[state=checked]:bg-emerald-500 data-[state=checked]:border-none"
-        />
-      </TableCell>
     </TableRow>
   )
 }

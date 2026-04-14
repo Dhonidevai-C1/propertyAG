@@ -7,11 +7,15 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Create Enum for Broker Types
-CREATE TYPE public.broker_type AS ENUM ('freelance', 'agency' , 'other');
+-- Create Enum for Broker Types (Safe creation)
+DO $$ BEGIN
+    CREATE TYPE public.broker_type AS ENUM ('freelance', 'agency' , 'other');
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
 -- Create Brokers Table
-CREATE TABLE public.brokers (
+CREATE TABLE IF NOT EXISTS public.brokers (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     agency_id UUID NOT NULL REFERENCES public.agencies(id) ON DELETE CASCADE,
     created_by UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
@@ -30,7 +34,7 @@ CREATE TABLE public.brokers (
 );
 
 -- Create Broker-Property Relations Table (Track Sourcing/Sharing)
-CREATE TABLE public.broker_property_relations (
+CREATE TABLE IF NOT EXISTS public.broker_property_relations (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     agency_id UUID NOT NULL REFERENCES public.agencies(id) ON DELETE CASCADE,
     broker_id UUID NOT NULL REFERENCES public.brokers(id) ON DELETE CASCADE,

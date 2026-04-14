@@ -13,8 +13,8 @@ export function FollowUpWidget({ followUps }: { followUps: Client[] }) {
         <div className="w-12 h-12 bg-emerald-50 text-emerald-500 rounded-full flex items-center justify-center mb-4">
           <CalendarClock className="w-6 h-6" />
         </div>
-        <h3 className="text-slate-900 font-bold mb-1">No follow-ups due</h3>
-        <p className="text-sm text-slate-500 max-w-[200px]">You are all caught up for today!</p>
+        <h3 className="text-slate-900 font-bold mb-1">No upcoming follow-ups</h3>
+        <p className="text-sm text-slate-500 max-w-[200px]">You have no scheduled follow-ups for now.</p>
       </Card>
     )
   }
@@ -24,7 +24,7 @@ export function FollowUpWidget({ followUps }: { followUps: Client[] }) {
       <div className="p-4 border-b border-slate-50 flex items-center justify-between">
         <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
           <CalendarClock className="w-4 h-4 text-emerald-500" />
-          Follow-ups due ({followUps.length})
+          Upcoming follow-ups ({followUps.length})
         </h2>
         <Link href="/clients" className="text-xs font-bold text-emerald-600 hover:text-emerald-700 flex items-center gap-1">
           View all <ArrowRight className="w-3.5 h-3.5" />

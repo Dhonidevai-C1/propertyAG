@@ -1,7 +1,8 @@
 'use client'
 
 import React, { useState, useMemo, useTransition } from "react"
-import { Building2, LayoutGrid, List, Plus, Search, X, Filter, Download, Zap, Star, ShieldCheck } from "lucide-react"
+import { useDebounce } from "use-debounce"
+import { ChevronLeft, ChevronRight, Building2, LayoutGrid, List, Plus, Search, X, Filter, Download, Zap, Star, ShieldCheck } from "lucide-react"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -27,7 +28,7 @@ import { Property } from "@/lib/types/database"
 import { exportToExcel } from "@/lib/utils/export-utils"
 import { deleteProperty } from "@/lib/actions/properties"
 import { toast } from "sonner"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -41,77 +42,72 @@ import {
 
 interface PropertyListProps {
   initialProperties: Property[]
+  totalCount: number
 }
 
-export function PropertyList({ initialProperties }: PropertyListProps) {
+export function PropertyList({ initialProperties, totalCount }: PropertyListProps) {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [isPending, startTransition] = useTransition()
   const [viewMode, setViewMode] = useState<"grid" | "list">("list")
-  const [searchValue, setSearchValue] = useState("")
-  const [typeFilter, setTypeFilter] = useState("any")
-  const [statusFilter, setStatusFilter] = useState("any")
-  const [listingTypeFilter, setListingTypeFilter] = useState("any")
-  const [approvalFilter, setApprovalFilter] = useState("any")
-  const [bedroomsFilter, setBedroomsFilter] = useState("any")
-  const [priceFilter, setPriceFilter] = useState("any")
+
+  // ── Unified Server-Driven Filters ──
+  const [searchValue, setSearchValue] = useState(searchParams.get("search") || "")
+  const [typeFilter, setTypeFilter] = useState(searchParams.get("property_type") || "any")
+  const [statusFilter, setStatusFilter] = useState(searchParams.get("status") || "any")
+  const [listingTypeFilter, setListingTypeFilter] = useState(searchParams.get("listing_type") || "any")
+  const [approvalFilter, setApprovalFilter] = useState(searchParams.get("approval_type") || "any")
+  const [bedroomsFilter, setBedroomsFilter] = useState(searchParams.get("bhk") || "any")
+  const currentPage = parseInt(searchParams.get("page") || "1")
+
+  const [debouncedSearch] = useDebounce(searchValue, 400)
+
+  // Sync state to URL
+  React.useEffect(() => {
+    const params = new URLSearchParams(searchParams.toString())
+
+    if (debouncedSearch) params.set("search", debouncedSearch)
+    else params.delete("search")
+
+    if (typeFilter !== "any") params.set("property_type", typeFilter)
+    else params.delete("property_type")
+
+    if (statusFilter !== "any") params.set("status", statusFilter)
+    else params.delete("status")
+
+    if (listingTypeFilter !== "any") params.set("listing_type", listingTypeFilter)
+    else params.delete("listing_type")
+
+    if (approvalFilter !== "any") params.set("approval_type", approvalFilter)
+    else params.delete("approval_type")
+
+    if (bedroomsFilter !== "any") params.set("bhk", bedroomsFilter)
+    else params.delete("bhk")
+
+    // Reset page on filter change
+    const hasFilterChanged =
+      debouncedSearch !== (searchParams.get("search") || "") ||
+      typeFilter !== (searchParams.get("property_type") || "any") ||
+      statusFilter !== (searchParams.get("status") || "any") ||
+      listingTypeFilter !== (searchParams.get("listing_type") || "any") ||
+      approvalFilter !== (searchParams.get("approval_type") || "any") ||
+      bedroomsFilter !== (searchParams.get("bhk") || "any")
+
+    if (hasFilterChanged) {
+      params.set("page", "1")
+    }
+
+    router.push(`/properties?${params.toString()}`, { scroll: false })
+  }, [debouncedSearch, typeFilter, statusFilter, listingTypeFilter, approvalFilter, bedroomsFilter])
 
   const [selectedProperties, setSelectedProperties] = useState<string[]>([])
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [propertyToDelete, setPropertyToDelete] = useState<string | null>(null)
 
-  // ── Pure client-side filtering ────────────────────────────
-  const filtered = useMemo(() => {
-    const q = searchValue.toLowerCase().trim()
+  const filtered = initialProperties
+  const totalPages = Math.ceil(totalCount / 30)
 
-    return initialProperties.filter(p => {
-      if (q) {
-        const haystack = [
-          p.title,
-          p.address,
-          p.city,
-          p.locality,
-          p.description,
-          p.property_type,
-          p.status,
-          p.pincode,
-          p.seller_name,
-          p.seller_phone,
-          p.approval_type,
-          p.group,
-          String(p.bhk || ""),
-          String(p.price || ""),
-        ].filter(Boolean).join(" ").toLowerCase()
-        if (!haystack.includes(q)) return false
-      }
-
-      if (typeFilter !== "any" && p.property_type !== typeFilter) return false
-      if (statusFilter !== "any" && p.status !== statusFilter) return false
-      if (listingTypeFilter !== "any" && p.listing_type !== listingTypeFilter) return false
-      if (approvalFilter !== "any" && p.approval_type !== approvalFilter) return false
-
-      if (bedroomsFilter !== "any") {
-        const filterBhk = Number(bedroomsFilter)
-        const propertyBhks = p.bhk || []
-
-        if (filterBhk === 5) {
-          // 5+ BHK: check if any value in the array is >= 5
-          if (!propertyBhks.some(val => val >= 5)) return false
-        } else {
-          // Specific BHK: check if the array contains the filtered value
-          if (!propertyBhks.includes(filterBhk)) return false
-        }
-      }
-
-      if (priceFilter !== "any") {
-        const max = parseInt(priceFilter)
-        if (p.price > max) return false
-      }
-
-      return true
-    })
-  }, [initialProperties, searchValue, typeFilter, statusFilter, listingTypeFilter, approvalFilter, bedroomsFilter, priceFilter])
-
-  const hasActiveFilters = searchValue || typeFilter !== "any" || statusFilter !== "any" || listingTypeFilter !== "any" || approvalFilter !== "any" || bedroomsFilter !== "any" || priceFilter !== "any"
+  const hasActiveFilters = searchValue || typeFilter !== "any" || statusFilter !== "any" || listingTypeFilter !== "any" || approvalFilter !== "any" || bedroomsFilter !== "any"
 
   const resetFilters = () => {
     setSearchValue("")
@@ -120,7 +116,12 @@ export function PropertyList({ initialProperties }: PropertyListProps) {
     setListingTypeFilter("any")
     setApprovalFilter("any")
     setBedroomsFilter("any")
-    setPriceFilter("any")
+  }
+
+  const handlePageChange = (newPage: number) => {
+    const params = new URLSearchParams(searchParams.toString())
+    params.set("page", newPage.toString())
+    router.push(`/properties?${params.toString()}`, { scroll: true })
   }
 
   const handleSelectAll = (checked: boolean) => {
@@ -202,11 +203,19 @@ export function PropertyList({ initialProperties }: PropertyListProps) {
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-emerald-500 transition-colors" />
             <Input
               placeholder="Search by title, seller, locality, type…"
-              className="pl-11 pr-11 bg-slate-50 border-none focus:bg-white focus:ring-2 focus:ring-emerald-500/20 text-slate-800 transition-all h-12 rounded-2xl"
+              className={cn(
+                "pl-11 pr-11 bg-slate-50 border-none focus:bg-white focus:ring-2 focus:ring-emerald-500/20 text-slate-800 transition-all h-12 rounded-2xl",
+                isPending && "opacity-70 animate-pulse"
+              )}
               value={searchValue}
               onChange={e => setSearchValue(e.target.value)}
             />
-            {searchValue && (
+            {isPending && (
+              <div className="absolute right-12 top-1/2 -translate-y-1/2">
+                <div className="w-4 h-4 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+              </div>
+            )}
+            {searchValue && !isPending && (
               <button
                 onClick={() => setSearchValue("")}
                 className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
@@ -365,15 +374,15 @@ export function PropertyList({ initialProperties }: PropertyListProps) {
           {hasActiveFilters && (
             <button
               onClick={resetFilters}
-              className="flex items-center gap-1.5 h-10 px-4 text-xs text-red-600 font-black rounded-xl bg-red-50 hover:bg-red-100 transition-all border border-red-100"
+              className="flex items-center gap-1 h-9 px-3 text-xs text-red-500 font-bold rounded-xl border-2 border-red-100 bg-red-50 hover:bg-red-100 transition-all cursor-pointer"
             >
-              <X className="w-3.5 h-3.5" />
-              Reset All
+              <X className="w-3 h-3" />
+              Reset
             </button>
           )}
 
-          <span className="ml-auto text-[10px] text-slate-400 font-black uppercase tracking-wider">
-            {filtered.length} of {initialProperties.length} Properties
+          <span className="ml-auto text-xs text-slate-500 font-semibold italic">
+            Showing page {currentPage} of {totalPages || 1} ({totalCount} total)
           </span>
         </div>
       </div>
@@ -392,13 +401,6 @@ export function PropertyList({ initialProperties }: PropertyListProps) {
                     <TableHead className="h-10 text-[10px] text-slate-400 uppercase font-black tracking-[0.2em]">Price</TableHead>
                     <TableHead className="h-10 text-[10px] text-slate-400 uppercase font-black tracking-[0.2em]">Type</TableHead>
                     <TableHead className="h-10 text-[10px] text-slate-400 uppercase font-black tracking-[0.2em]">Details</TableHead>
-                    <TableHead className="w-12 h-10 px-4">
-                      <Checkbox
-                        checked={selectedProperties.length > 0 && selectedProperties.length === filtered.length}
-                        onCheckedChange={handleSelectAll}
-                        className="border-slate-300 data-[state=checked]:bg-emerald-500 data-[state=checked]:border-none"
-                      />
-                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -464,6 +466,71 @@ export function PropertyList({ initialProperties }: PropertyListProps) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* ── Pagination Footer ─────────────────────── */}
+      <div className="flex items-center justify-between gap-4 mt-8 pb-10 border-t border-slate-100 pt-6">
+        <div className="flex-1 flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handlePageChange(currentPage - 1)}
+            disabled={currentPage <= 1}
+            className="rounded-xl border-2 border-slate-200 font-bold text-slate-600 disabled:opacity-50 h-10 px-4"
+          >
+            <ChevronLeft className="w-4 h-4 mr-2" />
+            Previous
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handlePageChange(currentPage + 1)}
+            disabled={currentPage >= totalPages}
+            className="rounded-xl border-2 border-slate-200 font-bold text-slate-600 disabled:opacity-50 h-10 px-4"
+          >
+            Next
+            <ChevronRight className="w-4 h-4 ml-2" />
+          </Button>
+        </div>
+
+        <div className="hidden sm:flex items-center gap-2">
+          {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+            // Show pages around current
+            let pageNum = currentPage
+            if (totalPages <= 5) pageNum = i + 1
+            else if (currentPage <= 3) pageNum = i + 1
+            else if (currentPage >= totalPages - 2) pageNum = totalPages - 4 + i
+            else pageNum = currentPage - 2 + i
+
+            if (pageNum <= 0 || pageNum > totalPages) return null
+
+            return (
+              <Button
+                key={pageNum}
+                variant={currentPage === pageNum ? "default" : "outline"}
+                size="icon"
+                onClick={() => handlePageChange(pageNum)}
+                className={cn(
+                  "h-10 w-10 rounded-xl font-bold transition-all",
+                  currentPage === pageNum
+                    ? "bg-emerald-500 hover:bg-emerald-600 text-white border-none shadow-lg shadow-emerald-100"
+                    : "border-2 border-slate-200 text-slate-600 hover:border-slate-300"
+                )}
+              >
+                {pageNum}
+              </Button>
+            )
+          })}
+          {totalPages > 5 && currentPage < totalPages - 2 && (
+            <span className="text-slate-400 font-bold px-2">...</span>
+          )}
+        </div>
+
+        <div className="flex-1 flex justify-end">
+          <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">
+            Page {currentPage} of {totalPages}
+          </p>
+        </div>
+      </div>
     </div>
   )
 }

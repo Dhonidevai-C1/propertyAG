@@ -159,7 +159,13 @@ export function ClientForm({ initialData, mode = "add" }: ClientFormProps) {
 
   const onSubmit = async (data: ClientFormValues) => {
     setIsSubmitting(true)
+    
+    // Clean optional fields
     if (!data.min_bedrooms) data.min_bedrooms = 0
+    if (!data.min_area_sqft || isNaN(data.min_area_sqft)) {
+      data.min_area_sqft = null
+      data.min_area_unit = null
+    }
 
     const { data: client, error } = mode === "add"
       ? await createClient(data)
@@ -247,7 +253,7 @@ export function ClientForm({ initialData, mode = "add" }: ClientFormProps) {
             <div className="relative">
               <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
               <Input
-                placeholder="e.g. Anil Sharma"
+                placeholder="FULL NAME"
                 {...register("full_name")}
                 className={cn("h-11 rounded-xl pl-10", errors.full_name && "border-red-400")}
               />
@@ -272,7 +278,7 @@ export function ClientForm({ initialData, mode = "add" }: ClientFormProps) {
               <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
               <Input
                 type="email"
-                placeholder="anil.sharma@example.com"
+                placeholder="mail@example.com"
                 {...register("email")}
                 className="h-11 rounded-xl pl-10"
               />

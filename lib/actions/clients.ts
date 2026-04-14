@@ -66,13 +66,14 @@ export async function createClient(formData: ClientFormValues) {
     .insert({
       agency_id: profile.agency_id,
       user_id: profile.id,
-      action_type: 'upload',
+      action: 'create',
       entity_type: 'client',
       entity_id: client.id,
-      metadata: { title: client.full_name }
+      details: { title: client.full_name }
     })
 
   revalidatePath('/clients')
+  revalidatePath('/dashboard')
   return { data: client as Client }
 }
 
@@ -95,14 +96,15 @@ export async function updateClient(id: string, formData: Partial<ClientFormValue
     .insert({
       agency_id: profile.agency_id,
       user_id: profile.id,
-      action_type: 'update',
+      action: 'update',
       entity_type: 'client',
       entity_id: client.id,
-      metadata: { title: client.full_name }
+      details: { title: client.full_name }
     })
 
   revalidatePath('/clients')
   revalidatePath(`/clients/${id}`)
+  revalidatePath('/dashboard')
   return { data: client as Client }
 }
 
@@ -125,10 +127,10 @@ export async function deleteClient(id: string) {
     .insert({
       agency_id: profile.agency_id,
       user_id: profile.id,
-      action_type: 'delete',
+      action: 'delete',
       entity_type: 'client',
       entity_id: id,
-      metadata: { title: 'Client removed' } // In deleteClient, we don't fetch full_name first, using generic label
+      details: { title: 'Client removed' }
     })
 
   // Dismiss any related matches
@@ -138,6 +140,7 @@ export async function deleteClient(id: string) {
     .match({ client_id: id, agency_id: profile.agency_id })
 
   revalidatePath('/clients')
+  revalidatePath('/dashboard')
   return { data: { success: true } }
 }
 
@@ -170,17 +173,19 @@ export async function getClients(filters: ClientFilters) {
   const profile = await requireProfile()
   const supabase = await createSupabaseClient()
 
+  const pageSize = 30
+  const currentPage = filters.page || 1
+  const from = (currentPage - 1) * pageSize
+  const to = from + pageSize - 1
+
+  // 1. Core query with count enabled
   let query = supabase
     .from('clients')
-    .select(`*, assignee:profiles!clients_assigned_to_fkey(*)`)
+    .select(`*, assignee:profiles!clients_assigned_to_fkey(*)`, { count: 'exact' })
     .eq('agency_id', profile.agency_id)
     .eq('is_deleted', false)
-    .order('priority', { ascending: false }) // 'high' > 'medium' > 'low' alphabetically string sorting might invert this depending on collation. 
-    // Ideally use a case expression or order by created_at. Supabase sorting strings will put 'low' after 'high'. 
-    // Actually: high, medium, low alphabetically is h, m, l. So descending order is medium, low, high.
-    // Instead, just order by created_at for safety, or we can handle enum sorting.
-    .order('created_at', { ascending: false })
 
+  // 2. Apply all filters BEFORE range/order for accurate counting
   if (filters.search) {
     query = query.or(`full_name.ilike.%${filters.search}%,phone.ilike.%${filters.search}%,email.ilike.%${filters.search}%`)
   }
@@ -201,19 +206,26 @@ export async function getClients(filters: ClientFilters) {
     query = query.eq('status', filters.status)
   }
 
-  const { data, error } = await query
+  // 3. Apply Ordering and Range LAST
+  const { data, error, count } = await query
+    .order('created_at', { ascending: false })
+    .range(from, to)
 
   if (error) {
+    // Handle "Requested range not satisfiable" (PGRST103)
+    if (error.code === 'PGRST103') {
+      return { data: [], count: count || 0, page: currentPage, totalPages: Math.ceil((count || 0) / pageSize) }
+    }
     console.error('Error fetching clients:', error)
-    return []
+    return { data: [], count: 0 }
   }
 
-  // Sort priority in JS to guarantee High -> Medium -> Low
-  const sorted = data.sort((a, b) => {
-    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-  })
-
-  return sorted as ClientWithAssignee[]
+  return {
+    data: data as ClientWithAssignee[],
+    count: count || 0,
+    page: currentPage,
+    totalPages: Math.ceil((count || 0) / pageSize)
+  }
 }
 
 export async function getTeamMembers() {
@@ -230,12 +242,12 @@ export async function getTeamMembers() {
   return data as Profile[]
 }
 
-export async function getTodaysFollowUps() {
+export async function getUpcomingFollowUps() {
   const profile = await requireProfile()
   const supabase = await createSupabaseClient()
   
-  // Format YYYY-MM-DD
-  const todayDate = new Date().toLocaleDateString('en-CA')
+  // Format YYYY-MM-DD in UTC (standard for Supabase DATE columns)
+  const todayDate = new Date().toISOString().split('T')[0]
 
   const { data, error } = await supabase
     .from('clients')
@@ -244,7 +256,7 @@ export async function getTodaysFollowUps() {
     .eq('is_deleted', false)
     .neq('status', 'closed')
     .not('follow_up_date', 'is', null)
-    .lte('follow_up_date', todayDate)
+    .gte('follow_up_date', todayDate) // Show today and future
     .order('follow_up_date', { ascending: true })
 
   if (error) {

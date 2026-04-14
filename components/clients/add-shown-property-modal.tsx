@@ -49,7 +49,7 @@ export function AddShownPropertyModal({ clientId, isOpen, onOpenChange, onSucces
       setIsLoading(true)
       try {
         const results = await getProperties({ search })
-        setProperties(results)
+        setProperties(results?.data || [])
       } catch (e) {
         console.error(e)
       } finally {

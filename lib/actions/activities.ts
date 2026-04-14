@@ -6,10 +6,10 @@ import { requireProfile } from '@/lib/auth/get-session'
 export interface Activity {
   id: string
   created_at: string
-  action_type: 'upload' | 'update' | 'delete' | 'match'
-  entity_type: 'property' | 'client' | 'match'
+  action: 'create' | 'update' | 'delete' | 'match' | 'view'
+  entity_type: 'property' | 'client' | 'match' | 'broker'
   entity_id: string
-  metadata: any
+  details: any
   profiles: {
     full_name: string
   }
@@ -30,7 +30,9 @@ export async function getRecentActivities(limit = 10): Promise<Activity[]> {
     .limit(limit)
 
   if (error) {
-    console.error('getRecentActivities error:', error)
+    if (error.code !== 'PGRST116') { // Not found / empty is fine
+      console.error('getRecentActivities error:', error)
+    }
     return []
   }
 

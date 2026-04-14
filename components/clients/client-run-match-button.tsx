@@ -40,7 +40,7 @@ export function ClientRunMatchButton({ clientId }: { clientId: string }) {
     <button
       onClick={handleRun}
       disabled={isRunning}
-      className="w-full flex items-center gap-3 h-11 px-4 text-amber-600 font-bold text-sm rounded-xl hover:bg-amber-50 transition-colors disabled:opacity-50"
+      className="w-full flex items-center gap-3 h-11 px-4 text-amber-600 cursor-pointer font-bold text-sm rounded-xl hover:bg-amber-50 transition-colors disabled:opacity-50"
     >
       {isRunning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
       {isRunning ? 'Running engine…' : 'Run match engine'}

@@ -28,17 +28,21 @@ import { toast } from "sonner"
 
 interface MatchListProps {
   initialMatches: MatchWithDetails[]
+  totalCount: number
+  totalPages: number
   initialFilters: {
     minScore?: number
     status?: string
     search?: string
     sortBy?: string
+    page?: number
   }
 }
 
-export function MatchList({ initialMatches, initialFilters }: MatchListProps) {
+export function MatchList({ initialMatches, initialFilters, totalCount, totalPages }: MatchListProps) {
   const router = useRouter()
   const pathname = usePathname()
+  const searchParams = useSearchParams()
   const [isPending, startTransition] = useTransition()
   const [isRunning, setIsRunning] = useState(false)
 
@@ -47,33 +51,22 @@ export function MatchList({ initialMatches, initialFilters }: MatchListProps) {
   const [statusFilter, setStatusFilter] = useState(initialFilters.status ?? "All")
   const [sortBy, setSortBy] = useState(initialFilters.sortBy ?? "Highest match")
 
-  const filteredMatches = useMemo(() => {
-    return initialMatches
-      .filter(m => {
-        const matchesSearch =
-          !search ||
-          m.client?.full_name?.toLowerCase().includes(search.toLowerCase()) ||
-          m.property?.title?.toLowerCase().includes(search.toLowerCase())
-        const matchesScore = m.score >= minScore
-        const matchesStatus =
-          statusFilter === "All" ||
-          m.status === statusFilter.toLowerCase()
-        return matchesSearch && matchesScore && matchesStatus
-      })
-      .sort((a, b) => {
-        if (sortBy === "Highest match") return b.score - a.score
-        if (sortBy === "Newest first")
-          return new Date(b.matched_at).getTime() - new Date(a.matched_at).getTime()
-        if (sortBy === "Client name")
-          return (a.client?.full_name ?? "").localeCompare(b.client?.full_name ?? "")
-        if (sortBy === "Property price")
-          return (b.property?.price ?? 0) - (a.property?.price ?? 0)
-        return 0
-      })
-  }, [initialMatches, search, minScore, statusFilter, sortBy])
+  const updateFilters = (updates: Record<string, any>) => {
+    const params = new URLSearchParams(searchParams.toString())
+    Object.entries(updates).forEach(([key, value]) => {
+      if (value) params.set(key, value.toString())
+      else params.delete(key)
+    })
+    // Reset to page 1 on filter change
+    if (!updates.page) params.set('page', '1')
+    
+    startTransition(() => {
+      router.push(`${pathname}?${params.toString()}`)
+    })
+  }
 
-  const highConfidence = filteredMatches.filter(m => m.score >= 90).length
-  const unreviewed = filteredMatches.filter(m => m.status === "new").length
+  const highConfidence = initialMatches.filter(m => m.score >= 90).length // Approximate for current page
+  const unreviewed = initialMatches.filter(m => m.status === "new").length     // Approximate for current page
 
   const runMatchForAll = async () => {
     setIsRunning(true)
@@ -95,9 +88,10 @@ export function MatchList({ initialMatches, initialFilters }: MatchListProps) {
 
   const resetFilters = () => {
     setSearch("")
-    setMinScore(60)
+    setMinScore(40)
     setStatusFilter("All")
     setSortBy("Highest match")
+    updateFilters({ search: "", minScore: 40, status: "All", sortBy: "Highest match", page: 1 })
   }
 
   return (
@@ -108,7 +102,7 @@ export function MatchList({ initialMatches, initialFilters }: MatchListProps) {
           <StatPill
             icon={<Sparkles className="w-4 h-4" />}
             color="amber"
-            label={`${filteredMatches.length} matches`}
+            label={`${totalCount} matches found`}
           />
           <StatPill
             icon={<CheckCircle2 className="w-4 h-4" />}
@@ -149,6 +143,9 @@ export function MatchList({ initialMatches, initialFilters }: MatchListProps) {
                 placeholder="Client or property name…"
                 value={search}
                 onChange={e => setSearch(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === 'Enter') updateFilters({ search })
+                }}
                 className="pl-10 h-11 rounded-xl bg-slate-50 text-slate-700 border-transparent focus:bg-white focus:border-emerald-200 transition-all font-medium"
               />
               {search && (
@@ -176,8 +173,13 @@ export function MatchList({ initialMatches, initialFilters }: MatchListProps) {
               type="range"
               min="40"
               max="100"
+              step="5"
               value={minScore}
-              onChange={e => setMinScore(parseInt(e.target.value))}
+              onChange={e => {
+                const val = parseInt(e.target.value)
+                setMinScore(val)
+                updateFilters({ minScore: val })
+              }}
               className="w-full h-1.5 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-emerald-500"
             />
           </div>
@@ -187,8 +189,15 @@ export function MatchList({ initialMatches, initialFilters }: MatchListProps) {
             <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">
               Sort by
             </label>
-            <Select value={sortBy} onValueChange={v => setSortBy(v ?? "Highest match")}>
-              <SelectTrigger className="h-11 rounded-xl bg-slate-500 border-transparent font-medium">
+            <Select 
+              value={sortBy} 
+              onValueChange={v => {
+                if (!v) return
+                setSortBy(v)
+                updateFilters({ sortBy: v })
+              }}
+            >
+              <SelectTrigger className="h-11 rounded-xl bg-slate-50 border-transparent font-medium">
                 <div className="flex items-center gap-2">
                   <ArrowUpDown className="w-3.5 h-3.5 text-slate-400" />
                   <SelectValue />
@@ -223,7 +232,10 @@ export function MatchList({ initialMatches, initialFilters }: MatchListProps) {
             {["All", "New", "Reviewed", "Contacted"].map(s => (
               <button
                 key={s}
-                onClick={() => setStatusFilter(s)}
+                onClick={() => {
+                  setStatusFilter(s)
+                  updateFilters({ status: s })
+                }}
                 className={cn(
                   "px-4 py-1.5 rounded-full text-xs font-bold transition-all border",
                   statusFilter === s
@@ -240,8 +252,8 @@ export function MatchList({ initialMatches, initialFilters }: MatchListProps) {
 
       {/* Match Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {filteredMatches.length > 0 ? (
-          filteredMatches.map(match => (
+        {initialMatches.length > 0 ? (
+          initialMatches.map(match => (
             <MatchCard key={match.id} match={match} />
           ))
         ) : (
@@ -255,17 +267,54 @@ export function MatchList({ initialMatches, initialFilters }: MatchListProps) {
                 Try adjusting the minimum score filter or run the match engine.
               </p>
             </div>
-            <Button
-              onClick={runMatchForAll}
-              disabled={isRunning}
-              className="bg-amber-500 hover:bg-amber-600 text-white gap-2 rounded-xl px-6"
-            >
-              <RefreshCw className="w-4 h-4" />
-              Run match engine
-            </Button>
           </div>
         )}
       </div>
+
+      {/* Pagination Controls */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-2 pt-8">
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={initialFilters.page === 1 || isPending}
+            onClick={() => updateFilters({ page: (initialFilters.page || 1) - 1 })}
+            className="rounded-lg font-bold"
+          >
+            Previous
+          </Button>
+          <div className="flex items-center gap-1">
+            {Array.from({ length: totalPages }, (_, i) => i + 1)
+              .filter(p => Math.abs(p - (initialFilters.page || 1)) <= 2 || p === 1 || p === totalPages)
+              .map((p, i, arr) => (
+                <React.Fragment key={p}>
+                  {i > 0 && arr[i-1] !== p - 1 && <span className="text-slate-300 px-1">...</span>}
+                  <Button
+                    variant={initialFilters.page === p ? "default" : "ghost"}
+                    size="sm"
+                    className={cn(
+                      "w-8 h-8 p-0 rounded-lg font-bold",
+                      initialFilters.page === p ? "bg-slate-800" : "text-slate-500"
+                    )}
+                    disabled={isPending}
+                    onClick={() => updateFilters({ page: p })}
+                  >
+                    {p}
+                  </Button>
+                </React.Fragment>
+              ))}
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={initialFilters.page === totalPages || isPending}
+            onClick={() => updateFilters({ page: (initialFilters.page || 1) + 1 })}
+            className="rounded-lg font-bold"
+          >
+            Next
+          </Button>
+        </div>
+      )}
     </div>
   )
 }

@@ -12,12 +12,18 @@ export interface MatchFilters {
   status?: string
   search?: string
   sortBy?: string
+  page?: number
 }
 
 // ── getMatches ──────────────────────────────────────────────
-export async function getMatches(filters: MatchFilters = {}): Promise<MatchWithDetails[]> {
+export async function getMatches(filters: MatchFilters = {}) {
   const profile = await requireProfile()
   const supabase = await createClient()
+
+  const pageSize = 30
+  const currentPage = filters.page || 1
+  const from = (currentPage - 1) * pageSize
+  const to = from + pageSize - 1
 
   let query = supabase
     .from('matches')
@@ -25,30 +31,35 @@ export async function getMatches(filters: MatchFilters = {}): Promise<MatchWithD
       *,
       client:clients!matches_client_id_fkey(*),
       property:properties!matches_property_id_fkey(*)
-    `)
+    `, { count: 'exact' })
     .eq('agency_id', profile.agency_id)
     .neq('status', 'dismissed')
 
   if (filters.minScore) {
     query = query.gte('score', filters.minScore)
   } else {
-    // Default to 50% as requested
-    query = query.gte('score', 50)
+    // Default to 40% as requested after fuzzy logic update
+    query = query.gte('score', 40)
   }
+  
   if (filters.status && filters.status !== 'All' && filters.status !== 'all') {
     query = query.eq('status', filters.status.toLowerCase())
   }
 
-  const { data, error } = await query.order('score', { ascending: false })
+  // Apply range and order
+  const { data, error, count } = await query
+    .order('score', { ascending: false })
+    .range(from, to)
 
   if (error) {
     console.error('getMatches error:', error)
-    return []
+    return { data: [], count: 0 }
   }
 
   let results = (data || []) as unknown as MatchWithDetails[]
 
-  // Search across client name and property title
+  // Search across client name and property title (Post-fetch filter for simplicity, 
+  // or could be moved to SQL for better performance)
   if (filters.search) {
     const q = filters.search.toLowerCase()
     results = results.filter(m =>
@@ -58,17 +69,12 @@ export async function getMatches(filters: MatchFilters = {}): Promise<MatchWithD
     )
   }
 
-  // Sort
-  if (filters.sortBy === 'Newest first') {
-    results.sort((a, b) => new Date(b.matched_at).getTime() - new Date(a.matched_at).getTime())
-  } else if (filters.sortBy === 'Client name') {
-    results.sort((a, b) => (a.client?.full_name ?? '').localeCompare(b.client?.full_name ?? ''))
-  } else if (filters.sortBy === 'Property price') {
-    results.sort((a, b) => (b.property?.price ?? 0) - (a.property?.price ?? 0))
+  return {
+    data: results,
+    count: count || 0,
+    page: currentPage,
+    totalPages: Math.ceil((count || 0) / pageSize)
   }
-  // default: already sorted by score desc from DB
-
-  return results
 }
 
 // ── getMatchesForClient ─────────────────────────────────────

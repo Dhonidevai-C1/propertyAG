@@ -6,17 +6,18 @@ import { MatchList } from "@/components/matches/match-list"
 export default async function SmartMatchesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ minScore?: string; status?: string; search?: string; sortBy?: string }>
+  searchParams: Promise<{ minScore?: string; status?: string; search?: string; sortBy?: string; page?: string }>
 }) {
   const params = await searchParams
   const filters = {
-    minScore: params.minScore ? parseInt(params.minScore) : 0,
+    minScore: params.minScore ? parseInt(params.minScore) : 40, // Default to 40% after fuzzy logic update
     status: params.status,
     search: params.search,
     sortBy: params.sortBy,
+    page: params.page ? parseInt(params.page) : 1,
   }
 
-  const matches = await getMatches(filters)
+  const result = await getMatches(filters)
 
   return (
     <div className="space-y-6 pb-10">
@@ -32,7 +33,12 @@ export default async function SmartMatchesPage({
         </div>
       </div>
 
-      <MatchList initialMatches={matches} initialFilters={filters} />
+      <MatchList 
+        initialMatches={result.data} 
+        initialFilters={filters} 
+        totalCount={result.count ?? 0}
+        totalPages={result.totalPages ?? 0}
+      />
     </div>
   )
 }

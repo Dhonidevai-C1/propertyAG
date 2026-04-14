@@ -6,20 +6,31 @@ import { createClient as createAdminClient } from '@supabase/supabase-js'
 import { UserRole, Profile } from '@/lib/types/database'
 import { revalidatePath } from 'next/cache'
 
-export async function getTeamMembers(): Promise<Profile[]> {
+export async function getTeamMembers(page: number = 1) {
   const profile = await requireProfile()
-  if (!profile.agency_id) return []
+  if (!profile.agency_id) return { data: [], count: 0 }
 
   const supabase = await createClient()
-  const { data, error } = await supabase
+  const pageSize = 30
+  const from = (page - 1) * pageSize
+  const to = from + pageSize - 1
+
+  const { data, error, count } = await supabase
     .from('profiles')
-    .select('*')
+    .select('*', { count: 'exact' })
     .eq('agency_id', profile.agency_id)
     .eq('is_active', true)
     .order('created_at', { ascending: true })
+    .range(from, to)
 
-  if (error) return []
-  return data as Profile[]
+  if (error) return { data: [], count: 0 }
+  
+  return {
+    data: data as Profile[],
+    count: count || 0,
+    page,
+    totalPages: Math.ceil((count || 0) / pageSize)
+  }
 }
 
 export async function updateMemberRole(

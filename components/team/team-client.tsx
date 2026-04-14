@@ -38,6 +38,9 @@ import { useRouter } from "next/navigation"
 interface TeamClientProps {
   currentProfile: Profile
   initialMembers: Profile[]
+  totalCount: number
+  totalPages: number
+  currentPage: number
 }
 
 const ROLE_MAP: Record<UserRole, { label: string; color: string; bg: string; icon: React.ElementType; desc: string }> = {
@@ -46,7 +49,13 @@ const ROLE_MAP: Record<UserRole, { label: string; color: string; bg: string; ico
   viewer: { label: "Viewer", color: "text-slate-600", bg: "bg-slate-50 border-slate-100", icon: Eye, desc: "Read-only monitoring" },
 }
 
-export function TeamClient({ currentProfile, initialMembers }: TeamClientProps) {
+export function TeamClient({ 
+  currentProfile, 
+  initialMembers, 
+  totalCount, 
+  totalPages, 
+  currentPage 
+}: TeamClientProps) {
   const router = useRouter()
   const [members, setMembers] = useState<Profile[]>(initialMembers)
   const [isInviteOpen, setIsInviteOpen] = useState(false)
@@ -135,7 +144,7 @@ export function TeamClient({ currentProfile, initialMembers }: TeamClientProps) 
         <div className="space-y-1">
           <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Team</h1>
           <p className="text-sm text-slate-500 font-medium">
-            {members.length} member{members.length !== 1 ? 's' : ''} in your agency
+            {totalCount} member{totalCount !== 1 ? 's' : ''} in your agency
           </p>
         </div>
 
@@ -324,6 +333,63 @@ export function TeamClient({ currentProfile, initialMembers }: TeamClientProps) 
           </TableBody>
         </Table>
       </div>
+
+      {/* Pagination Controls */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-2 pt-8">
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={currentPage === 1 || isPending}
+            onClick={() => {
+              const params = new URLSearchParams(window.location.search)
+              params.set('page', (currentPage - 1).toString())
+              startTransition(() => router.push(`${window.location.pathname}?${params.toString()}`))
+            }}
+            className="rounded-lg font-bold"
+          >
+            Previous
+          </Button>
+          <div className="flex items-center gap-1">
+            {Array.from({ length: totalPages }, (_, i) => i + 1)
+              .filter(p => Math.abs(p - currentPage) <= 2 || p === 1 || p === totalPages)
+              .map((p, i, arr) => (
+                <React.Fragment key={p}>
+                  {i > 0 && arr[i-1] !== p - 1 && <span className="text-slate-300 px-1">...</span>}
+                  <Button
+                    variant={currentPage === p ? "default" : "ghost"}
+                    size="sm"
+                    className={cn(
+                      "w-8 h-8 p-0 rounded-lg font-bold",
+                      currentPage === p ? "bg-slate-800" : "text-slate-500"
+                    )}
+                    disabled={isPending}
+                    onClick={() => {
+                      const params = new URLSearchParams(window.location.search)
+                      params.set('page', p.toString())
+                      startTransition(() => router.push(`${window.location.pathname}?${params.toString()}`))
+                    }}
+                  >
+                    {p}
+                  </Button>
+                </React.Fragment>
+              ))}
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={currentPage === totalPages || isPending}
+            onClick={() => {
+              const params = new URLSearchParams(window.location.search)
+              params.set('page', (currentPage + 1).toString())
+              startTransition(() => router.push(`${window.location.pathname}?${params.toString()}`))
+            }}
+            className="rounded-lg font-bold"
+          >
+            Next
+          </Button>
+        </div>
+      )}
 
       {/* Change Role Dialog */}
       <Dialog open={isRoleOpen} onOpenChange={setIsRoleOpen}>

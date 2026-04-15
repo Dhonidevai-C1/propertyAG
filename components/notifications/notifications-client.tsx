@@ -91,7 +91,7 @@ export function NotificationsClient({ initialActivities, initialMatches }: Notif
       router.push(`/matches/${item.id}`)
     } else if (item.itemType === 'activity') {
       const a = item as Activity
-      if (a.action_type === 'delete') return
+      if (a.action === 'delete') return
       const link =
         a.entity_type === "client" ? `/clients/${a.entity_id}` :
         a.entity_type === "property" ? `/properties/${a.entity_id}` :

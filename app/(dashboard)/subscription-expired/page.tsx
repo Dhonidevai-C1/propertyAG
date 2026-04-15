@@ -20,7 +20,7 @@ export default function SubscriptionExpiredPage() {
 
         <div className="grid grid-cols-1 gap-3">
           <a 
-            href="https://wa.me/91XXXXXXXXXX?text=Help%21%20My%20PropDesk%20subscription%20has%20expired." 
+            href="https://wa.me/918271301911?text=Help%21%20My%20PropDesk%20subscription%20has%20expired." 
             target="_blank" 
             rel="noopener noreferrer" 
             className={cn(

@@ -13,5 +13,7 @@ export default async function NotificationsPage() {
     getMatches({ minScore: 50 })
   ])
 
-  return <NotificationsClient initialActivities={activities} initialMatches={matches} />
+  const matchesData = 'data' in matches ? matches.data : matches
+
+  return <NotificationsClient initialActivities={activities} initialMatches={matchesData as any} />
 }

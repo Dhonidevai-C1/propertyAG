@@ -26,6 +26,7 @@ interface PropertyShareActionsProps {
   variant?: "default" | "outline" | "ghost"
   className?: string
   showLabel?: boolean
+  whatsappTemplate?: string | null
 }
 
 export function PropertyShareActions({
@@ -39,7 +40,8 @@ export function PropertyShareActions({
   price = 0,
   variant = "outline",
   className,
-  showLabel = true
+  showLabel = true,
+  whatsappTemplate
 }: PropertyShareActionsProps) {
   const [copied, setCopied] = React.useState(false)
 
@@ -73,7 +75,8 @@ export function PropertyShareActions({
       locality,
       score: 95, // Aesthetic default for sharing
       price,
-      link: publicUrl
+      link: publicUrl,
+      template: whatsappTemplate
     })
     window.open(`https://wa.me/?text=${message}`, "_blank")
 

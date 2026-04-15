@@ -39,6 +39,7 @@ import { formatCurrency } from "@/lib/utils"
 import { getMatchesForProperty } from "@/lib/actions/matches"
 import { SingleMatchButton } from "@/components/matches/match-button"
 import { PropertyShareActions } from "@/components/properties/property-share-actions"
+import { getDefaultWhatsAppTemplate } from "@/lib/actions/templates"
 
 export default async function PropertyDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -141,6 +142,7 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
             propertyType={property.property_type}
             locality={property.locality || property.city || undefined}
             price={property.price}
+            whatsappTemplate={await getDefaultWhatsAppTemplate()}
           />
           <SingleMatchButton propertyId={property.id} label="Find Buyers" />
           <Link href={`/properties/${property.id}/edit`} className={cn(buttonVariants({ variant: "outline" }), "border-slate-200 text-slate-600 h-10 px-4")}>

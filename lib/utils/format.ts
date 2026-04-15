@@ -83,18 +83,38 @@ export function generateWhatsAppMessage(params: {
   score: number
   price: number
   link: string
+  template?: string | null
 }): string {
-  const { agencyName, clientName, propertyTitle, propertyType, locality, score, price, link } = params
+  const { agencyName, clientName, propertyTitle, propertyType, locality, score, price, link, template } = params
   
-  return encodeURIComponent(
-    `Greetings ${clientName} from ${agencyName}! 👋\n\n` +
-    `I've found a *${score}% match* for your requirements:\n\n` +
-    `🏠 *${propertyTitle}*\n` +
-    `📍 ${locality}\n` +
-    `💰 ${formatPrice(price)}\n\n` +
+  const defaultTemplate = 
+    `Greetings {{client_name}} from {{agency_name}}! 👋\n\n` +
+    `I've found a *{{score}}% match* for your requirements:\n\n` +
+    `🏠 *{{property_title}}*\n` +
+    `📍 {{locality}}\n` +
+    `💰 {{price}}\n\n` +
     `You can preview the property details and photos here:\n` +
-    `${link}\n\n` +
+    `{{link}}\n\n` +
     `Let me know if you would like to schedule a site visit!`
-  )
+
+  let message = template || defaultTemplate
+
+  // Replace placeholders
+  const replacements: Record<string, string> = {
+    '{{agency_name}}': agencyName,
+    '{{client_name}}': clientName,
+    '{{property_title}}': propertyTitle,
+    '{{property_type}}': propertyType,
+    '{{locality}}': locality,
+    '{{score}}': score.toString(),
+    '{{price}}': formatPrice(price),
+    '{{link}}': link
+  }
+
+  Object.entries(replacements).forEach(([key, value]) => {
+    message = message.replace(new RegExp(key, 'g'), value || '')
+  })
+
+  return encodeURIComponent(message)
 }
 

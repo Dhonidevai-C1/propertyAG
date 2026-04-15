@@ -115,9 +115,36 @@ DROP POLICY IF EXISTS "properties_public_select" ON properties;
 CREATE POLICY "properties_public_select" ON properties FOR SELECT
   USING (is_deleted = FALSE AND status = 'available'); -- Allows listing pages to work without auth
 
+-- ── WhatsApp Templates ──
+CREATE TABLE IF NOT EXISTS whatsapp_templates (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  agency_id UUID NOT NULL REFERENCES agencies(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  content TEXT NOT NULL,
+  category TEXT DEFAULT 'match', -- match, follow_up, welcome
+  is_default BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Seed Default Templates (Only if they don't exist)
+INSERT INTO whatsapp_templates (agency_id, name, content, category, is_default)
+SELECT 
+  id as agency_id, 
+  'Premium Match' as name,
+  'Greetings {{client_name}}! 🏠\n\nI''ve found a *{{score}}% match* for your requirements:\n\n🌟 *{{property_title}}*\n📍 {{locality}}\n💰 {{price}}\n\nView details here: {{link}}\n\nLet me know if you''d like a visit!',
+  'match',
+  true
+FROM agencies
+WHERE NOT EXISTS (SELECT 1 FROM whatsapp_templates WHERE agency_id = agencies.id AND name = 'Premium Match');
+
 -- Standard Agency Scoping (Ensure these exist)
 DROP POLICY IF EXISTS "activities_select" ON activities;
 CREATE POLICY "activities_select" ON activities FOR SELECT
+  USING (agency_id = (SELECT agency_id FROM profiles WHERE id = auth.uid()));
+
+DROP POLICY IF EXISTS "templates_select" ON whatsapp_templates;
+CREATE POLICY "templates_select" ON whatsapp_templates FOR SELECT
   USING (agency_id = (SELECT agency_id FROM profiles WHERE id = auth.uid()));
 
 -- 5. Efficiency Boost (Indexes)

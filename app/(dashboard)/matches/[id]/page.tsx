@@ -26,6 +26,7 @@ import { getMatch } from "@/lib/actions/matches"
 import { formatBudget, formatRelativeTime } from "@/lib/utils/format"
 import { MatchDetailActions } from "@/components/matches/match-detail-actions"
 import { PropertyShareActions } from "@/components/properties/property-share-actions"
+import { getDefaultWhatsAppTemplate } from "@/lib/actions/templates"
 
 interface Props {
   params: Promise<{ id: string }>
@@ -146,6 +147,7 @@ export default async function MatchDetailPage({ params }: Props) {
             propertyType={property?.property_type}
             locality={property?.locality || property?.city || undefined}
             price={property?.price}
+            whatsappTemplate={await getDefaultWhatsAppTemplate()}
           />
           <div className="flex flex-col items-start md:items-end px-2 md:px-4">
             <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">Overall Match</span>
@@ -307,6 +309,7 @@ export default async function MatchDetailPage({ params }: Props) {
                     propertyType={property.property_type}
                     locality={property.locality || property.city || undefined}
                     price={property.price}
+                    whatsappTemplate={await getDefaultWhatsAppTemplate()}
                   />
                   <h3 className="text-2xl font-black font-sans text-slate-900 tracking-tight leading-none">{property?.price ? formatBudget(property.price) : '—'}</h3>
                   <Badge variant="secondary" className="bg-blue-50 text-blue-700 font-bold rounded-lg text-xs pointer-events-none border border-blue-100">

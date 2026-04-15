@@ -189,28 +189,32 @@ function ActivityItem({ item, onClick }: { item: any, onClick: () => void }) {
     
     const a = item as Activity
     const IconMap = {
-      upload: UserPlus,
+      create: UserPlus,
       update: Building2,
       delete: Inbox,
       match: Sparkles,
+      share: ArrowRight,
+      view: Building2,
     }
     const colorMap = {
-      upload: "bg-emerald-50 text-emerald-600",
+      create: "bg-emerald-50 text-emerald-600",
       update: "bg-blue-50 text-blue-600",
       delete: "bg-red-50 text-red-600",
       match: "bg-amber-50 text-amber-600",
+      share: "bg-purple-50 text-purple-600",
+      view: "bg-slate-50 text-slate-600",
     }
     
     return {
-      icon: (IconMap as any)[a.action_type] || Bell,
-      colors: (colorMap as any)[a.action_type] || "bg-slate-50 text-slate-600",
+      icon: (IconMap as any)[a.action] || Bell,
+      colors: (colorMap as any)[a.action] || "bg-slate-50 text-slate-600",
       title: a.profiles?.full_name || 'Team Action',
-      message: `${a.action_type === 'upload' ? 'Added new' : a.action_type === 'update' ? 'Updated' : 'Removed'} ${a.metadata?.title || a.entity_type}`
+      message: `${a.action === 'create' ? 'Added new' : a.action === 'update' ? 'Updated' : a.action === 'share' ? 'Shared' : a.action === 'delete' ? 'Removed' : 'Viewed'} ${a.details?.title || a.entity_type}`
     }
   }
 
   const { icon: Icon, colors: iconColors, title, message } = content(item)
-  const isClickable = item.itemType === 'match_entry' || item.action_type !== 'delete'
+  const isClickable = item.itemType === 'match_entry' || item.action !== 'delete'
 
   return (
     <div

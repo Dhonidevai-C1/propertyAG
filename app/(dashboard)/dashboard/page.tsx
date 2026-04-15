@@ -22,15 +22,10 @@ import { cn } from "@/lib/utils"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
-import { getDashboardStats, getRecentNotifications } from "@/lib/actions/matches"
-import { getRecentActivities, Activity } from "@/lib/actions/activities"
-import { getProperties } from "@/lib/actions/properties"
-import { requireProfile } from "@/lib/auth/get-session"
-import { Notification } from "@/lib/types/database"
-import { formatRelativeTime, formatPrice } from "@/lib/utils/format"
-import { getUpcomingFollowUps } from "@/lib/actions/clients"
+import { getDashboardData } from "@/lib/actions/dashboard"
 import { ensureDailyFollowUpNotification } from "@/lib/actions/matches"
 import { FollowUpWidget } from "@/components/dashboard/follow-up-widget"
+import { formatRelativeTime, formatPrice } from "@/lib/utils/format"
 
 function activityIcon(type: string) {
   const map: Record<string, typeof Building2> = {
@@ -95,23 +90,19 @@ const quickActions = [
     cls: "bg-white hover:bg-slate-50 text-slate-700 border border-slate-200",
   },
 ]
-
 export default async function DashboardPage() {
-  const [profile, stats, notifications, recentActivities, recentProperties, followUpsRes] = await Promise.all([
-    requireProfile(),
-    getDashboardStats(),
-    getRecentNotifications(4),
-    getRecentActivities(6),
-    getProperties({ limit: 6 } as any),
-    getUpcomingFollowUps()
-  ])
+  const { 
+    profile, 
+    stats, 
+    notifications, 
+    recentActivities, 
+    recentProperties, 
+    followUps, 
+    hotMatches 
+  } = await getDashboardData()
 
   const propertiesResult = recentProperties as any
   const properties = propertiesResult?.data || (Array.isArray(recentProperties) ? recentProperties : [])
-
-  const followUps = followUpsRes && Array.isArray(followUpsRes) ? followUpsRes : (followUpsRes as any)?.data || []
-
-  console.log(`[DASHBOARD] Follow-ups fetched: ${followUps.length}`)
 
   if (followUps.length > 0) {
     // Run asynchronously without blocking the render
@@ -188,6 +179,49 @@ export default async function DashboardPage() {
           </Card>
         ))}
       </div>
+
+      {/* Top Opportunities (Hot Matches) */}
+      {hotMatches.length > 0 && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-amber-500" />
+              Hot Opportunities
+            </h2>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            {hotMatches.map((match) => (
+              <Link key={match.id} href={`/matches/${match.id}`} className="group">
+                <Card className="border-slate-100/60 bg-white shadow-sm hover:shadow-lg transition-all rounded-[1.5rem] overflow-hidden group">
+                  <CardContent className="p-5">
+                    <div className="flex items-center justify-between mb-3">
+                      <Badge className="bg-amber-50 text-amber-600 border-none font-bold text-[10px] px-2 py-0.5 uppercase tracking-wider">
+                        {match.score}% Smart Match
+                      </Badge>
+                      <ArrowRight className="w-4 h-4 text-slate-300 group-hover:text-emerald-500 transition-colors" />
+                    </div>
+                    <div className="space-y-3">
+                      <div>
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">For Client</p>
+                        <p className="font-bold text-slate-900 truncate">{match.client?.full_name}</p>
+                      </div>
+                      <Separator className="bg-slate-50" />
+                      <div>
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Property</p>
+                        <p className="text-sm font-bold text-slate-700 truncate">{match.property?.title}</p>
+                        <div className="flex items-center text-xs text-slate-400 font-medium mt-1">
+                          <MapPin className="w-3 h-3 mr-1" />
+                          {match.property?.locality}
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Recent Activity */}

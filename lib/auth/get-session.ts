@@ -1,20 +1,21 @@
+import { cache } from 'react'
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { type Profile } from '@/lib/types/database'
 
-export async function getSession() {
+export const getSession = cache(async () => {
   const supabase = await createClient()
   const { data: { session }, error } = await supabase.auth.getSession()
   if (error) return null
   return session
-}
+})
 
-export async function getUser() {
+export const getUser = cache(async () => {
   const supabase = await createClient()
   const { data: { user }, error } = await supabase.auth.getUser()
   if (error) return null
   return user
-}
+})
 
 export async function requireSession() {
   const session = await getSession()
@@ -24,7 +25,7 @@ export async function requireSession() {
   return session
 }
 
-export async function getProfile() {
+export const getProfile = cache(async () => {
   const user = await getUser()
   if (!user) return null
 
@@ -37,7 +38,7 @@ export async function getProfile() {
 
   if (error || !data) return null
   return data as Profile
-}
+})
 
 export async function requireProfile() {
   const profile = await getProfile()

@@ -6,6 +6,7 @@ export interface MatchScoreBreakdown {
   property_type: number // 0–40
   bedrooms: number   // 0–15 (0 for land/commercial)
   area: number       // 0–5 (20 for land/commercial)
+  notes?: string[]   // Human readable explanations
 }
 
 export interface MatchScoreResult {
@@ -39,10 +40,12 @@ export function scoreMatch(client: Client, property: Property): MatchScoreResult
   const isRentMismatch = client.looking_for === "rent" && property.listing_type === "sale"
   const isBuyMismatch = client.looking_for === "buy" && property.listing_type === "rent"
   
+  const notes: string[] = []
+
   if (isRentMismatch || isBuyMismatch) {
     return {
       score: 0,
-      breakdown: { budget: 0, location: 0, property_type: 0, bedrooms: 0, area: 0 },
+      breakdown: { budget: 0, location: 0, property_type: 0, bedrooms: 0, area: 0, notes: ["Listing type mismatch (Rent vs Sale)"] },
       qualifies: false
     }
   }
@@ -53,6 +56,7 @@ export function scoreMatch(client: Client, property: Property): MatchScoreResult
     // Exact match
     if (client.property_types.includes(property.property_type)) {
       property_type_score = 40
+      notes.push(`Exact match for ${property.property_type}`)
     } 
     // Cluster match (e.g. looking for Apartment, found Independent House)
     else {
@@ -60,10 +64,12 @@ export function scoreMatch(client: Client, property: Property): MatchScoreResult
       const hasClusterMatch = client.property_types.some(t => getCluster(t) === propCluster)
       if (hasClusterMatch) {
         property_type_score = 10
+        notes.push(`Cluster match: ${propCluster} (Alternative)`)
       }
     }
   } else {
     property_type_score = 40 // No preference -> full points
+    notes.push("Matches general property interest")
   }
 
   // 2. Budget (30 pts)
@@ -71,27 +77,37 @@ export function scoreMatch(client: Client, property: Property): MatchScoreResult
   if (client.budget_max != null) {
     if (property.price <= client.budget_max) {
       budget_score = 30
+      notes.push("Fits perfectly within budget")
     } else if (property.price <= client.budget_max * 1.1) {
       budget_score = 15 // within 10% above max
+      notes.push("Slightly over budget (10% buffer used)")
     }
   } else {
     budget_score = 30 // No max budget -> full points
+    notes.push("No budget constraints found")
   }
 
   // 3. Location (10 pts)
   let location_score = 0
   if (!client.preferred_locations || client.preferred_locations.length === 0) {
     location_score = 10 
+    notes.push("Matches general location interest")
   } else {
     const propLocations = [
       property.locality?.toLowerCase().trim() ?? '',
       property.city?.toLowerCase().trim() ?? '',
     ]
+    let matchedName = ''
     const matched = client.preferred_locations.some(pref => {
       const p = pref.toLowerCase().trim()
-      return propLocations.some(loc => loc.includes(p) || p.includes(loc))
+      const isMatch = propLocations.some(loc => loc.includes(p) || p.includes(loc))
+      if (isMatch) matchedName = pref
+      return isMatch
     })
-    if (matched) location_score = 10
+    if (matched) {
+      location_score = 10
+      notes.push(`Matches preferred location: ${matchedName}`)
+    }
   }
 
   // 4. Features: BHK & Area (20 pts total)
@@ -106,12 +122,18 @@ export function scoreMatch(client: Client, property: Property): MatchScoreResult
     bhk_score = 0
     if (!client.min_area_sqft) {
       area_score = 20
+      notes.push("Matches general area requirement")
     } else {
       const clientMinSqft = normalizeToSqft(client.min_area_sqft, client.min_area_unit)
       const propertySqft = property.area_sqft ? normalizeToSqft(property.area_sqft, property.area_unit) : null
       if (propertySqft != null) {
-        if (propertySqft >= clientMinSqft) area_score = 20
-        else if (propertySqft >= clientMinSqft * 0.9) area_score = 10
+        if (propertySqft >= clientMinSqft) {
+          area_score = 20
+          notes.push("Meets or exceeds area requirement")
+        } else if (propertySqft >= clientMinSqft * 0.9) {
+          area_score = 10
+          notes.push("Area within 10% of requirement")
+        }
       }
     }
   } else {
@@ -126,13 +148,16 @@ export function scoreMatch(client: Client, property: Property): MatchScoreResult
       const matchesExactly = propBHKConfigs.some(b => client.preferred_bhks.includes(b))
       if (matchesExactly) {
         current_bhk_match = 15
+        notes.push("Exact BHK preference match")
       } else if (property.bedrooms >= (client.min_bedrooms || 0)) {
         current_bhk_match = 10 // Satisfies min count but not the specific preferred list
+        notes.push("Meets minimum room requirements")
       }
     } else {
       // Fallback to simple min_bedrooms check
       const matchesMin = !client.min_bedrooms || property.bedrooms >= client.min_bedrooms
       current_bhk_match = matchesMin ? 15 : 0
+      if (matchesMin) notes.push("Fulfills bedroom count requirement")
     }
     
     bhk_score = current_bhk_match
@@ -143,8 +168,10 @@ export function scoreMatch(client: Client, property: Property): MatchScoreResult
       const clientMinSqft = normalizeToSqft(client.min_area_sqft, client.min_area_unit)
       const propertySqft = property.area_sqft ? normalizeToSqft(property.area_sqft, property.area_unit) : null
       if (propertySqft != null) {
-        if (propertySqft >= clientMinSqft) area_score = 5
-        else if (propertySqft >= clientMinSqft * 0.9) area_score = 2
+        if (propertySqft >= clientMinSqft) {
+          area_score = 5
+          notes.push("Comfortable area space")
+        }
       }
     }
   }
@@ -158,7 +185,8 @@ export function scoreMatch(client: Client, property: Property): MatchScoreResult
       location: location_score, 
       property_type: property_type_score, 
       bedrooms: bhk_score, 
-      area: area_score 
+      area: area_score,
+      notes
     },
     qualifies: totalScore >= 40, // Lowered qualification bar to account for fuzzy matches
   }

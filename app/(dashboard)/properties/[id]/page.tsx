@@ -38,6 +38,7 @@ import { PrintButton } from "@/components/properties/print-button"
 import { formatCurrency } from "@/lib/utils"
 import { getMatchesForProperty } from "@/lib/actions/matches"
 import { SingleMatchButton } from "@/components/matches/match-button"
+import { PropertyShareActions } from "@/components/properties/property-share-actions"
 
 export default async function PropertyDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -133,10 +134,18 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <PropertyShareActions
+            propertyId={property.id}
+            propertyTitle={property.title}
+            propertySlug={property.slug || undefined}
+            propertyType={property.property_type}
+            locality={property.locality || property.city || undefined}
+            price={property.price}
+          />
           <SingleMatchButton propertyId={property.id} label="Find Buyers" />
           <Link href={`/properties/${property.id}/edit`} className={cn(buttonVariants({ variant: "outline" }), "border-slate-200 text-slate-600 h-10 px-4")}>
             <PencilLine className="w-4 h-4 mr-2" />
-            Edit property
+            Edit
           </Link>
           <PropertyDetailActions propertyId={property.id} propertyName={property.title} currentStatus={property.status} />
         </div>

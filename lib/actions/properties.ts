@@ -15,6 +15,16 @@ export type PropertyWithCreator = Property & {
   broker_relations?: any[]
 }
 
+export type PublicProperty = Property & {
+  agency: {
+    name: string
+    logo_url: string | null
+    contact_phone: string | null
+    contact_email: string | null
+    website: string | null
+  }
+}
+
 async function generateUniqueSlug(title: string | null | undefined, agencyId: string, excludeId?: string): Promise<string> {
   const supabase = await createClient()
   const base = toSlug(title)
@@ -326,4 +336,29 @@ export async function getProperties(filters: PropertyFilters) {
     page: currentPage,
     totalPages: Math.ceil((count || 0) / pageSize)
   }
+}
+export async function getPublicProperty(slug: string) {
+  // Use admin client to bypass dealer-only RLS for public viewing
+  const { data, error } = await supabaseAdmin
+    .from('properties')
+    .select(`
+      *,
+      agency:agencies(
+        name,
+        logo_url,
+        contact_phone,
+        contact_email,
+        website
+      )
+    `)
+    .eq('slug', slug)
+    .eq('is_deleted', false)
+    .single()
+
+  if (error) {
+    console.error("Error fetching public property:", error)
+    return null
+  }
+  
+  return data as PublicProperty
 }

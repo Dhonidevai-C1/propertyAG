@@ -73,3 +73,28 @@ export function formatBhk(bhk: number[] | number | null | undefined): string {
   }
   return `${bhk} BHK`
 }
+
+export function generateWhatsAppMessage(params: {
+  agencyName: string
+  clientName: string
+  propertyTitle: string
+  propertyType: string
+  locality: string
+  score: number
+  price: number
+  link: string
+}): string {
+  const { agencyName, clientName, propertyTitle, propertyType, locality, score, price, link } = params
+  
+  return encodeURIComponent(
+    `Greetings ${clientName} from ${agencyName}! 👋\n\n` +
+    `I've found a *${score}% match* for your requirements:\n\n` +
+    `🏠 *${propertyTitle}*\n` +
+    `📍 ${locality}\n` +
+    `💰 ${formatPrice(price)}\n\n` +
+    `You can preview the property details and photos here:\n` +
+    `${link}\n\n` +
+    `Let me know if you would like to schedule a site visit!`
+  )
+}
+

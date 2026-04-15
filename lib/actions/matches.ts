@@ -265,3 +265,23 @@ export async function ensureDailyFollowUpNotification(count: number) {
     } catch (e) {}
   }
 }
+export async function getHotMatches(limit = 3): Promise<MatchWithDetails[]> {
+  const profile = await requireProfile()
+  const supabase = await createClient()
+
+  const { data, error } = await supabase
+    .from('matches')
+    .select(`
+      *,
+      client:clients!matches_client_id_fkey(*),
+      property:properties!matches_property_id_fkey(*)
+    `)
+    .eq('agency_id', profile.agency_id)
+    .neq('status', 'dismissed')
+    .gte('score', 85)
+    .order('score', { ascending: false })
+    .limit(limit)
+
+  if (error) return []
+  return (data || []) as unknown as MatchWithDetails[]
+}

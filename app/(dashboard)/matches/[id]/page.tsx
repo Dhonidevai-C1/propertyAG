@@ -25,6 +25,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { getMatch } from "@/lib/actions/matches"
 import { formatBudget, formatRelativeTime } from "@/lib/utils/format"
 import { MatchDetailActions } from "@/components/matches/match-detail-actions"
+import { PropertyShareActions } from "@/components/properties/property-share-actions"
 
 interface Props {
   params: Promise<{ id: string }>
@@ -136,6 +137,16 @@ export default async function MatchDetailPage({ params }: Props) {
         </div>
 
         <div className="flex items-center gap-3 bg-white p-3 rounded-2xl border border-slate-200 shadow-sm self-start md:self-auto w-full md:w-auto justify-between md:justify-start">
+          <PropertyShareActions 
+            propertyId={property?.id || ""} 
+            propertyTitle={property?.title || ""} 
+            propertySlug={property?.slug || undefined}
+            agencyName={"Your Agency"} // Will be handled by the component's default if not passed, but we can pass branding here
+            clientName={client?.full_name}
+            propertyType={property?.property_type}
+            locality={property?.locality || property?.city || undefined}
+            price={property?.price}
+          />
           <div className="flex flex-col items-start md:items-end px-2 md:px-4">
             <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">Overall Match</span>
             <div className="flex items-baseline gap-1 mt-1">
@@ -219,9 +230,20 @@ export default async function MatchDetailPage({ params }: Props) {
             </div>
             <div className="p-5 rounded-2xl bg-indigo-50/50 border border-indigo-100 hover:bg-indigo-50 transition-colors">
               <h4 className="text-[10px] font-black text-indigo-600 uppercase tracking-widest mb-1">Smart Engine Note</h4>
-              <p className="text-sm font-bold text-indigo-800 leading-snug">
-                Matches {property?.property_type} in {property?.city} with {client?.full_name}'s {client?.looking_for} requirements.
-              </p>
+              <div className="space-y-1.5">
+                {breakdown.notes && breakdown.notes.length > 0 ? (
+                  breakdown.notes.map((note: string, idx: number) => (
+                    <p key={idx} className="text-sm font-bold text-indigo-800 leading-snug flex items-start gap-2">
+                       <span className="w-1 h-1 rounded-full bg-indigo-400 mt-2 shrink-0" />
+                       {note}
+                    </p>
+                  ))
+                ) : (
+                  <p className="text-sm font-bold text-indigo-800 leading-snug">
+                    Matches {property?.property_type} in {property?.city} with {client?.full_name}'s {client?.looking_for} requirements.
+                  </p>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -278,6 +300,14 @@ export default async function MatchDetailPage({ params }: Props) {
 
               <div className="space-y-3">
                 <div className="flex items-center gap-2">
+                  <PropertyShareActions 
+                    propertyId={property.id} 
+                    propertyTitle={property.title} 
+                    propertySlug={property.slug || undefined}
+                    propertyType={property.property_type}
+                    locality={property.locality || property.city || undefined}
+                    price={property.price}
+                  />
                   <h3 className="text-2xl font-black font-sans text-slate-900 tracking-tight leading-none">{property?.price ? formatBudget(property.price) : '—'}</h3>
                   <Badge variant="secondary" className="bg-blue-50 text-blue-700 font-bold rounded-lg text-xs pointer-events-none border border-blue-100">
                     {property?.property_type}

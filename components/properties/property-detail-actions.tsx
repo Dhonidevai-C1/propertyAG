@@ -7,10 +7,10 @@ import { SharePropertyModal } from "@/components/brokers/share-property-modal"
 import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
   DropdownMenuTrigger,
   DropdownMenuSeparator
 } from "@/components/ui/dropdown-menu"
@@ -42,7 +42,7 @@ export function PropertyDetailActions({ propertyId, propertyName, currentStatus 
 
   const handleStatusChange = async (newStatus: "sold" | "rented" | "available") => {
     if (newStatus === currentStatus) return
-    
+
     setIsUpdatingStatus(true)
     try {
       const result = await updatePropertyStatus(propertyId, newStatus)
@@ -102,8 +102,8 @@ export function PropertyDetailActions({ propertyId, propertyName, currentStatus 
             </DropdownMenuItem>
           )}
           <DropdownMenuSeparator className="bg-slate-100 my-1" />
-          <DropdownMenuItem 
-            className="text-amber-600 cursor-pointer rounded-md focus:bg-amber-50 focus:text-amber-700 font-bold flex items-center gap-2" 
+          <DropdownMenuItem
+            className="text-amber-600 cursor-pointer rounded-md focus:bg-amber-500 focus:text-white font-bold flex items-center gap-2"
             onClick={() => setShowShareModal(true)}
           >
             <Share2 className="w-4 h-4" /> Share with Broker
@@ -125,11 +125,11 @@ export function PropertyDetailActions({ propertyId, propertyName, currentStatus 
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel className="border-slate-200 text-slate-600 hover:bg-slate-50">Cancel</AlertDialogCancel>
-            <AlertDialogAction 
+            <AlertDialogAction
               onClick={(e) => {
                 e.preventDefault();
                 handleDelete();
-              }} 
+              }}
               className="bg-red-500 text-white hover:bg-red-600"
               disabled={isDeleting}
             >
@@ -140,11 +140,11 @@ export function PropertyDetailActions({ propertyId, propertyName, currentStatus 
         </AlertDialogContent>
       </AlertDialog>
 
-      <SharePropertyModal 
-        propertyId={propertyId} 
-        propertyName={propertyName} 
-        isOpen={showShareModal} 
-        onClose={() => setShowShareModal(false)} 
+      <SharePropertyModal
+        propertyId={propertyId}
+        propertyName={propertyName}
+        isOpen={showShareModal}
+        onClose={() => setShowShareModal(false)}
       />
     </>
   )

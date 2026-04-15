@@ -1,8 +1,8 @@
 'use client'
 
-import React, { useState, useEffect, useTransition } from "react"
+import React, { useState, useEffect, useTransition, useCallback } from "react"
 import { useRouter } from "next/navigation"
-import { CheckCircle2, Eye, EyeOff, Loader2 } from "lucide-react"
+import { CheckCircle, Eye, EyeOff, Loader2, ShieldCheck, Mail, Building2 } from "lucide-react"
 import { type AuthChangeEvent, type Session } from "@supabase/supabase-js"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
@@ -16,7 +16,7 @@ export default function AcceptInvitePage() {
   const supabase = createClient()
   const [isPending, startTransition] = useTransition()
 
-  const [step, setStep] = useState<"loading" | "form" | "done" | "error">("loading")
+  const [step, setStep] = useState<"loading" | "form" | "done" | "error" | "syncing">("loading")
   const [sessionUser, setSessionUser] = useState<{ email: string; agency_id?: string; role?: string } | null>(null)
 
   const [fullName, setFullName] = useState("")
@@ -37,51 +37,130 @@ export default function AcceptInvitePage() {
     setStrength(s)
   }, [password])
 
-  // The Supabase browser client auto-parses the #access_token hash on load
-  // and fires a SIGNED_IN / TOKEN_REFRESHED event — we listen for that here.
+  const handleAuthChange = useCallback((user: any) => {
+    if (!user) return
+    setSessionUser({
+      email: user.email!,
+      agency_id: user.user_metadata?.agency_id,
+      role: user.user_metadata?.role ?? 'admin',
+    })
+    if (user.user_metadata?.full_name) {
+      setFullName(user.user_metadata.full_name)
+    }
+    setStep('form')
+  }, [])
+
   useEffect(() => {
+    // 1. Hash Parser for Manual Links (#email=...&invite=...) and Official Invites
+    const parseHash = () => {
+      const hash = window.location.hash.substring(1)
+      if (!hash) return null
+      
+      const params = new URLSearchParams(hash)
+      
+      // Manual Link Detection
+      const email = params.get('email')
+      const invite = params.get('invite')
+      if (email && invite) return { type: 'manual', email, invite }
+
+      // Official Link Detection
+      const accessToken = params.get('access_token')
+      const refreshToken = params.get('refresh_token')
+      const type = params.get('type')
+
+      if (accessToken || type === 'invite' || type === 'recovery') {
+        return { 
+          type: 'official', 
+          accessToken: accessToken || undefined, 
+          refreshToken: refreshToken || undefined 
+        }
+      }
+      
+      return null
+    }
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event: AuthChangeEvent, session: Session | null) => {
-        if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session?.user) {
-          const user = session.user
-          setSessionUser({
-            email: user.email!,
-            agency_id: user.user_metadata?.agency_id,
-            role: user.user_metadata?.role ?? 'agent',
-          })
-          if (user.user_metadata?.full_name) {
-            setFullName(user.user_metadata.full_name)
-          }
-          setStep('form')
+        console.log('Auth event change:', event, session?.user?.email)
+        if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') && session?.user) {
+          handleAuthChange(session.user)
         }
       }
     )
 
-    // Also try getUser() in case the session was already established
-    supabase.auth.getUser().then(({ data }: { data: { user: any } }) => {
-      if (data.user && step === 'loading') {
-        setSessionUser({
-          email: data.user.email!,
-          agency_id: data.user.user_metadata?.agency_id,
-          role: data.user.user_metadata?.role ?? 'agent',
-        })
-        if (data.user.user_metadata?.full_name) {
-          setFullName(data.user.user_metadata.full_name)
-        }
-        setStep('form')
+    const checkSession = async () => {
+      console.log('Checking session...')
+      
+      // 1. Detect Syncing State from Hash
+      if (window.location.hash.includes('syncing=true')) {
+        setStep('syncing')
+        const retryInterval = setInterval(async () => {
+          const { data: { user } } = await supabase.auth.getUser()
+          if (user) {
+            const { data: profile } = await supabase.from('profiles').select('id').eq('id', user.id).single()
+            if (profile) {
+              clearInterval(retryInterval)
+              router.push('/dashboard')
+              router.refresh()
+            }
+          }
+        }, 2000)
+        return () => clearInterval(retryInterval)
       }
-    })
 
-    // Fallback: if no auth event fires in 20 seconds, show error
+      const hashInfo = parseHash()
+      console.log('Hash detected:', hashInfo?.type)
+
+      // 2. Nuclear Option: Force Session if Official Hash is present
+      if (hashInfo?.type === 'official' && hashInfo.accessToken) {
+        console.log('Nuclear: Manually setting session...')
+        await supabase.auth.setSession({
+          access_token: hashInfo.accessToken,
+          refresh_token: hashInfo.refreshToken || ''
+        })
+      }
+
+      const { data: { session } } = await supabase.auth.getSession()
+
+      if (session?.user) {
+        console.log('Session established for:', session.user.email)
+        handleAuthChange(session.user)
+      } else {
+        if (hashInfo?.type === 'manual') {
+          console.log('Entering manual flow')
+          setSessionUser({ email: hashInfo.email!, agency_id: hashInfo.invite, role: 'admin' })
+          setStep('form')
+        } else if (hashInfo?.type === 'official') {
+          console.log('Waiting for official session establishment...')
+          // We stay in loading, the listener or setSession will soon update the state
+        } else if (!window.location.hash) {
+          console.log('No hash, setting error...')
+          const t = setTimeout(() => {
+            setStep(prev => prev === 'loading' ? 'error' : prev)
+          }, 3000)
+          return () => clearTimeout(t)
+        }
+      }
+    }
+
+    checkSession()
+
+    // Increased timeout for official links (Functional update to avoid closure capture)
     const timeout = setTimeout(() => {
-      setStep(prev => prev === 'loading' ? 'error' : prev)
+      setStep(prev => {
+        if (prev === 'loading') {
+          console.error('Accept invite timeout reached (20s)')
+          return 'error'
+        }
+        return prev
+      })
     }, 20000)
 
     return () => {
       subscription.unsubscribe()
       clearTimeout(timeout)
     }
-  }, [])
+  }, [supabase, handleAuthChange])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -90,58 +169,105 @@ export default function AcceptInvitePage() {
     if (password !== confirmPwd) { toast.error("Passwords don't match"); return }
 
     startTransition(async () => {
-      // 1. Set a real password (invited users start with a temp session)
-      const { error: pwdError } = await supabase.auth.updateUser({ password })
-      if (pwdError) { toast.error(pwdError.message); return }
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        
+        if (session) {
+          // A. Official Flow (Updating existing temp user)
+          const { error: pwdError } = await supabase.auth.updateUser({ 
+            password,
+            data: { full_name: fullName }
+          })
+          if (pwdError) throw pwdError
+        } else {
+          // B. Manual Flow (Creating new account)
+          const { error: signUpError } = await supabase.auth.signUp({
+            email: sessionUser?.email!,
+            password,
+            options: {
+              data: {
+                full_name: fullName,
+                agency_id: sessionUser?.agency_id,
+                role: 'admin'
+              }
+            }
+          })
+          if (signUpError) throw signUpError
+        }
 
-      // 2. Update the profile row with their name
-      const { data: { user } } = await supabase.auth.getUser()
-      if (user) {
-        await supabase
-          .from("profiles")
-          .update({ full_name: fullName, updated_at: new Date().toISOString() })
-          .eq("id", user.id)
+        window.location.hash = ''
+        setStep("done")
+        
+        setTimeout(() => {
+          router.push("/dashboard")
+          router.refresh()
+        }, 2000)
+      } catch (err: any) {
+        toast.error(err.message || "Something went wrong. Please try again.")
       }
-
-      setStep("done")
-      setTimeout(() => router.push("/dashboard"), 2000)
     })
   }
 
   if (step === "loading") {
     return (
-      <div className="flex flex-col h-[90vh] items-center gap-4">
-        <Loader2 className="w-10 h-10 text-emerald-500 animate-spin" />
-        <p className="text-slate-500 font-medium animate-pulse">Verifying your invite…</p>
+      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4">
+        <div className="relative">
+          <div className="w-20 h-20 border-4 border-emerald-100 border-t-emerald-500 rounded-full animate-spin" />
+          <div className="absolute inset-0 flex items-center justify-center">
+            <ShieldCheck className="w-8 h-8 text-emerald-500" />
+          </div>
+        </div>
+        <div className="mt-8 text-center space-y-2">
+          <h2 className="text-xl font-black text-slate-900">Verifying Invite</h2>
+          <p className="text-slate-500 font-medium">Please wait while we secure your connection...</p>
+        </div>
       </div>
     )
   }
 
   if (step === "error") {
     return (
-      <div className="min-h-screen bg-linear-to-br from-slate-50 to-emerald-50/30 flex items-center justify-center p-4">
-        <div className="bg-white rounded-3xl shadow-xl border border-slate-100 p-10 max-w-md w-full text-center space-y-4">
-          <div className="w-16 h-16 bg-red-50 rounded-2xl flex items-center justify-center mx-auto">
-            <span className="text-3xl">⚠️</span>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-emerald-50/30 flex items-center justify-center p-4">
+        <div className="bg-white rounded-[2.5rem] shadow-2xl border border-slate-100 p-10 max-w-md w-full text-center space-y-4">
+          <div className="w-16 h-16 bg-red-50 rounded-2xl flex items-center justify-center mx-auto text-red-500">
+            <Mail className="w-8 h-8" />
           </div>
-          <h2 className="text-xl font-bold text-slate-900">Invite link expired</h2>
-          <p className="text-sm text-slate-500 leading-relaxed">
-            This invite link is invalid or has already been used. Please ask your admin to send a new invite.
+          <h2 className="text-2xl font-black text-slate-900 leading-tight">Link Expired or Invalid</h2>
+          <p className="text-sm text-slate-500 leading-relaxed font-medium">
+            This invitation link has either expired or was already used. Please request a new invite from your administrator.
           </p>
-          <div className="grid grid-cols-2 gap-3 mt-4">
+          <div className="grid grid-cols-2 gap-3 mt-8">
             <Button
               variant="outline"
+              onClick={() => router.push("/login")}
+              className="h-12 rounded-xl border-slate-200 text-slate-600 font-black uppercase text-[10px] tracking-widest hover:bg-slate-50"
+            >
+              Sign In
+            </Button>
+            <Button
               onClick={() => window.location.reload()}
-              className="h-12 rounded-xl border-slate-200 text-slate-600 font-bold"
+              className="h-12 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-black uppercase text-[10px] tracking-widest shadow-lg shadow-slate-200"
             >
               Retry
             </Button>
-            <Button
-              onClick={() => router.push("/login")}
-              className="h-12 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold"
-            >
-              Login
-            </Button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (step === "syncing") {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+        <div className="bg-white rounded-[3rem] shadow-2xl border-none p-12 max-w-md w-full text-center space-y-6">
+          <div className="w-20 h-20 bg-emerald-50 rounded-2xl flex items-center justify-center mx-auto animate-pulse">
+            <Loader2 className="w-10 h-10 text-emerald-500 animate-spin" />
+          </div>
+          <div className="space-y-3">
+            <h2 className="text-3xl font-black text-slate-900 tracking-tight leading-tight">Preparing your workspace...</h2>
+            <p className="text-slate-500 font-medium leading-relaxed">
+              We're setting things up for you. This usually takes just a few seconds. 🥂
+            </p>
           </div>
         </div>
       </div>
@@ -150,20 +276,15 @@ export default function AcceptInvitePage() {
 
   if (step === "done") {
     return (
-      <div className="min-h-screen bg-linear-to-br from-slate-50 to-emerald-50/30 flex items-center justify-center p-4">
-        <div className="bg-white rounded-3xl shadow-xl border border-slate-100 p-10 max-w-md w-full text-center space-y-5">
-          <div className="w-20 h-20 bg-emerald-50 rounded-full flex items-center justify-center mx-auto animate-in zoom-in-50 duration-500">
-            <CheckCircle2 className="w-10 h-10 text-emerald-500" />
+      <div className="min-h-screen bg-emerald-50 flex items-center justify-center p-4">
+        <div className="bg-white rounded-[3rem] shadow-2xl border-none p-12 max-w-md w-full text-center space-y-6">
+          <div className="w-24 h-24 bg-emerald-500 rounded-full flex items-center justify-center mx-auto shadow-xl shadow-emerald-200 animate-bounce">
+            <CheckCircle className="w-12 h-12 text-white" />
           </div>
-          <div className="space-y-2">
-            <h2 className="text-2xl font-bold text-slate-900">You're all set!</h2>
-            <p className="text-slate-500">Welcome to the team, <span className="font-bold text-slate-700">{fullName}</span>.</p>
-            <p className="text-sm text-slate-400">Redirecting you to the dashboard…</p>
-          </div>
-          <div className="flex items-center justify-center gap-1.5">
-            {[0, 1, 2].map(i => (
-              <div key={i} className="w-2 h-2 bg-emerald-400 rounded-full animate-bounce" style={{ animationDelay: `${i * 0.15}s` }} />
-            ))}
+          <div className="space-y-3">
+            <h2 className="text-3xl font-black text-slate-900 tracking-tight">Success!</h2>
+            <p className="text-slate-500 font-medium">Welcome aboard, <span className="text-emerald-600 font-bold">{fullName}</span>. Your workspace is ready.</p>
+            <p className="text-[10px] uppercase font-black tracking-widest text-slate-300">Entering Dashboard...</p>
           </div>
         </div>
       </div>
@@ -171,85 +292,76 @@ export default function AcceptInvitePage() {
   }
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-slate-50 via-white to-emerald-50/20 flex items-center justify-center p-4">
-      <div className="w-full max-w-md space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-        {/* Logo */}
-        <div className="flex justify-center">
-          <div className="flex items-center gap-3">
-            <img src="/logoprop.png" alt="Logo" className="w-12 h-12 object-contain shadow-lg rounded-2xl" />
-            <span className="text-2xl font-black text-slate-900 tracking-tight">PropDesk</span>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-emerald-50/20 flex flex-col items-center justify-center p-4">
+      <div className="w-full max-w-md space-y-8">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-16 h-16 bg-white rounded-2xl shadow-xl flex items-center justify-center border border-slate-50 p-2">
+            <img src="/logoprop.png" alt="Logo" className="w-full h-full object-contain" />
+          </div>
+          <div className="text-center">
+            <h1 className="text-3xl font-black text-slate-900 tracking-tight">PropDesk Access</h1>
+            <p className="text-emerald-600 font-bold text-sm">Secure Agency Onboarding</p>
           </div>
         </div>
 
-        {/* Card */}
-        <div className="bg-white rounded-3xl shadow-xl border border-slate-100 p-8 space-y-8">
-          {/* Header */}
-          <div className="text-center space-y-2">
-            <h1 className="text-2xl font-bold text-slate-900">You've been invited!</h1>
-            <p className="text-slate-500 text-sm leading-relaxed">
-              Set up your account to join the team.
-            </p>
+        <div className="bg-white rounded-[2.5rem] shadow-2xl border border-slate-50 p-10 space-y-8 relative overflow-hidden">
+          <div className="absolute top-0 left-0 w-full h-1.5 bg-emerald-500" />
+          
+          <div className="text-center space-y-3">
+            <h2 className="text-xl font-extrabold text-slate-800">Complete Your Account</h2>
             {sessionUser?.email && (
-              <div className="inline-flex items-center gap-2 bg-slate-50 text-slate-600 text-xs font-bold px-3 py-1.5 rounded-full border border-slate-100 mt-2">
-                <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full" />
+              <div className="inline-flex items-center gap-2 bg-slate-50 text-slate-600 text-xs font-black px-4 py-2 rounded-xl border border-slate-100">
+                <Building2 className="w-3.5 h-3.5 text-emerald-500" />
                 {sessionUser.email}
-                <span className="bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded capitalize font-bold text-[10px]">
-                  {sessionUser.role}
-                </span>
               </div>
             )}
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-5">
-            {/* Full Name */}
+          <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-2">
-              <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Full name</Label>
+              <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Member Name</Label>
               <Input
                 required
-                placeholder="Your full name"
+                placeholder="How should we address you?"
                 value={fullName}
                 onChange={e => setFullName(e.target.value)}
-                className="h-12 rounded-xl bg-slate-50 border-transparent focus:bg-white focus:border-emerald-300 focus:ring-emerald-100 transition-all font-medium"
+                className="h-14 rounded-2xl bg-slate-50 border-transparent focus:bg-white focus:border-emerald-500 focus:ring-0 transition-all font-bold text-slate-700"
               />
             </div>
 
-            {/* Password */}
             <div className="space-y-2">
-              <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Create password</Label>
+              <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Create Password</Label>
               <div className="relative">
                 <Input
                   required
                   type={showPwd ? "text" : "password"}
-                  placeholder="At least 8 characters"
+                  placeholder="Min 8 characters"
                   value={password}
                   onChange={e => setPassword(e.target.value)}
-                  className="h-12 rounded-xl bg-slate-50 border-transparent focus:bg-white focus:border-emerald-300 transition-all font-medium pr-12"
+                  className="h-14 rounded-2xl bg-slate-50 border-transparent focus:bg-white focus:border-emerald-500 transition-all font-bold pr-14"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPwd(!showPwd)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
                 >
-                  {showPwd ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  {showPwd ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
               </div>
               {password && (
-                <div className="space-y-1.5 px-1">
-                  <div className="flex gap-1 h-1.5">
-                    {[1, 2, 3, 4].map(i => (
-                      <div key={i} className={cn("flex-1 rounded-full bg-slate-100 transition-colors", i <= strength ? strengthColors[strength] : "")} />
-                    ))}
-                  </div>
-                  <p className={cn("text-[10px] font-bold", strength < 3 ? "text-amber-500" : "text-emerald-600")}>
+                <div className="flex items-center gap-1.5 px-1 mt-3">
+                  {[1, 2, 3, 4].map(i => (
+                    <div key={i} className={cn("h-1 flex-1 rounded-full transition-all duration-500", i <= strength ? strengthColors[strength] : "bg-slate-100")} />
+                  ))}
+                  <span className={cn("text-[9px] font-black uppercase ml-2", strength < 3 ? "text-amber-500" : "text-emerald-600")}>
                     {strengthLabels[strength]}
-                  </p>
+                  </span>
                 </div>
               )}
             </div>
 
-            {/* Confirm */}
             <div className="space-y-2">
-              <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Confirm password</Label>
+              <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Confirm Identity</Label>
               <Input
                 required
                 type="password"
@@ -257,37 +369,34 @@ export default function AcceptInvitePage() {
                 value={confirmPwd}
                 onChange={e => setConfirmPwd(e.target.value)}
                 className={cn(
-                  "h-12 rounded-xl bg-slate-50 border-transparent focus:bg-white transition-all font-medium",
-                  confirmPwd && password !== confirmPwd ? "border-red-300 focus:border-red-300 bg-red-50/30" : "focus:border-emerald-300"
+                  "h-14 rounded-2xl bg-slate-50 border-transparent focus:bg-white transition-all font-bold",
+                  confirmPwd && password !== confirmPwd ? "border-red-500 bg-red-50" : "focus:border-emerald-500"
                 )}
               />
-              {confirmPwd && password !== confirmPwd && (
-                <p className="text-[10px] text-red-500 font-bold ml-1">Passwords don't match</p>
-              )}
             </div>
 
             <Button
               type="submit"
               disabled={isPending || !fullName || password.length < 8 || password !== confirmPwd}
-              className="w-full h-12 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-base shadow-lg shadow-emerald-100 disabled:opacity-50 disabled:shadow-none transition-all mt-2"
+              className="w-full h-14 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white font-black uppercase text-xs tracking-widest shadow-xl shadow-slate-200 disabled:opacity-30 disabled:shadow-none transition-all active:scale-[0.98] mt-4"
             >
               {isPending ? (
-                <span className="flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> Setting up your account…</span>
+                <span className="flex items-center gap-3"><Loader2 className="w-4 h-4 animate-spin" /> Activating Profile...</span>
               ) : (
-                "Activate my account →"
+                "Join Workspace →"
               )}
             </Button>
           </form>
 
-          <p className="text-center text-[11px] text-slate-400">
-            Already have an account?{' '}
-            <button onClick={() => router.push("/login")} className="text-emerald-600 font-bold hover:underline">Sign in</button>
+          <p className="text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+            Identity Verified · SSL Encrypted
           </p>
         </div>
 
-        <p className="text-center text-[11px] text-slate-400">
-          Powered by PropDesk · Your real estate CRM
-        </p>
+        <div className="flex flex-col items-center gap-4 py-4">
+          <div className="h-px w-20 bg-slate-100" />
+          <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">PropDesk Platform Services</p>
+        </div>
       </div>
     </div>
   )

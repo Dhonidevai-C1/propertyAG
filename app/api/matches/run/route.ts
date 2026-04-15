@@ -138,6 +138,20 @@ export async function POST(request: NextRequest) {
       qualifiedMatches: qualifiedMatches.length,
     })
   } catch (e: any) {
+    if (e.message === 'UNAUTHORIZED') {
+      return NextResponse.json({ error: 'Unauthorized — Please sign in.' }, { status: 401 })
+    }
+    if (e.message === 'PROFILE_MISSING') {
+      return NextResponse.json({ 
+        error: 'Profile not ready', 
+        message: 'Your profile is being synchronized. Please wait a moment.',
+        isSyncing: true 
+      }, { status: 403 })
+    }
+    if (e.message === 'SUBSCRIPTION_EXPIRED') {
+      return NextResponse.json({ error: 'Subscription expired' }, { status: 402 })
+    }
+    
     console.error('[matches/run] error:', e)
     return NextResponse.json({ error: e.message || 'Unexpected error' }, { status: 500 })
   }

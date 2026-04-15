@@ -23,6 +23,7 @@ import {
 import { Activity } from "@/lib/actions/activities"
 import { MatchWithDetails } from "@/lib/types/database"
 import { formatRelativeTime } from "@/lib/utils/format"
+import { RelativeTime } from "@/components/ui/relative-time"
 
 const TABS = [
   { label: "Recent activities", id: "activities" },
@@ -236,9 +237,10 @@ function ActivityItem({ item, onClick }: { item: any, onClick: () => void }) {
         <p className="text-sm text-slate-600 font-medium line-clamp-2 leading-relaxed">
           {message}
         </p>
-        <span className="text-[11px] font-bold text-slate-400 uppercase tracking-tight block pt-1">
-          {formatRelativeTime(item.sortDate)}
-        </span>
+        <RelativeTime 
+          date={item.sortDate} 
+          className="text-[11px] font-bold text-slate-400 uppercase tracking-tight block pt-1"
+        />
       </div>
 
       <div className="flex flex-col items-end gap-2 shrink-0">

@@ -87,6 +87,9 @@ export interface Agency {
   contact_phone: string | null
   contact_email: string | null
   rera_number: string | null
+  subscription_status: 'trial' | 'active' | 'paused' | 'expired'
+  subscription_end_date: string | null
+  plan_type: 'free' | 'monthly' | 'yearly'
   created_at: string
 }
 
@@ -100,6 +103,7 @@ export interface Profile {
   role: UserRole
   avatar_url: string | null
   is_active: boolean
+  is_super_admin: boolean
   created_at: string
   updated_at: string
 }

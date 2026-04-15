@@ -33,7 +33,9 @@ import {
 import { Profile, UserRole } from "@/lib/types/database"
 import { updateMemberRole, deactivateMember, removeMember } from "@/lib/actions/team"
 import { formatRelativeTime } from "@/lib/utils/format"
+import { RelativeTime } from "@/components/ui/relative-time"
 import { useRouter } from "next/navigation"
+import { useAuth } from "@/lib/context/auth-context"
 
 interface TeamClientProps {
   currentProfile: Profile
@@ -57,6 +59,7 @@ export function TeamClient({
   currentPage 
 }: TeamClientProps) {
   const router = useRouter()
+  const { isReadOnly } = useAuth()
   const [members, setMembers] = useState<Profile[]>(initialMembers)
   const [isInviteOpen, setIsInviteOpen] = useState(false)
   const [isRoleOpen, setIsRoleOpen] = useState(false)
@@ -73,6 +76,10 @@ export function TeamClient({
 
   const handleInvite = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (isReadOnly) {
+      toast.error("Read-Only Mode", { description: "Subscription paused. Renew to invite members." })
+      return
+    }
     if (!inviteEmail) return
     setIsInviting(true)
     try {
@@ -148,7 +155,7 @@ export function TeamClient({
           </p>
         </div>
 
-        {isAdmin && (
+        {isAdmin && !isReadOnly && (
           <Dialog open={isInviteOpen} onOpenChange={setIsInviteOpen}>
             <DialogTrigger render={
               <Button className="bg-emerald-500 hover:bg-emerald-600 text-white border-none rounded-xl h-11 px-6 flex items-center gap-2 font-bold shadow-lg shadow-emerald-100">
@@ -285,11 +292,12 @@ export function TeamClient({
                     </div>
                   </TableCell>
                   <TableCell className="py-4">
-                    <span className="text-xs font-bold text-slate-400 uppercase tracking-tight">
-                      {formatRelativeTime(member.created_at)}
-                    </span>
+                    <RelativeTime 
+                      date={member.created_at} 
+                      className="text-xs font-bold text-slate-400 uppercase tracking-tight"
+                    />
                   </TableCell>
-                  {isAdmin && (
+                  {isAdmin && !isReadOnly && (
                     <TableCell className="py-4 text-right">
                       {!isCurrentUser && (
                         <DropdownMenu>

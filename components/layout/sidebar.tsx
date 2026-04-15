@@ -42,6 +42,10 @@ const secondaryNavItems = [
   { label: "Settings", icon: Settings, href: "/settings" },
 ]
 
+const adminNavItem = { label: "Super Admin", icon: Shield, href: "/superadmin" }
+
+import { Shield } from "lucide-react"
+
 interface SidebarProps {
   isCollapsed: boolean
   setIsCollapsed: (value: boolean) => void
@@ -53,6 +57,7 @@ import { LogoutButton } from "@/components/auth/logout-button"
 export function Sidebar({ isCollapsed, setIsCollapsed }: SidebarProps) {
   const pathname = usePathname()
   const { profile } = useAuth()
+  const isSuperAdmin = profile?.is_super_admin
 
   const initials = profile?.full_name
     ? profile.full_name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
@@ -67,7 +72,7 @@ export function Sidebar({ isCollapsed, setIsCollapsed }: SidebarProps) {
     >
       {/* Logo Area */}
       <div className="h-[70px] flex items-center px-4 shrink-0 overflow-hidden">
-        <Link href="/dashboard" className="flex items-center gap-3">
+        <Link href={isSuperAdmin ? "/superadmin" : "/dashboard"} className="flex items-center gap-3">
           <img
             src="/logoprop.png"
             alt="Logo"
@@ -88,27 +93,37 @@ export function Sidebar({ isCollapsed, setIsCollapsed }: SidebarProps) {
 
       {/* Navigation */}
       <div className="flex-1 overflow-y-auto overflow-x-hidden py-4 space-y-1">
-        {navItems.map((item) => (
+        {isSuperAdmin ? (
           <NavItem
-            key={item.label}
-            item={item}
+            item={adminNavItem}
             isCollapsed={isCollapsed}
-            isActive={pathname === item.href}
+            isActive={pathname === adminNavItem.href}
           />
-        ))}
+        ) : (
+          <>
+            {navItems.map((item) => (
+              <NavItem
+                key={item.label}
+                item={item}
+                isCollapsed={isCollapsed}
+                isActive={pathname === item.href}
+              />
+            ))}
 
-        <div className="px-4 py-2">
-          <Separator className="bg-slate-800" />
-        </div>
+            <div className="px-4 py-2">
+              <Separator className="bg-slate-800" />
+            </div>
 
-        {secondaryNavItems.map((item) => (
-          <NavItem
-            key={item.label}
-            item={item}
-            isCollapsed={isCollapsed}
-            isActive={pathname === item.href}
-          />
-        ))}
+            {secondaryNavItems.map((item) => (
+              <NavItem
+                key={item.label}
+                item={item}
+                isCollapsed={isCollapsed}
+                isActive={pathname === item.href}
+              />
+            ))}
+          </>
+        )}
       </div>
 
       {/* Footer / User Profile */}

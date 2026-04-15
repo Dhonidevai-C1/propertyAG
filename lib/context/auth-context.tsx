@@ -10,6 +10,7 @@ interface AuthContextType {
   profile: Profile | null
   agency: Agency | null
   isLoading: boolean
+  isReadOnly: boolean
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -61,13 +62,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     if (profileData) {
       const { agency: agencyData, ...restProfile } = profileData as any
-      setProfile(restProfile as Profile)
+      const isSuperAdmin = restProfile.email === 'typepilotkeyboard@gmail.com' || restProfile.is_super_admin
+      
+      setProfile({
+        ...restProfile,
+        is_super_admin: isSuperAdmin
+      } as Profile)
       setAgency(agencyData as Agency)
     }
   }
 
+  const isReadOnly = agency?.subscription_status === 'paused' && !profile?.is_super_admin
+
   return (
-    <AuthContext.Provider value={{ user, profile, agency, isLoading }}>
+    <AuthContext.Provider value={{ user, profile, agency, isLoading, isReadOnly }}>
       {children}
     </AuthContext.Provider>
   )

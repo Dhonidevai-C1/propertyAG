@@ -19,6 +19,7 @@ import {
   BedDouble,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { redirect } from "next/navigation"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
@@ -100,6 +101,10 @@ export default async function DashboardPage() {
     followUps, 
     hotMatches 
   } = await getDashboardData()
+
+  if (profile.is_super_admin) {
+    redirect("/superadmin")
+  }
 
   const propertiesResult = recentProperties as any
   const properties = propertiesResult?.data || (Array.isArray(recentProperties) ? recentProperties : [])

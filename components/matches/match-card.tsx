@@ -29,6 +29,7 @@ import {
 import { MatchWithDetails } from "@/lib/types/database"
 import { updateMatchStatus } from "@/lib/actions/matches"
 import { formatBudget, formatRelativeTime } from "@/lib/utils/format"
+import { RelativeTime } from "@/components/ui/relative-time"
 import { toast } from "sonner"
 
 interface MatchCardProps {
@@ -181,9 +182,10 @@ export function MatchCard({ match }: MatchCardProps) {
       <div className="mt-auto border-t border-slate-100 px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-1.5 text-slate-400">
           <Clock className="w-3.5 h-3.5" />
-          <span className="text-[10px] font-bold uppercase tracking-wider">
-            {formatRelativeTime(match.matched_at)}
-          </span>
+          <RelativeTime 
+            date={match.matched_at} 
+            className="text-[10px] font-bold uppercase tracking-wider"
+          />
         </div>
 
         <div className="flex items-center gap-2">

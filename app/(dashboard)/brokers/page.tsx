@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils"
 import { buttonVariants } from "@/components/ui/button-variants"
 import { BrokerList } from "@/components/brokers/broker-list"
 import { getBrokers } from "@/lib/actions/brokers"
+import { getProfile } from "@/lib/auth/get-session"
 
 interface BrokersPageProps {
   searchParams: Promise<{
@@ -16,6 +17,9 @@ interface BrokersPageProps {
 }
 
 export default async function BrokersPage(props: BrokersPageProps) {
+  const profile = await getProfile()
+  const isReadOnly = profile?.subscription_status === 'paused' && !profile?.is_super_admin
+
   const searchParams = await props.searchParams
   const filters = {
     search: searchParams.search,
@@ -33,16 +37,18 @@ export default async function BrokersPage(props: BrokersPageProps) {
           <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Brokers Network</h1>
           <p className="text-sm text-slate-500 font-medium">Manage your external agent partnerships</p>
         </div>
-        <Link
-          href="/brokers/new"
-          className={cn(
-            buttonVariants({ variant: "default" }),
-            "bg-slate-900 hover:bg-slate-800 cursor-pointer text-white border-none rounded-xl h-10 px-5 flex items-center gap-2 font-bold"
-          )}
-        >
-          <Plus className="w-4 h-4" />
-          Add Broker
-        </Link>
+        {!isReadOnly && (
+          <Link
+            href="/brokers/new"
+            className={cn(
+              buttonVariants({ variant: "default" }),
+              "bg-slate-900 hover:bg-slate-800 cursor-pointer text-white border-none rounded-xl h-10 px-5 flex items-center gap-2 font-bold"
+            )}
+          >
+            <Plus className="w-4 h-4" />
+            Add Broker
+          </Link>
+        )}
       </div>
 
       <BrokerList initialBrokers={brokers} totalCount={totalCount} />

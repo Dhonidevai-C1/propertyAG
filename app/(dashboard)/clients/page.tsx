@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils"
 import { buttonVariants } from "@/components/ui/button-variants"
 import { ClientList } from "@/components/clients/client-list"
 import { getClients } from "@/lib/actions/clients"
+import { getProfile } from "@/lib/auth/get-session"
 
 interface ClientsPageProps {
   searchParams: Promise<{
@@ -18,6 +19,9 @@ interface ClientsPageProps {
 }
 
 export default async function ClientsPage(props: ClientsPageProps) {
+  const profile = await getProfile()
+  const isReadOnly = profile?.subscription_status === 'paused' && !profile?.is_super_admin
+
   const searchParams = await props.searchParams
   const filters = {
     search: searchParams.search,
@@ -37,16 +41,18 @@ export default async function ClientsPage(props: ClientsPageProps) {
           <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Clients</h1>
           <p className="text-sm text-slate-500 font-medium">Your buyer and renter database</p>
         </div>
-        <Link
-          href="/clients/new"
-          className={cn(
-            buttonVariants({ variant: "default" }),
-            "bg-emerald-500 hover:bg-emerald-600 text-white border-none rounded-xl h-11 px-6 flex items-center gap-2 font-semibold"
-          )}
-        >
-          <Plus className="w-5 h-5" />
-          Add client
-        </Link>
+        {!isReadOnly && (
+          <Link
+            href="/clients/new"
+            className={cn(
+              buttonVariants({ variant: "default" }),
+              "bg-emerald-500 hover:bg-emerald-600 text-white border-none rounded-xl h-11 px-6 flex items-center gap-2 font-semibold"
+            )}
+          >
+            <Plus className="w-5 h-5" />
+            Add client
+          </Link>
+        )}
       </div>
 
       <Suspense fallback={<div className="h-40 bg-white animate-pulse rounded-2xl border border-slate-100" />}>

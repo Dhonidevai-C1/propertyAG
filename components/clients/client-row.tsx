@@ -29,6 +29,7 @@ import Link from "next/link"
 
 import { ClientWithAssignee } from "@/lib/actions/clients"
 import { formatBudgetRange, formatRelativeTime, formatInitials } from "@/lib/utils/format"
+import { RelativeTime } from "@/components/ui/relative-time"
 
 
 
@@ -107,7 +108,9 @@ export function ClientRow({ client, isSelected, onSelect, onDelete }: ClientRowP
           </Avatar>
           <div className="flex flex-col">
             <span className="font-medium text-slate-800">{client.full_name}</span>
-            <span className="text-xs text-slate-400">Added {formatRelativeTime(client.created_at)}</span>
+            <div className="text-xs text-slate-400 flex items-center gap-1">
+              Added <RelativeTime date={client.created_at} />
+            </div>
           </div>
         </div>
       </TableCell>

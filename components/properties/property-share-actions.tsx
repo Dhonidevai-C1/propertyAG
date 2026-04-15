@@ -13,6 +13,7 @@ import { toast } from "sonner"
 import { cn } from "@/lib/utils"
 import { logPropertyShared } from "@/lib/actions/activities"
 import { generateWhatsAppMessage } from "@/lib/utils/format"
+import { useAuth } from "@/lib/context/auth-context"
 
 interface PropertyShareActionsProps {
   propertyId: string
@@ -43,6 +44,7 @@ export function PropertyShareActions({
   showLabel = true,
   whatsappTemplate
 }: PropertyShareActionsProps) {
+  const { isReadOnly } = useAuth()
   const [copied, setCopied] = React.useState(false)
 
   const publicUrl = typeof window !== "undefined"
@@ -50,6 +52,10 @@ export function PropertyShareActions({
     : ""
 
   const handleCopy = async () => {
+    if (isReadOnly) {
+      toast.error("Read-Only Mode", { description: "Subscription paused. Renew to share links." })
+      return
+    }
     try {
       await navigator.clipboard.writeText(publicUrl)
       setCopied(true)
@@ -67,6 +73,10 @@ export function PropertyShareActions({
   }
 
   const handleWhatsAppShare = () => {
+    if (isReadOnly) {
+      toast.error("Read-Only Mode", { description: "Subscription paused. Renew to share via WhatsApp." })
+      return
+    }
     const message = generateWhatsAppMessage({
       agencyName,
       clientName,
@@ -89,7 +99,8 @@ export function PropertyShareActions({
       <DropdownMenuTrigger render={
         <Button
           variant={variant}
-          className={cn("gap-2 border-slate-200 cursor-pointer text-slate-600 font-bold", className)}
+          disabled={isReadOnly}
+          className={cn("gap-2 border-slate-200 cursor-pointer text-slate-600 font-bold", className, isReadOnly && "opacity-50 cursor-not-allowed")}
         >
           <Share2 className="w-4 h-4" />
           {showLabel && "Share"}

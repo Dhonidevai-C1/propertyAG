@@ -67,6 +67,22 @@ CREATE TABLE IF NOT EXISTS broker_client_relations (
 -- 3. Column Upgrades (Graceful Additions)
 DO $$ 
 BEGIN
+  -- agencies
+  IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME='agencies' AND COLUMN_NAME='subscription_status') THEN
+    ALTER TABLE agencies ADD COLUMN subscription_status TEXT DEFAULT 'trial';
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME='agencies' AND COLUMN_NAME='subscription_end_date') THEN
+    ALTER TABLE agencies ADD COLUMN subscription_end_date TIMESTAMPTZ;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME='agencies' AND COLUMN_NAME='plan_type') THEN
+    ALTER TABLE agencies ADD COLUMN plan_type TEXT DEFAULT 'free';
+  END IF;
+
+  -- profiles
+  IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME='profiles' AND COLUMN_NAME='is_super_admin') THEN
+    ALTER TABLE profiles ADD COLUMN is_super_admin BOOLEAN DEFAULT FALSE;
+  END IF;
+
   -- properties
   IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME='properties' AND COLUMN_NAME='slug') THEN
     ALTER TABLE properties ADD COLUMN slug TEXT;

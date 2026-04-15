@@ -8,7 +8,7 @@ import * as z from "zod"
 import { Building2, Eye, EyeOff, Loader2 } from "lucide-react"
 import { toast } from "sonner"
 import { createClient } from "@/lib/supabase/client"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -35,11 +35,13 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const invitedEmail = searchParams.get('email') || ""
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      username: "",
+      username: invitedEmail,
       password: "",
     },
   })
@@ -62,7 +64,11 @@ export default function LoginPage() {
       }
 
       toast.success("Signed in successfully!")
-      router.push("/dashboard")
+      if (data.username === 'typepilotkeyboard@gmail.com') {
+        router.push("/superadmin")
+      } else {
+        router.push("/dashboard")
+      }
       router.refresh()
     } catch (err) {
       setError("An unexpected error occurred. Please try again.")

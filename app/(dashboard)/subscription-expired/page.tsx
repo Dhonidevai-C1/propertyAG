@@ -1,6 +1,6 @@
 import React from "react"
 import { ShieldAlert, Phone, CreditCard, ExternalLink } from "lucide-react"
-import { buttonVariants } from "@/components/ui/button"
+import { buttonVariants } from "@/components/ui/button-variants"
 import { cn } from "@/lib/utils"
 import Link from "next/link"
 import { LogoutButton } from "@/components/auth/logout-button"

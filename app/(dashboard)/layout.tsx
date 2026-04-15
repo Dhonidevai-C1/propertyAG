@@ -57,7 +57,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
           {/* Main Content - Updated with Warm Professional Background */}
           <main className="flex-1 min-w-0 bg-slate-100 overflow-y-auto print:bg-white">
-            <div className="p-4 md:p-6 pb-24 lg:pb-6 max-w-7xl mx-auto w-full print:p-0">
+            <div className="py-4 px-2 md:p-6 pb-24 lg:pb-6 max-w-7xl mx-auto w-full print:p-0">
               {children}
             </div>
           </main>

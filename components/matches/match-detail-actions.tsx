@@ -50,27 +50,20 @@ export function MatchDetailActions({ matchId, currentStatus, footer }: MatchDeta
         <Button
           variant="outline"
           onClick={() => handleStatus('reviewed')}
-          className="flex-1 sm:flex-none h-11 px-6 rounded-xl border-slate-200 text-slate-600 font-bold text-xs hover:bg-slate-50 hover:text-slate-900 shadow-sm"
+          className="flex-1 sm:flex-none h-11 px-6 rounded-xl cursor-pointer border-slate-200 text-slate-600 font-bold text-xs hover:bg-slate-50 hover:text-slate-900 shadow-sm"
         >
           <CheckCheck className="w-4 h-4 mr-2 text-emerald-500" />
           Mark as reviewed
         </Button>
-        <Button
-          variant="outline"
-          onClick={() => handleStatus('contacted')}
-          className="flex-1 sm:flex-none h-11 px-6 rounded-xl border-slate-200 text-slate-600 font-bold text-xs hover:bg-slate-50 hover:text-slate-900 shadow-sm"
-        >
-          <Phone className="w-4 h-4 mr-2 text-blue-500" />
-          Log contact made
-        </Button>
-        <Button
+
+        {/* <Button
           variant="ghost"
           onClick={() => handleStatus('dismissed')}
           className="flex-1 sm:flex-none h-11 px-6 rounded-xl text-red-500 hover:text-red-600 hover:bg-red-50 font-bold text-xs"
         >
           <X className="w-4 h-4 mr-2" />
           Dismiss match
-        </Button>
+        </Button> */}
       </div>
     )
   }

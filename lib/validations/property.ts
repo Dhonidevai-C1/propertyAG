@@ -38,7 +38,7 @@ export const PropertyFormSchema = z.object({
   seller_phone: z.string().optional().nullable(),
   approval_type: z.string().optional().nullable(),
   group: z.string().optional().nullable(),
-  contact_type: z.enum(["client", "broker"]).optional().nullable(),
+  contact_type: z.enum(["client", "broker", "coloniser", "builder"]).optional().nullable(),
   // Slug: auto-generated from title. Only lowercase letters, numbers, hyphens.
   // No spaces, no leading/trailing hyphens. Server validates uniqueness.
   slug: z.string()

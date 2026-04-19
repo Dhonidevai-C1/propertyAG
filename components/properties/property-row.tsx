@@ -48,7 +48,7 @@ export function PropertyRow({ property, isSelected, onSelect, onDelete }: Proper
   return (
     <TableRow className="group hover:bg-slate-50/50 transition-colors">
       <TableCell className="text-right">
-        <div className="flex items-center justify-end gap-0.5">
+        <div className="flex items-center justify-center gap-0.5">
           <Link href={`/properties/${property.id}`}>
             <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 cursor-pointer hover:text-emerald-600">
               <Eye className="w-4 h-4" />

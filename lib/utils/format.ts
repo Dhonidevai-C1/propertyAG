@@ -1,5 +1,14 @@
-export function formatPrice(amount: number): string {
+export function formatPrice(amount: number | null | undefined): string {
   if (!amount && amount !== 0) return ""
+  
+  if (amount >= 10000000) {
+    return `₹${+(amount / 10000000).toFixed(2)} Cr`
+  } else if (amount >= 100000) {
+    return `₹${+(amount / 100000).toFixed(2)}L`
+  } else if (amount >= 1000) {
+    return `₹${+(amount / 1000).toFixed(2)}k`
+  }
+  
   return new Intl.NumberFormat('en-IN', {
     style: 'currency',
     currency: 'INR',
@@ -10,15 +19,8 @@ export function formatPrice(amount: number): string {
 export const formatCurrency = formatPrice
 
 export function formatBudget(amount: number | null | undefined): string {
-  if (!amount) return "0"
-  if (amount >= 10000000) {
-    return `₹${+(amount / 10000000).toFixed(2)}Cr`
-  } else if (amount >= 100000) {
-    return `₹${+(amount / 100000).toFixed(2)}L`
-  } else if (amount >= 1000) {
-    return `₹${+(amount / 1000).toFixed(2)}K`
-  }
-  return `₹${amount}`
+  if (!amount && amount !== 0) return "0"
+  return formatPrice(amount)
 }
 
 export function formatBudgetRange(min: number | null | undefined, max: number | null | undefined): string {

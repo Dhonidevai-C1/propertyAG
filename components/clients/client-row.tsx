@@ -81,11 +81,13 @@ export function ClientRow({ client, isSelected, onSelect, onDelete }: ClientRowP
               </Button>
             } />
             <DropdownMenuContent align="end" className="bg-white min-w-[120px]">
-              <DropdownMenuItem className="cursor-pointer">
-                <Pencil className="w-4 h-4 mr-2" />
-                Edit
-              </DropdownMenuItem>
-              <DropdownMenuSeparator className="bg-slate-100" />
+              <Link href={`/clients/${client.id}/edit`} className="w-full">
+                <DropdownMenuItem className="cursor-pointer">
+                  <Pencil className="w-4 h-4 mr-2" />
+                  Edit
+                </DropdownMenuItem>
+              </Link>
+              <DropdownMenuSeparator className="bg-slate-100 " />
               <DropdownMenuItem
                 className="text-red-500 cursor-pointer focus:text-red-500"
                 onClick={() => onDelete(client.id)}

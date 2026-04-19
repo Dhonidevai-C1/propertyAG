@@ -395,8 +395,9 @@ export function PropertyForm({ initialData, mode = "add" }: PropertyFormProps) {
 
   return (
     <form onSubmit={handleSubmit(onSubmit as any)} className="space-y-8 pb-20">
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
-        <div className="lg:col-span-3 space-y-6">
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
+        <div className="lg:col-span-3 space-y-4">
+
           <Section title="Basic Info">
             <div className="space-y-4">
               <div className="grid gap-2">
@@ -412,11 +413,20 @@ export function PropertyForm({ initialData, mode = "add" }: PropertyFormProps) {
                 {errors.title && <p className="text-xs text-red-500 font-bold">{errors.title.message}</p>}
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="listing_type">Listing Type</Label>
+              {/* Dynamically adjusts the grid so things never get cramped */}
+              <div className={cn(
+                "grid gap-4",
+                propertyTypeValue === "commercial"
+                  ? "grid-cols-1 sm:grid-cols-2 " // 2x2 grid on medium screens, 4-inline on huge screens
+                  : "grid-cols-1 sm:grid-cols-2"                // Standard 3-inline layout
+              )}>
+
+                {/* min-w-0 prevents the grid column from overflowing */}
+                <div className="grid gap-2 min-w-0">
+                  <Label htmlFor="listing_type" className="truncate">Listing Type</Label>
                   <Select onValueChange={(v) => setValue("listing_type", v as any, { shouldDirty: true })} value={listingTypeValue}>
-                    <SelectTrigger className="bg-emerald-50 border-none font-bold text-emerald-700">
+                    {/* w-full ensures the trigger stays exactly within the column */}
+                    <SelectTrigger className="bg-emerald-50 border-none font-bold text-emerald-700 w-full">
                       <SelectValue placeholder="Sale/Rent" />
                     </SelectTrigger>
                     <SelectContent className="bg-white">
@@ -425,12 +435,13 @@ export function PropertyForm({ initialData, mode = "add" }: PropertyFormProps) {
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="property_type" className="flex items-center gap-1">
+
+                <div className="grid gap-2 min-w-0">
+                  <Label htmlFor="property_type" className="flex items-center gap-1 truncate">
                     Property Type <span className="text-red-500">*</span>
                   </Label>
                   <Select onValueChange={(v) => setValue("property_type", v as any, { shouldDirty: true })} value={propertyTypeValue}>
-                    <SelectTrigger className={cn(errors.property_type && "border-red-500")}>
+                    <SelectTrigger className={cn("w-full", errors.property_type && "border-red-500")}>
                       <SelectValue placeholder="Select type" />
                     </SelectTrigger>
                     <SelectContent className="bg-white">
@@ -446,14 +457,15 @@ export function PropertyForm({ initialData, mode = "add" }: PropertyFormProps) {
                   </Select>
                   {errors.property_type && <p className="text-xs text-red-500 font-bold">{errors.property_type.message}</p>}
                 </div>
+
                 {propertyTypeValue === "commercial" && (
-                  <div className="grid gap-2 animate-in fade-in zoom-in-95 duration-200">
-                    <Label htmlFor="commercial_type" className="flex items-center gap-1">
+                  <div className="grid gap-2 min-w-0 animate-in fade-in zoom-in-95 duration-200">
+                    <Label htmlFor="commercial_type" className="flex items-center gap-1 truncate">
                       Commercial Type <span className="text-red-500">*</span>
                     </Label>
                     <Select onValueChange={(v) => setValue("commercial_type", v as any, { shouldDirty: true })} value={watch("commercial_type") || ""}>
-                      <SelectTrigger className="bg-white">
-                        <SelectValue placeholder="Shop / Space / Land" />
+                      <SelectTrigger className="bg-white w-full">
+                        <SelectValue placeholder="Select type" />
                       </SelectTrigger>
                       <SelectContent className="bg-white">
                         <SelectItem value="shop">Shop</SelectItem>
@@ -463,12 +475,13 @@ export function PropertyForm({ initialData, mode = "add" }: PropertyFormProps) {
                     </Select>
                   </div>
                 )}
-                <div className="grid gap-2">
-                  <Label htmlFor="status" className="flex items-center gap-1">
+
+                <div className="grid gap-2 min-w-0">
+                  <Label htmlFor="status" className="flex items-center gap-1 truncate">
                     Status <span className="text-red-500">*</span>
                   </Label>
                   <Select onValueChange={(v) => setValue("status", v as any, { shouldDirty: true })} value={statusValue}>
-                    <SelectTrigger className=" border borde-slate-200 text-black">
+                    <SelectTrigger className="border border-slate-200 text-black w-full">
                       <SelectValue placeholder="Status" />
                     </SelectTrigger>
                     <SelectContent className="bg-white">
@@ -500,7 +513,8 @@ export function PropertyForm({ initialData, mode = "add" }: PropertyFormProps) {
 
           <Section title="Specifications">
             <div className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Area & Measurement Row */}
+              <div className="grid grid-cols-1 xl:grid-cols-1 gap-4">
                 <div className="grid gap-2">
                   <Label>Area & Measurement</Label>
                   <div className="flex gap-2">
@@ -508,10 +522,10 @@ export function PropertyForm({ initialData, mode = "add" }: PropertyFormProps) {
                       type="number"
                       placeholder="Area"
                       {...register("area_sqft", { valueAsNumber: true })}
-                      className="flex-1"
+                      className="flex-1 min-w-0 "
                     />
                     <Select onValueChange={(v) => setValue("area_unit", v as any, { shouldDirty: true })} value={areaUnitValue}>
-                      <SelectTrigger className="w-28 bg-slate-50 border-none font-medium">
+                      <SelectTrigger className="w-28 bg-slate-50 border-none font-medium shrink-0">
                         <SelectValue placeholder="Unit" />
                       </SelectTrigger>
                       <SelectContent className="bg-white">
@@ -524,25 +538,25 @@ export function PropertyForm({ initialData, mode = "add" }: PropertyFormProps) {
                     </Select>
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="grid gap-2">
-                    <Label htmlFor="dimensions">Dimensions (Size)</Label>
-                    <Input id="dimensions" placeholder="e.g. 20x40" {...register("dimensions")} />
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="grid gap-2 min-w-0">
+                    <Label htmlFor="dimensions">Size</Label>
+                    <Input id="dimensions" placeholder="e.g. 20x40" {...register("dimensions")} className="w-full" />
                   </div>
-                  <div className="grid gap-2">
+                  <div className="grid gap-2 min-w-0">
                     <Label htmlFor="road_info">Road Info</Label>
-                    <Input id="road_info" placeholder="e.g. 40ft wide" {...register("road_info")} />
+                    <Input id="road_info" placeholder="e.g. 40ft wide" {...register("road_info")} className="w-full" />
                   </div>
                 </div>
               </div>
 
-
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t border-slate-50">
+              {/* Facing, Floor Info Row */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4 pt-4 border-t border-slate-50">
                 <div className="grid gap-2">
                   <Label htmlFor="facing">Facing Direction</Label>
                   <Select onValueChange={(v) => setValue("facing", v, { shouldDirty: true })} value={watch("facing") || ""}>
-                    <SelectTrigger><SelectValue placeholder="Select Facing" /></SelectTrigger>
+                    <SelectTrigger className="w-full"><SelectValue placeholder="Direction" /></SelectTrigger>
                     <SelectContent className="bg-white">
                       {FACING_OPTIONS.map(opt => (
                         <SelectItem key={opt} value={opt}>{opt}</SelectItem>
@@ -552,15 +566,16 @@ export function PropertyForm({ initialData, mode = "add" }: PropertyFormProps) {
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="floor_number">Floor Number</Label>
-                  <Input id="floor_number" placeholder="e.g. 4th" {...register("floor_number")} />
+                  <Input id="floor_number" placeholder="e.g. 4th" {...register("floor_number")} className="w-full" />
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="total_floors">Total Floors</Label>
-                  <Input id="total_floors" placeholder="e.g. 10" {...register("total_floors")} />
+                  <Input id="total_floors" placeholder="e.g. 10" {...register("total_floors")} className="w-full" />
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-slate-50 mt-4">
+              {/* Approval & Slug Row */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 pt-4 border-t border-slate-50">
                 <div className="grid gap-2">
                   <Label htmlFor="approval_type">Approval Authority</Label>
                   {isOtherApproval ? (
@@ -569,7 +584,7 @@ export function PropertyForm({ initialData, mode = "add" }: PropertyFormProps) {
                         placeholder="Enter custom authority"
                         value={customApproval}
                         onChange={(e) => setCustomApproval(e.target.value)}
-                        className="bg-emerald-50 border-emerald-100 placeholder:text-slate-300"
+                        className="bg-emerald-50 border-emerald-100 placeholder:text-slate-300 flex-1 min-w-0"
                       />
                       <Button
                         type="button"
@@ -601,7 +616,7 @@ export function PropertyForm({ initialData, mode = "add" }: PropertyFormProps) {
                       }}
                       value={approvalTypeValue}
                     >
-                      <SelectTrigger className="bg-blue-50 border-none font-bold text-blue-700">
+                      <SelectTrigger className="bg-blue-50 border-none font-bold text-blue-700 w-full">
                         <SelectValue placeholder="Select Authority" />
                       </SelectTrigger>
                       <SelectContent className="bg-white font-bold">
@@ -615,125 +630,129 @@ export function PropertyForm({ initialData, mode = "add" }: PropertyFormProps) {
                   )}
                 </div>
 
-                {propertyTypeValue === "plot" && (
-                  <div className="grid gap-2">
-                    <Label htmlFor="group">Plot Group (Category)</Label>
-                    {isOtherPlotGroup ? (
-                      <div className="flex gap-2 animate-in slide-in-from-right-2 duration-300">
-                        <Input
-                          placeholder="Name of society/scheme"
-                          value={customPlotGroup}
-                          onChange={(e) => setCustomPlotGroup(e.target.value)}
-                          className="bg-orange-50 border-orange-100 placeholder:text-slate-300"
-                        />
-                        <Button
-                          type="button"
-                          size="sm"
-                          onClick={handleAddCustomPlotGroup}
-                          disabled={isAddingPlotGroup}
-                          className="bg-orange-500 hover:bg-orange-600 h-10 px-3 shrink-0"
-                        >
-                          {isAddingPlotGroup ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save"}
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => setIsOtherPlotGroup(false)}
-                          className="h-10 w-10 shrink-0 text-slate-400"
-                        >
-                          <X className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    ) : (
-                      <Select
-                        onValueChange={(v) => {
-                          if (v === "other") {
-                            setIsOtherPlotGroup(true)
-                          } else {
-                            setValue("group" as any, v, { shouldDirty: true })
-                          }
-                        }}
-                        value={groupValue}
-                      >
-                        <SelectTrigger className="bg-orange-50 border-none font-bold text-orange-700">
-                          <SelectValue placeholder="Select Group" />
-                        </SelectTrigger>
-                        <SelectContent className="bg-white font-bold">
-                          <SelectItem value="" className="text-slate-400 italic">None / Select</SelectItem>
-                          {plotGroupOptions.map(opt => (
-                            <SelectItem key={opt} value={opt}>{opt}</SelectItem>
-                          ))}
-                          <SelectItem value="other" className="text-orange-600 font-black">+ Add Custom Group</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    )}
-                  </div>
-                )}
-
                 <div className="grid gap-2">
                   <Label htmlFor="slug" className="flex items-center gap-1">
                     Property Slug (URL) <span className="text-red-500">*</span>
                   </Label>
-                  <Input id="slug" placeholder="e.g. luxury-3bhk-villa" {...register("slug")} className={cn(errors.slug && "border-red-500")} />
+                  <Input id="slug" placeholder="e.g. luxury-3bhk-villa" {...register("slug")} className={cn("w-full", errors.slug && "border-red-500")} />
                   {errors.slug && <p className="text-xs text-red-500 font-bold">{errors.slug.message}</p>}
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="grid gap-2 md:col-span-2">
-                  <Label className="flex items-center gap-2">
-                    BHK Options
-                    <span className="text-[10px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded uppercase font-bold tracking-wider">Multi-Select</span>
-                  </Label>
-                  <div className="flex flex-wrap gap-2">
-                    {[1, 2, 3, 4, 5, 6].map((num) => (
-                      <button
-                        key={num}
+              {/* Plot Group Row (conditional) */}
+              {propertyTypeValue === "plot" && (
+                <div className="grid gap-2 pt-2">
+                  <Label htmlFor="group">Plot Group (Category)</Label>
+                  {isOtherPlotGroup ? (
+                    <div className="flex gap-2 animate-in slide-in-from-right-2 duration-300">
+                      <Input
+                        placeholder="Name of society/scheme"
+                        value={customPlotGroup}
+                        onChange={(e) => setCustomPlotGroup(e.target.value)}
+                        className="bg-orange-50 border-orange-100 placeholder:text-slate-300 flex-1 min-w-0"
+                      />
+                      <Button
                         type="button"
-                        onClick={() => toggleBhk(num)}
-                        className={cn(
-                          "h-10 px-4 rounded-xl border text-sm font-bold transition-all",
-                          bhkValues.includes(num)
-                            ? "bg-emerald-500 border-emerald-500 text-white shadow-md shadow-emerald-100"
-                            : "bg-white border-slate-200 text-slate-600 hover:border-emerald-200 hover:bg-emerald-50/30"
-                        )}
+                        size="sm"
+                        onClick={handleAddCustomPlotGroup}
+                        disabled={isAddingPlotGroup}
+                        className="bg-orange-500 hover:bg-orange-600 h-10 px-3 shrink-0"
                       >
-                        {num} BHK
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="bedrooms">Bedrooms</Label>
-                  <Input id="bedrooms" type="number" {...register("bedrooms", { valueAsNumber: true })} />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="bathrooms">Bathrooms</Label>
-                  <Input id="bathrooms" type="number" {...register("bathrooms", { valueAsNumber: true })} />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="balconies">Balconies</Label>
-                  <Input id="balconies" type="number" {...register("balconies", { valueAsNumber: true })} />
-                </div>
-                {!(propertyTypeValue === "plot" || propertyTypeValue === "farmhouse" || propertyTypeValue === "farmer_land") && (
-                  <div className="grid gap-2">
-                    <Label htmlFor="furnishing">Furnishing</Label>
-                    <Select onValueChange={(v) => setValue("furnishing", v as any, { shouldDirty: true })} value={furnishingValue || "null"}>
-                      <SelectTrigger className={cn(!furnishingValue && "text-slate-400 font-medium")}><SelectValue placeholder="Select" /></SelectTrigger>
-                      <SelectContent className="bg-white">
-                        <SelectItem value="null" className="text-slate-400 italic">None / NA</SelectItem>
-                        <SelectItem value="unfurnished">Unfurnished</SelectItem>
-                        <SelectItem value="semi_furnished">Semi Furnished</SelectItem>
-                        <SelectItem value="fully_furnished">Fully Furnished</SelectItem>
+                        {isAddingPlotGroup ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save"}
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setIsOtherPlotGroup(false)}
+                        className="h-10 w-10 shrink-0 text-slate-400"
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <Select
+                      onValueChange={(v) => {
+                        if (v === "other") {
+                          setIsOtherPlotGroup(true)
+                        } else {
+                          setValue("group" as any, v, { shouldDirty: true })
+                        }
+                      }}
+                      value={groupValue}
+                    >
+                      <SelectTrigger className="bg-orange-50 border-none font-bold text-orange-700 w-full">
+                        <SelectValue placeholder="Select Group" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-white font-bold">
+                        <SelectItem value="" className="text-slate-400 italic">None / Select</SelectItem>
+                        {plotGroupOptions.map(opt => (
+                          <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                        ))}
+                        <SelectItem value="other" className="text-orange-600 font-black">+ Add Custom Group</SelectItem>
                       </SelectContent>
                     </Select>
+                  )}
+                </div>
+              )}
+
+              {/* BHK & Property Details (conditional) */}
+              {!(propertyTypeValue === "plot" || propertyTypeValue === "farmer_land") && (
+                <div className="space-y-4 pt-4 border-t border-slate-50">
+                  <div className="grid gap-2">
+                    <Label className="flex items-center gap-2">
+                      BHK Options
+                      <span className="text-[10px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded uppercase font-bold tracking-wider">Multi-Select</span>
+                    </Label>
+                    <div className="flex flex-wrap gap-2">
+                      {[1, 2, 3, 4, 5, 6].map((num) => (
+                        <button
+                          key={num}
+                          type="button"
+                          onClick={() => toggleBhk(num)}
+                          className={cn(
+                            "h-10 px-4 rounded-xl border text-sm font-bold transition-all",
+                            bhkValues.includes(num)
+                              ? "bg-emerald-500 border-emerald-500 text-white shadow-md shadow-emerald-100"
+                              : "bg-white border-slate-200 text-slate-600 hover:border-emerald-200 hover:bg-emerald-50/30"
+                          )}
+                        >
+                          {num} BHK
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                )}
-              </div>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className="grid gap-2">
+                      <Label htmlFor="bedrooms">Bedrooms</Label>
+                      <Input id="bedrooms" type="number" {...register("bedrooms", { valueAsNumber: true })} className="w-full" />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="bathrooms">Bathrooms</Label>
+                      <Input id="bathrooms" type="number" {...register("bathrooms", { valueAsNumber: true })} className="w-full" />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="balconies">Balconies</Label>
+                      <Input id="balconies" type="number" {...register("balconies", { valueAsNumber: true })} className="w-full" />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="furnishing">Furnishing</Label>
+                      <Select onValueChange={(v) => setValue("furnishing", v as any, { shouldDirty: true })} value={furnishingValue || "null"}>
+                        <SelectTrigger className={cn("w-full", !furnishingValue && "text-slate-400 font-medium")}><SelectValue placeholder="Select" /></SelectTrigger>
+                        <SelectContent className="bg-white">
+                          <SelectItem value="null" className="text-slate-400 italic">None / NA</SelectItem>
+                          <SelectItem value="unfurnished">Unfurnished</SelectItem>
+                          <SelectItem value="semi_furnished">Semi Furnished</SelectItem>
+                          <SelectItem value="fully_furnished">Fully Furnished</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </Section>
-
           <Section title="Location">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="grid gap-2">
@@ -789,6 +808,8 @@ export function PropertyForm({ initialData, mode = "add" }: PropertyFormProps) {
                     <SelectItem value="null" className="text-slate-400 italic">None / NA</SelectItem>
                     <SelectItem value="client">Client (Direct)</SelectItem>
                     <SelectItem value="broker">Broker</SelectItem>
+                    <SelectItem value="coloniser">Coloniser</SelectItem>
+                    <SelectItem value="builder">Builder</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -805,7 +826,7 @@ export function PropertyForm({ initialData, mode = "add" }: PropertyFormProps) {
                     <SelectTrigger className="bg-amber-50 border-none font-bold text-amber-700">
                       <SelectValue placeholder="Search or select broker" />
                     </SelectTrigger>
-                    <SelectContent className="bg-white font-bold">
+                    <SelectContent className="bg-white w font-bold">
                       <SelectItem value="" className="text-slate-400 italic">None / Unknown</SelectItem>
                       {brokers?.map(b => (
                         <SelectItem key={b.id} value={b.id}>{b.full_name} {b.company_name ? `(${b.company_name})` : ''}</SelectItem>

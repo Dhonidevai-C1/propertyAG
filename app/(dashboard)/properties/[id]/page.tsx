@@ -64,7 +64,16 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
     { label: "Listing type", value: property.listing_type },
     { label: "Status", value: property.status },
     { label: "Approval Authority", value: property.approval_type || "General" },
-    { label: "Source", value: property.contact_type === "broker" ? "Broker" : "Direct Client" },
+    {
+      label: "Source",
+      value: property.contact_type === "broker"
+        ? "Broker"
+        : property.contact_type === "coloniser"
+          ? "Coloniser"
+          : property.contact_type === "builder"
+            ? "Builder"
+            : "Direct Client"
+    },
     property.group && (property.property_type === 'plot' || property.property_type === 'farmhouse' || property.property_type === 'farmer_land')
       ? { label: "Plot Group", value: property.group } : null,
     (property.bhk && property.bhk.length > 0) ? { label: "BHK", value: `${property.bhk.sort((a, b) => a - b).join(", ")} BHK` } : null,
@@ -341,7 +350,7 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
                       <User className="w-5 h-5 text-emerald-400" />
                     </div>
                     <div>
-                      <p className="text-xs text-slate-400">Owner/Agent</p>
+                      <p className="text-xs text-slate-400">{property.contact_type}</p>
                       <p className="font-bold text-lg">{property.seller_name}</p>
                     </div>
                   </div>

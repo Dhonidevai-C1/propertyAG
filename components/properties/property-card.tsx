@@ -35,6 +35,7 @@ import {
 import { Property, PropertyStatus } from "@/lib/types/database"
 import { deleteProperty } from "@/lib/actions/properties"
 import { toast } from "sonner"
+import { formatPrice } from "@/lib/utils/format"
 
 interface PropertyCardProps {
   property: Property
@@ -52,13 +53,6 @@ export function PropertyCard({ property, viewMode }: PropertyCardProps) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
 
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR',
-      maximumFractionDigits: 0,
-    }).format(price)
-  }
 
   const formatBhk = (bhk: number[] | null | undefined) => {
     if (!bhk || !Array.isArray(bhk) || bhk.length === 0) return null

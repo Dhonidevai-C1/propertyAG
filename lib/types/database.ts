@@ -143,7 +143,7 @@ export interface Property {
   seller_phone: string | null
   approval_type: string | null
   group: string | null
-  contact_type: 'client' | 'broker' | null
+  contact_type: 'client' | 'broker' | 'coloniser' | 'builder' | null
   slug: string | null
   listing_type: 'sale' | 'rent'
   is_featured: boolean
